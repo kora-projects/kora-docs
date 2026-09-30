@@ -181,14 +181,14 @@ junitVersion=6.1.3
         implementation "io.koraframework:config-hocon"
         implementation "io.koraframework:grpc-server"
         implementation "io.koraframework:logging-logback"
-        implementation "io.grpc:grpc-protobuf:1.83.1"
-        implementation "io.grpc:grpc-services:1.83.1"
+        implementation "io.grpc:grpc-protobuf:1.84.0"
+        implementation "io.grpc:grpc-services:1.84.0"
 
         testCompileOnly "javax.annotation:javax.annotation-api:1.3.2"
         testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
-        testImplementation "io.grpc:grpc-netty:1.83.1"
+        testImplementation "io.grpc:grpc-netty:1.84.0"
         testImplementation "org.junit.jupiter:junit-jupiter"
         testImplementation "io.koraframework:test-junit5"
     }
@@ -208,13 +208,13 @@ junitVersion=6.1.3
         implementation("io.koraframework:config-hocon")
         implementation("io.koraframework:grpc-server")
         implementation("io.koraframework:logging-logback")
-        implementation("io.grpc:grpc-protobuf:1.83.1")
-        implementation("io.grpc:grpc-services:1.83.1")
+        implementation("io.grpc:grpc-protobuf:1.84.0")
+        implementation("io.grpc:grpc-services:1.84.0")
 
         testCompileOnly("javax.annotation:javax.annotation-api:1.3.2")
 
         testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
-        testImplementation("io.grpc:grpc-netty:1.83.1")
+        testImplementation("io.grpc:grpc-netty:1.84.0")
         testImplementation("org.junit.jupiter:junit-jupiter")
         testImplementation("io.koraframework:test-junit5")
     }
@@ -229,7 +229,7 @@ junitVersion=6.1.3
 
 !!! warning "Держите все артефакты `io.grpc` на одной версии"
 
-    Среда выполнения gRPC, поставляемая с `io.koraframework:grpc-server`, — это `1.83.1`. Любой другой объявленный вами артефакт `io.grpc` — `grpc-protobuf`, `grpc-services` и все, что в тестовой
+    Среда выполнения gRPC, поставляемая с `io.koraframework:grpc-server`, — это `1.84.0`. Любой другой объявленный вами артефакт `io.grpc` — `grpc-protobuf`, `grpc-services` и все, что в тестовой
     области, например `grpc-netty`, — должен использовать ровно эту версию. Зафиксированная более старая версия прекрасно компилируется и падает только во время выполнения с
     `AbstractMethodError: ... does not define or inherit an implementation of the resolved method 'buildClientTransportServers(List, MetricRecorder)'`.
 
@@ -1087,7 +1087,7 @@ grpcurl -plaintext -H "authorization: test-api-key" \
 
 **Тесты падают с `AbstractMethodError` и упоминанием `buildClientTransportServers`:**
 
-Артефакт gRPC в тестовой области зафиксирован на версии, отличной от среды выполнения из `io.koraframework:grpc-server`. Приведите все зависимости `io.grpc` к версии `1.83.1`.
+Артефакт gRPC в тестовой области зафиксирован на версии, отличной от среды выполнения из `io.koraframework:grpc-server`. Приведите все зависимости `io.grpc` к версии `1.84.0`.
 
 ## Что дальше? { #whats-next }
 

@@ -2070,7 +2070,7 @@ Extensions ship with the corresponding Kora processors and cover, among others:
 - gRPC client stubs
 - Config extractors for `@ConfigSource` and `@ConfigMapper` interfaces
 - `Validator<T>` implementations for `@Valid` annotated types
-- MapStruct and Konvert mapper implementations
+- MapStruct mapper implementations in Java and Konvert mapper implementations in Kotlin
 
 ===! ":fontawesome-brands-java: `Java`"
 

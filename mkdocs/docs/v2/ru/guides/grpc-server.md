@@ -6,7 +6,7 @@ search:
   exclude: true
 title: gRPC-сервер с Kora
 summary: Build a gRPC CRUD service on Kora 2.0 with Protocol Buffers, generated handlers, and GrpcServerModule
-description: "Step-by-step unary gRPC server on Kora 2.0: the io.koraframework:grpc-server artifact and GrpcServerModule, the com.google.protobuf Gradle plugin with protoc 4.35.1 and the io.grpc runtime pinned to 1.83.1, a user_service.proto contract using google.protobuf.Empty and Timestamp, a @Component handler extending the generated UserServiceGrpc.UserServiceImplBase that answers through StreamObserver, Status.NOT_FOUND and Status.INTERNAL error mapping, and the grpcServer.port and grpcServer.telemetry.logging.enabled configuration."
+description: "Step-by-step unary gRPC server on Kora 2.0: the io.koraframework:grpc-server artifact and GrpcServerModule, the com.google.protobuf Gradle plugin with protoc 4.36.2 and the io.grpc runtime pinned to 1.84.0, a user_service.proto contract using google.protobuf.Empty and Timestamp, a @Component handler extending the generated UserServiceGrpc.UserServiceImplBase that answers through StreamObserver, Status.NOT_FOUND and Status.INTERNAL error mapping, and the grpcServer.port and grpcServer.telemetry.logging.enabled configuration."
 agent:
   use_when: "Use this file for questions about exposing a Kora 2.0 service over gRPC: io.koraframework:grpc-server, GrpcServerModule, the com.google.protobuf Gradle plugin and generated protobuf and gRPC sources, writing a .proto contract, implementing the generated ImplBase class as a @Component, StreamObserver onNext, onCompleted and onError, mapping failures with Status.NOT_FOUND and Status.INTERNAL, grpcServer.port (default 8090), the 4MiB message cap and reflectionEnabled default, and fixing missing generated classes, an UNIMPLEMENTED response or an AbstractMethodError from mismatched io.grpc versions."
 tags: grpc-server, protobuf, rpc, microservices
@@ -226,14 +226,14 @@ junitVersion=6.1.3
         implementation "io.koraframework:config-hocon"
         implementation "io.koraframework:grpc-server"
         implementation "io.koraframework:logging-logback"
-        implementation "io.grpc:grpc-protobuf:1.83.1"
-        implementation "io.grpc:grpc-services:1.83.1"
+        implementation "io.grpc:grpc-protobuf:1.84.0"
+        implementation "io.grpc:grpc-services:1.84.0"
 
         testCompileOnly "javax.annotation:javax.annotation-api:1.3.2"
         testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
-        testImplementation "io.grpc:grpc-netty:1.83.1"
+        testImplementation "io.grpc:grpc-netty:1.84.0"
         testImplementation "org.junit.jupiter:junit-jupiter"
         testImplementation "io.koraframework:test-junit5"
     }
@@ -262,13 +262,13 @@ junitVersion=6.1.3
         implementation("io.koraframework:config-hocon")
         implementation("io.koraframework:grpc-server")
         implementation("io.koraframework:logging-logback")
-        implementation("io.grpc:grpc-protobuf:1.83.1")
-        implementation("io.grpc:grpc-services:1.83.1")
+        implementation("io.grpc:grpc-protobuf:1.84.0")
+        implementation("io.grpc:grpc-services:1.84.0")
 
         testCompileOnly("javax.annotation:javax.annotation-api:1.3.2")
 
         testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
-        testImplementation("io.grpc:grpc-netty:1.83.1")
+        testImplementation("io.grpc:grpc-netty:1.84.0")
         testImplementation("org.junit.jupiter:junit-jupiter")
         testImplementation("io.koraframework:test-junit5")
     }
@@ -284,7 +284,7 @@ junitVersion=6.1.3
 
 !!! warning "Держите все артефакты `io.grpc` на одной версии"
 
-    Среда выполнения gRPC, которая поставляется с `io.koraframework:grpc-server`, - это `1.83.1`. Любой другой артефакт `io.grpc`, который вы объявляете, - `grpc-protobuf`, `grpc-services` и всё,
+    Среда выполнения gRPC, которая поставляется с `io.koraframework:grpc-server`, - это `1.84.0`. Любой другой артефакт `io.grpc`, который вы объявляете, - `grpc-protobuf`, `grpc-services` и всё,
     что попадает в тестовую область, например `grpc-netty`, - должен использовать ровно эту версию. Более старая зафиксированная версия компилируется без ошибок и падает только во время выполнения с
     `AbstractMethodError: ... does not define or inherit an implementation of the resolved method 'buildClientTransportServers(List, MetricRecorder)'`.
 
@@ -298,9 +298,9 @@ junitVersion=6.1.3
 
     ```groovy title="build.gradle"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
+        protoc { artifact = "com.google.protobuf:protoc:4.36.2" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.84.0" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -323,9 +323,9 @@ junitVersion=6.1.3
 
     ```kotlin title="build.gradle.kts"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
+        protoc { artifact = "com.google.protobuf:protoc:4.36.2" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.84.0" }
         }
         generateProtoTasks {
             all().forEach { task ->
@@ -841,7 +841,7 @@ grpcurl -plaintext -import-path src/main/proto -proto user_service.proto \
 Сопутствующее приложение включает JUnit-тесты, которые используют настоящий gRPC-канал к приложению.
 
 `@KoraAppTest` поднимает весь граф, поэтому gRPC-сервер занимает реальный порт, а тест обращается к нему через обычный `ManagedChannel`. Клиентской стороне такого теста нужен gRPC-транспорт в
-тестовом classpath - поэтому в тестовой области объявлен `io.grpc:grpc-netty:1.83.1`, зафиксированный на той же версии, что и среда выполнения gRPC из `io.koraframework:grpc-server`.
+тестовом classpath - поэтому в тестовой области объявлен `io.grpc:grpc-netty:1.84.0`, зафиксированный на той же версии, что и среда выполнения gRPC из `io.koraframework:grpc-server`.
 
 Запустите их:
 
@@ -898,7 +898,7 @@ grpcurl -plaintext -import-path src/main/proto -proto user_service.proto \
 
 **Тесты падают с `AbstractMethodError` и упоминанием `buildClientTransportServers`:**
 
-Артефакт gRPC в тестовой области зафиксирован на версии, отличной от среды выполнения из `io.koraframework:grpc-server`. Приведите все зависимости `io.grpc` к версии `1.83.1`.
+Артефакт gRPC в тестовой области зафиксирован на версии, отличной от среды выполнения из `io.koraframework:grpc-server`. Приведите все зависимости `io.grpc` к версии `1.84.0`.
 
 **`grpcurl` сообщает, что сервер не поддерживает рефлексию:**
 

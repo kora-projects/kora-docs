@@ -6,9 +6,9 @@ search:
   exclude: true
 title: Tracing with Kora
 summary: Build focused OpenTelemetry tracing for a Kora HTTP service, including the OTLP exporter, KoraTracer business spans, trace context propagation, log correlation, and Jaeger verification.
-description: "Step-by-step OpenTelemetry tracing for a Kora HTTP service: the io.koraframework:opentelemetry-tracing-exporter-http dependency, OpentelemetryHttpExporterModule, the tracing and tracing.exporter configuration sections, service.name resource attributes, business spans created with KoraTracer traceParent and traceNew, span attributes and error recording, ScopedValue-based trace context, traceId and spanId log correlation, and verifying a trace in Jaeger."
+description: "Step-by-step OpenTelemetry tracing for a Kora HTTP service: the io.koraframework:opentelemetry-tracing-exporter-http dependency, OpentelemetryHttpExporterModule, the tracing and tracing.exporter configuration sections, service.name resource attributes and OpentelemetryTracingAttributesProvider, business spans created with KoraTracer traceParent and traceNew, span attributes and error recording, ScopedValue-based trace context, traceId and spanId log correlation, and verifying a trace in Jaeger."
 agent:
-  use_when: "Use this file for questions about adding tracing to a Kora application step by step: io.koraframework:opentelemetry-tracing-exporter-http, OpentelemetryHttpExporterModule, OpentelemetryGrpcExporterModule, the tracing.exporter.endpoint setting, tracing.attributes with service.name, injecting KoraTracer, traceParent and traceNew, KoraTracer.TraceCallable in Kotlin, adding span attributes, why a manual span becomes a separate trace, why traceId is missing from logs, and running Jaeger locally to inspect a trace."
+  use_when: "Use this file for questions about adding tracing to a Kora application step by step: io.koraframework:opentelemetry-tracing-exporter-http, OpentelemetryHttpExporterModule, OpentelemetryGrpcExporterModule, the tracing.exporter.endpoint setting, tracing.attributes with service.name, OpentelemetryTracingAttributesProvider for startup-computed resource attributes, injecting KoraTracer, traceParent and traceNew, KoraTracer.TraceCallable in Kotlin, adding span attributes, why a manual span becomes a separate trace, why traceId is missing from logs, and running Jaeger locally to inspect a trace."
 tags: observability, tracing, opentelemetry, spans, kora-tracer, jaeger, context
 ---
 
@@ -264,6 +264,9 @@ For the full configuration reference, see [Tracing](../documentation/tracing.md#
 
 `service.name` deserves attention because it is how you find anything at all. `tracing.attributes` is empty by default, so a service that skips it exports spans without an identity and shows up in the
 collector as an unnamed producer. Set at least the name, and a namespace if you run several related services.
+
+An attribute whose value is known only at startup, such as the host or pod name, does not have to go through the configuration: an `OpentelemetryTracingAttributesProvider` component adds it to
+the same `Resource`, and `tracing.attributes` wins on a key conflict. See [Tracing](../documentation/tracing.md#attributes-provider).
 
 `scheduleDelay = "1s"` is a deliberate choice for a local guide: the default `2s` is fine in production but feels like a hang when you create a user and immediately refresh the Jaeger UI.
 
@@ -534,7 +537,7 @@ Logback configuration from the HTTP server guide already has both:
 
 ```xml title="src/main/resources/logback.xml"
 <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder class="io.koraframework.logging.logback.ConsoleTextRecordEncoder"/>
+    <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
 </appender>
 
 <appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
@@ -630,7 +633,7 @@ Parent context:
 : what makes a manual span part of the incoming request instead of a trace of its own.
 
 Resource attributes:
-: `tracing.attributes` — the service identity attached to every exported span.
+: `tracing.attributes` plus `OpentelemetryTracingAttributesProvider` components — the service identity attached to every exported span.
 
 OTLP:
 : the protocol used to ship spans to a collector, over `HTTP` or `gRPC`.

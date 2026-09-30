@@ -8,7 +8,7 @@ title: Advanced JDBC with Kora
 summary: Learn advanced Kora JDBC repository patterns with related tables, nullable foreign keys, entity macros, batch inserts, transactions, projections, and custom mappers
 description: "Advanced Kora JDBC repository patterns on PostgreSQL: a second table with a nullable foreign key, @EntityJdbc insert models, the %{entity#inserts} macro, @Batch inserts with @Id generated keys, custom JdbcParameterColumnMapper and JdbcResultColumnMapper components, PostgreSQL array parameters with ANY(:ids), nested @Embedded projections and transactions through JdbcRepository.executor().inTx(...)."
 agent:
-  use_when: "Use this file for questions about advanced Kora JDBC repositories: %{entity#inserts} and other SQL macros, @Batch with @Id generated keys, UpdateCount, custom JdbcParameterColumnMapper / JdbcResultColumnMapper, passing a List into ANY(:ids), @Embedded projections with a column prefix, JdbcExecutor.inTx and its SqlSupplier / SqlRunnable SAM types in Kotlin, TxIsolation and ConnectionContext post-commit actions."
+  use_when: "Use this file for questions about advanced Kora JDBC repositories: %{entity#inserts} and other SQL macros, @Batch with @Id generated keys, UpdateCount, custom JdbcParameterColumnMapper / JdbcResultColumnMapper, passing a List into ANY(:ids), @Embedded projections with a column prefix, JdbcExecutor.inTx and its SqlSupplier / SqlRunnable SAM types in Kotlin, the inTxKt extension, the database-jdbc-postgres @Pg array mappers, TxIsolation and ConnectionContext post-commit actions."
 tags: database, jdbc, postgres, transactions, batch, macros
 ---
 
@@ -160,7 +160,7 @@ The base JDBC guide already adds the main database dependencies. Keep those depe
 
         implementation("io.koraframework:database-jdbc")
         implementation("io.koraframework:database-flyway")
-        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+        implementation("org.flywaydb:flyway-database-postgresql:13.8.1")
 
         runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
@@ -176,7 +176,7 @@ The base JDBC guide already adds the main database dependencies. Keep those depe
 
         implementation("io.koraframework:database-jdbc")
         implementation("io.koraframework:database-flyway")
-        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+        implementation("org.flywaydb:flyway-database-postgresql:13.8.1")
 
         runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
@@ -184,7 +184,7 @@ The base JDBC guide already adds the main database dependencies. Keep those depe
 
 `database-jdbc` provides the repository infrastructure, the `JdbcExecutor` used for manual queries and transactions, and the Hikari connection pool. `database-flyway` applies schema migrations before
 repositories are used; it brings only `flyway-core`, so the PostgreSQL dialect artifact `org.flywaydb:flyway-database-postgresql` has to be declared explicitly and kept at the same version as the
-`flyway-core` that Kora `2.0.0.RC2` resolves, which is `13.3.0`. The PostgreSQL driver lets the application connect to the database at runtime.
+`flyway-core` that Kora `2.0.0.RC2` resolves, which is `13.8.1`. The PostgreSQL driver lets the application connect to the database at runtime.
 
 ## Modules { #modules }
 
@@ -539,6 +539,10 @@ The mapper is small, but it keeps array conversion centralized. Repository metho
 `JdbcParameterColumnMapper.set(...)` declares its value as `@Nullable` through JSpecify, so a Kotlin implementation must accept `List<Long>?` and handle the `null` branch itself. Declaring the override
 parameter as non-null `List<Long>` does not compile. The generic argument of the interface still stays non-null: `JdbcParameterColumnMapper<List<Long>>`, because that is the type Kora matches against
 repository parameters when it resolves the mapper.
+
+This guide writes the mapper by hand to show the mapper contract. In a real `PostgreSQL` service the `io.koraframework:database-jdbc-postgres` module already provides array
+mappers for `List`, `Set`, `Collection`, and arrays: inherit `PostgresJdbcDatabaseModule` instead of `JdbcDatabaseModule`, annotate the `assigneeIds` parameter with `@Pg`, and no custom component is needed, see
+[PostgreSQL](../documentation/database-jdbc.md#postgres-arrays).
 
 ## New Repository { #new-repository }
 
@@ -1577,7 +1581,7 @@ var created = taskRepository.executor().inTx(JdbcExecutor.TxIsolation.REPEATABLE
 
 In Java the compiler picks the overload from the lambda shape, so `inTx(() -> { ... })` is enough. In Kotlin a bare lambda is ambiguous across that overload set and the compiler reports
 `Overload resolution ambiguity`. That is why the Kotlin service constructs the SAM explicitly: `JdbcExecutor.SqlSupplier { ... }` when the block returns a value and `JdbcExecutor.SqlRunnable { ... }`
-when it does not.
+when it does not. The `inTxKt { ... }` and `withConnectionKt { ... }` extensions from `io.koraframework.database.jdbc` accept a plain Kotlin lambda instead; `inTxKt` has no `TxIsolation` variant.
 
 The `SqlFunction<ConnectionContext, T>` overload gives access to the `ConnectionContext`, which can register actions that run after the transaction outcome is known:
 
@@ -2025,7 +2029,7 @@ and `JdbcResultColumnMapper<TaskStatus>` in both languages. The generic argument
 **Kotlin reports `Overload resolution ambiguity` on `inTx`:**
 
 `JdbcExecutor.inTx(...)` has eight overloads, so Kotlin cannot infer which functional interface a bare lambda implements. Construct the SAM explicitly with `JdbcExecutor.SqlSupplier { ... }` for a block
-that returns a value or `JdbcExecutor.SqlRunnable { ... }` for a block that does not.
+that returns a value or `JdbcExecutor.SqlRunnable { ... }` for a block that does not, or call the `inTxKt { ... }` extension that accepts a plain lambda.
 
 **Assigned task query maps the wrong columns:**
 

@@ -6,9 +6,9 @@ search:
   exclude: true
 title: Шаблоны отказоустойчивости
 summary: Extend the HTTP Server guide by applying Kora resilience annotations directly to your existing UserService methods
-description: "Step-by-step resilience for a Kora 2.0 service: the io.koraframework:resilient-kora artifact and ResilientModule, typed spec interfaces declared with @RetrySpec, @TimeoutSpec, @CircuitBreakerSpec and @RateLimiterSpec, the @Retryable, @Timeout, @CircuitBreakable, @RateLimited and @Fallback aspects that reference them by class, the resilient configuration section with countBased.windowSize and the circuit breaker type, a CircuitBreakerPredicate bound with @Tag, @Fallback.Reason, and the generated AOP proxy sources."
+description: "Step-by-step resilience for a Kora 2.0 service: the io.koraframework:resilient-kora artifact and ResilientModule, typed spec interfaces declared with @RetrySpec, @TimeoutSpec, @CircuitBreakerSpec and @RateLimiterSpec (or @RateLimiterDistributedSpec for a Redis-backed limit), the @Retryable, @Timeout, @CircuitBreakable, @RateLimited and @Fallback aspects that reference them by class, the resilient configuration section with countBased.windowSize and the circuit breaker type, the rate limiter type (TOKEN_BUCKET by default or FIXED_WINDOW), a CircuitBreakerPredicate bound with @Tag, the NonRetryableException and NonCircuitableException markers, @Fallback.Reason, and the generated AOP proxy sources."
 agent:
-  use_when: "Use this file for questions about making a Kora 2.0 service fault tolerant: io.koraframework:resilient-kora, ResilientModule, @RetrySpec / @TimeoutSpec / @CircuitBreakerSpec / @RateLimiterSpec interfaces, @Retryable(Spec.class), @Timeout(Spec.class), @CircuitBreakable(Spec.class), @RateLimited(Spec.class), @Fallback(method) and @Fallback.Reason, CircuitBreakerPredicate and RetryPredicate bound with @Tag(Spec.class), the resilient.* config keys (attempts, delay, delayStep, backoff, jitter, retryBudget, duration, type, countBased.windowSize, minimumRequiredCalls, failureRateThreshold, waitDurationInOpenState, limitForPeriod, limitRefreshPeriod), aspect ordering, and reading the generated $UserService__AopProxy."
+  use_when: "Use this file for questions about making a Kora 2.0 service fault tolerant: io.koraframework:resilient-kora, ResilientModule, @RetrySpec / @TimeoutSpec / @CircuitBreakerSpec / @RateLimiterSpec interfaces, @Retryable(Spec.class), @Timeout(Spec.class), @CircuitBreakable(Spec.class), @RateLimited(Spec.class), @Fallback(method) and @Fallback.Reason, CircuitBreakerPredicate and RetryPredicate bound with @Tag(Spec.class), NonRetryableException / NonCircuitableException marker interfaces, @RateLimiterDistributedSpec, the resilient.* config keys (attempts, delay, delayStep, backoff, jitter, retryBudget, duration, type, countBased.windowSize, minimumRequiredCalls, failureRateThreshold, waitDurationInOpenState, limitForPeriod, limitRefreshPeriod, rate limiter type TOKEN_BUCKET / FIXED_WINDOW), aspect ordering, and reading the generated $UserService__AopProxy."
 tags: resilient, retry, timeout, circuitbreaker, ratelimiter, fallback, http-server, hocon
 ---
 
@@ -377,7 +377,7 @@ Kora 2.0 не связывает политику отказоустойчиво
     }
     ```
 
-Предикат необязателен. Без него повторяется любое исключение — именно это поведение и оставляет руководство.
+Предикат необязателен. Без него повторяется любое исключение, кроме реализующих интерфейс-маркер `NonRetryableException`, — именно это поведение и оставляет руководство. Такой же маркер `NonCircuitableException` исключает исключение из статистики прерывателя, см. [Фильтрация исключений](../documentation/resilient.md#exception-filtering).
 
 Помимо `delay`, `delayStep` и `attempts` секция повторных попыток принимает блок `backoff` (`type = EXPONENTIAL`, `multiplier`, `delayMax`), блок `jitter` (`type = NONE` или `FULL`, `ratio`) и блок
 `retryBudget`, ограничивающий, какую долю трафика могут составлять повторы. К ним стоит обращаться, когда сервис повторяет запросы к зависимости, общей с другими вызывающими сторонами.
@@ -1057,7 +1057,7 @@ Kora вызывает этот предикат каждый раз, когда 
 
 Менять конфигурацию не нужно. Модуль, сгенерированный для `DefaultCircuitBreaker`, объявляет параметр `@Tag(DefaultCircuitBreaker.class) @Nullable CircuitBreakerPredicate`, поэтому ваш помеченный
 компонент подхватывается просто фактом своего присутствия в графе. Уберите `@Tag` — и предикат больше не связан с этим прерывателем; уберите компонент целиком — и прерыватель вернется к подсчету всех
-исключений.
+исключений, кроме реализующих `NonCircuitableException`.
 
 Тот же механизм привязывает `RetryPredicate` к интерфейсу с `@RetrySpec`. У `@TimeoutSpec` и `@RateLimiterSpec` предиката нет: таймаут решается прошедшим временем, а ограничитель частоты —
 разрешениями, так что классифицировать нечего.
@@ -1075,7 +1075,7 @@ Kora вызывает этот предикат каждый раз, когда 
 
 Применяйте осторожно, когда:
 
-- лимит общий для всех экземпляров, ведь у каждого экземпляра приложения свой локальный ограничитель
+- лимит общий для всех экземпляров, ведь у каждого экземпляра приложения свой локальный ограничитель; объявите спецификацию через `@RateLimiterDistributedSpec`, чтобы соблюдать единый лимит через `Redis`, см. [Распределённый rate limiter](../documentation/resilient.md#ratelimiter-distributed)
 - у вызывающих сторон нет разумного способа отреагировать на отказ
 - операция настолько дешева, что ограничение лишь добавляет задержку
 
@@ -1095,7 +1095,7 @@ Kora вызывает этот предикат каждый раз, когда 
     ```
 
     1. Число разрешений, выдаваемых в каждом периоде обновления.
-    2. Как часто пополняется бюджет разрешений.
+    2. Длительность периода обновления, за который восполняются `limitForPeriod` разрешений.
 
 === ":simple-yaml: `YAML`"
 
@@ -1108,7 +1108,10 @@ Kora вызывает этот предикат каждый раз, когда 
     ```
 
     1. Число разрешений, выдаваемых в каждом периоде обновления.
-    2. Как часто пополняется бюджет разрешений.
+    2. Длительность периода обновления, за который восполняются `limitForPeriod` разрешений.
+
+Ключ `type` здесь опущен, поэтому ограничитель использует алгоритм по умолчанию `TOKEN_BUCKET`: разрешения восполняются непрерывно, по одному каждые `limitRefreshPeriod / limitForPeriod`, а простаивающий
+ограничитель допускает всплеск до `limitForPeriod` вызовов. Для строгой квоты на окно задайте `type = FIXED_WINDOW`, см. [Алгоритмы](../documentation/resilient.md#ratelimiter-algorithms).
 
 Объявите спецификацию и разметьте метод:
 

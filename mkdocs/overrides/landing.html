@@ -4904,7 +4904,7 @@
                     "Separate public traffic from private management endpoints such as /metrics, /system/readiness, and /system/liveness.",
                     "Configure logging, SLO buckets, tracing, masked headers, request path templates, and graceful shutdown in HOCON or YAML.",
                     "Keep request handling understandable: route classes, body mappers, response mappers, and interceptors are visible generated code.",
-                    "Run on a lightweight Undertow runtime with Java 24+ virtual-thread support available when blocking handlers need it."
+                    "Run on a lightweight Undertow runtime with Java 25 virtual-thread support available when blocking handlers need it."
                 ]
             },
             data: {
@@ -4972,9 +4972,9 @@
                 generatedHeadline: "Generated human-readable source code",
                 points: [
                     "Every one of these is a free aspect: the generated wrapper is a plain method call compiled at build time, with zero reflection and zero runtime overhead versus hand-written code.",
-                    "@Timeout limits execution time, @Retry repeats failed calls, @CircuitBreaker protects dependencies, and @Fallback provides recovery.",
+                    "@Timeout limits execution time, @Retryable repeats failed calls, @CircuitBreakable protects dependencies, and @Fallback provides recovery.",
                     "Aspect order is explicit and documented, so teams can understand how timeout, retry, breaker, and fallback interact.",
-                    "Defaults can be shared globally, while named configurations tune policies for specific clients or operations.",
+                    "Each policy is a typed spec interface (@RetrySpec, @CircuitBreakerSpec, @TimeoutSpec) backed by its own configuration, so policies are tuned per client or operation.",
                     "Validation, caching, transactions, scheduling, security, and logging aspects use the same compile-time generation model.",
                     "The result is policy code that reads like normal source instead of disappearing into runtime reflection and dynamic proxies."
                 ]
@@ -5009,7 +5009,7 @@
                 points: [
                     "The application graph is built and validated at compile time, so there is no runtime container, no classpath scanning, and no proxy magic to learn.",
                     "Where other frameworks offer several competing ways to solve the same problem, Kora ships one clear, well-supported path.",
-                    "HTTP handlers, repositories, and clients run on virtual threads from Java 24+, so blocking code stays straightforward to write and read.",
+                    "HTTP handlers, repositories, and clients run on virtual threads on Java 25, so blocking code stays straightforward to write and read.",
                     "High concurrency comes from the platform's scheduler, not from reactive operators or callback chains layered on top of business logic.",
                     "Thread-per-connection semantics keep stack traces, debuggers, and profilers meaningful, and resource usage predictable under load.",
                     "You don't tune the framework: the fast startup, lean integrations, and high-performance defaults are already done inside Kora. Pick a JVM version and write your business code — the optimization work is not yours to carry."
@@ -5050,7 +5050,7 @@
                     "Разделяйте пользовательский трафик и служебные эндпоинты управления: /metrics, /system/readiness и /system/liveness.",
                     "Настраивайте логирование, SLO-бакеты, трассировку, маскирование заголовков, шаблоны путей и корректное завершение работы в HOCON или YAML.",
                     "Обработка запросов остается понятной: классы маршрутов, преобразователи тела, преобразователи ответов и перехватчики видны как сгенерированный код.",
-                    "Запускайтесь на легковестном и производительном Undertow с поддержкой виртуальных потоков Java 24+ для блокирующих обработчиков."
+                    "Запускайтесь на легковестном и производительном Undertow с поддержкой виртуальных потоков Java 25 для блокирующих обработчиков."
                 ]
             },
             data: {
@@ -5118,9 +5118,9 @@
                 generatedHeadline: "Читаемый сгенерированный исходный код",
                 points: [
                     "Каждый такой аспект бесплатный: сгенерированная обертка — это обычный вызов метода, скомпилированный на этапе сборки, без рефлексии и без накладных расходов во время выполнения по сравнению с кодом, написанным вручную.",
-                    "@Timeout ограничивает время выполнения, @Retry повторяет неудачные вызовы, @CircuitBreaker защищает зависимости, а @Fallback дает восстановление.",
+                    "@Timeout ограничивает время выполнения, @Retryable повторяет неудачные вызовы, @CircuitBreakable защищает зависимости, а @Fallback дает восстановление.",
                     "Порядок аспектов явный и задокументированный, поэтому команды понимают, как взаимодействуют timeout, retry, breaker и fallback.",
-                    "Значения по умолчанию можно разделять глобально, а named configurations настраивают политики для конкретных клиентов или операций.",
+                    "Каждая политика — это типизированный интерфейс-спецификация (@RetrySpec, @CircuitBreakerSpec, @TimeoutSpec) со своей конфигурацией, поэтому политики настраиваются для конкретных клиентов или операций.",
                     "Validation, cache, транзакции, scheduling, безопасность и logging aspects используют ту же модель генерации во время компиляции.",
                     "В итоге получается код политик, который читается как обычный исходный код, а не растворяется в рефлексии во время выполнения и динамических прокси."
                 ]
@@ -5155,7 +5155,7 @@
                 points: [
                     "Граф приложения строится и проверяется во время компиляции — не нужно изучать контейнер во время выполнения, сканирование пути классов или магию прокси.",
                     "Там, где другие фреймворки предлагают несколько конкурирующих способов решить одну задачу, Kora дает один понятный и поддерживаемый путь.",
-                    "HTTP-обработчики, репозитории и клиенты работают на виртуальных потоках Java 24+, поэтому блокирующий код остается простым в написании и чтении.",
+                    "HTTP-обработчики, репозитории и клиенты работают на виртуальных потоках Java 25, поэтому блокирующий код остается простым в написании и чтении.",
                     "Высокая конкурентность обеспечивается планировщиком платформы, а не реактивными операторами или цепочками колбэков поверх бизнес-логики.",
                     "Модель «один поток на соединение» сохраняет осмысленность трассировок стека, отладчиков и профилировщиков, а расход ресурсов предсказуем под нагрузкой.",
                     "Вам не нужно оптимизировать сам фреймворк: быстрый старт, лёгкие интеграции и высокопроизводительные настройки по умолчанию уже сделаны внутри Kora. Выберите версию JVM и пишите бизнес-код — работа по оптимизации не на вас."
@@ -8745,7 +8745,7 @@ public final class HelloController {
     <li><strong>Basics</strong> &mdash; <code>@KoraApp</code> &amp; the graph, <code>@Component</code> + constructor injection, <code>@Module</code>/<code>@Tag</code>, typed <code>@ConfigSource</code> (HOCON or YAML).</li>
     <li><strong>HTTP API</strong> &mdash; <code>@HttpController</code>/<code>@HttpRoute</code> CRUD, <code>@Path</code>/<code>@Query</code>/<code>@Header</code> + body, <code>@Json</code> DTOs, declarative <code>@HttpClient</code>, OpenAPI.</li>
     <li><strong>Data &amp; messaging</strong> &mdash; JDBC <code>@Repository</code>/<code>@Query</code>, transactions &amp; pooling, Flyway/Liquibase migrations, Kafka producer/consumer.</li>
-    <li><strong>Reliability</strong> &mdash; <code>@Retry</code>/<code>@Timeout</code>/<code>@CircuitBreaker</code>/<code>@Fallback</code>, caching, validation, scheduling.</li>
+    <li><strong>Reliability</strong> &mdash; <code>@Retryable</code>/<code>@Timeout</code>/<code>@CircuitBreakable</code>/<code>@Fallback</code>, caching, validation, scheduling.</li>
     <li><strong>Observability</strong> &mdash; Logback + MDC, Micrometer/Prometheus metrics, OpenTelemetry tracing, readiness/liveness probes.</li>
     <li><strong>Testing</strong> &mdash; <code>@KoraAppTest</code> graph tests, Testcontainers integration, black-box HTTP tests.</li>
 </ol>
@@ -8795,7 +8795,7 @@ public final class HelloController {
     <li><strong>Основы</strong> &mdash; <code>@KoraApp</code> и граф, <code>@Component</code> + внедрение через конструктор, <code>@Module</code>/<code>@Tag</code>, типизированная <code>@ConfigSource</code> (HOCON или YAML).</li>
     <li><strong>HTTP API</strong> &mdash; CRUD на <code>@HttpController</code>/<code>@HttpRoute</code>, <code>@Path</code>/<code>@Query</code>/<code>@Header</code> и тело запроса, DTO с <code>@Json</code>, декларативный <code>@HttpClient</code>, OpenAPI.</li>
     <li><strong>Данные и сообщения</strong> &mdash; JDBC <code>@Repository</code>/<code>@Query</code>, транзакции и пул соединений, миграции Flyway/Liquibase, издатель и потребитель Kafka.</li>
-    <li><strong>Надёжность</strong> &mdash; <code>@Retry</code>/<code>@Timeout</code>/<code>@CircuitBreaker</code>/<code>@Fallback</code>, кеширование, валидация, планировщик.</li>
+    <li><strong>Надёжность</strong> &mdash; <code>@Retryable</code>/<code>@Timeout</code>/<code>@CircuitBreakable</code>/<code>@Fallback</code>, кеширование, валидация, планировщик.</li>
     <li><strong>Наблюдаемость</strong> &mdash; Logback и MDC, метрики Micrometer/Prometheus, трассировка OpenTelemetry, пробы готовности и живучести.</li>
     <li><strong>Тестирование</strong> &mdash; тесты графа через <code>@KoraAppTest</code>, интеграционные тесты на Testcontainers, тесты HTTP по принципу чёрного ящика.</li>
 </ol>

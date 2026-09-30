@@ -1,10 +1,10 @@
 ---
 seo_title: "Kora HTTP Server: Controllers, Routing and Interceptors"
 seo_description: "Reference for the Kora HTTP server: declarative and imperative controllers, routing, request and response mapping, interceptors, errors, auth and Undertow config."
-keywords: ["Kora Framework", "Kora HTTP server", "@HttpController", "REST controller", "Undertow", "HTTP interceptors"]
-description: "Explains Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration. Use when working with @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith."
+keywords: ["Kora Framework", "Kora HTTP server", "@HttpController", "REST controller", "Undertow", "HTTP interceptors", "HTTP telemetry masking"]
+description: "Explains Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization, telemetry masking and Undertow configuration. Use when working with @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, MaskingStrategy, DataMasker."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration; key triggers include @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpServerInterceptor, HttpServerParameterReader, UndertowPublicHttpServerModule, @Tag(HttpServer.class), httpServer.port, httpServer.system."
+  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration; key triggers include @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpServerInterceptor, HttpServerParameterReader, UndertowPublicHttpServerModule, @Tag(HttpServer.class), httpServer.port, httpServer.system, headerServerNameEnabled, maskHeaders, maskQueries, MaskingStrategy tagged @Tag(HttpServerTelemetry.class), DataMasker, JsonDataMasker, MaskingPathRules, MaskingUtils, http.server.request.duration."
 ---
 
 The `HTTP server` module describes the incoming HTTP boundary of an application: accepting a request, parsing parameters,
@@ -119,13 +119,13 @@ Basic HTTP server configuration parameters:
             socketWriteTimeout = "0s" //(5)!
             socketKeepAliveEnabled = false //(6)!
             headerKeepAliveEnabled = false //(7)!
-            headerServerDateEnabled = true //(8)!
-            maxRequestBodySize = "256MiB" //(9)!
+            headerServerNameEnabled = false //(8)!
+            headerServerDateEnabled = true //(9)!
+            maxRequestBodySize = "256MiB" //(10)!
             telemetry {
                 logging {
-                    enabled = false //(10)!
-                    stacktrace = true //(11)!
-                    mask = "***" //(12)!
+                    enabled = false //(11)!
+                    stacktrace = true //(12)!
                     maskQueries = [ ] //(13)!
                     maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(14)!
                     pathFull = false //(15)!
@@ -159,13 +159,13 @@ Basic HTTP server configuration parameters:
         5.  Maximum time to wait for writing data to a socket or connection; `0s` disables the timeout (default: `0s`)
         6.  Whether to enable `TCP keep-alive` for a socket or connection (default: `false`)
         7.  Whether to always send the `Connection: keep-alive` response header (default: `false`)
-        8.  Whether to always send the `Date` response header (default: `true`)
-        9.  Maximum allowed size of an incoming request body (default: `256MiB`)
-        10.  Enables module logging (default: `false`)
-        11.  Enables call stack logging on exception (default: `true`)
-        12.  Mask used to hide specified headers and request or response parameters (default: `***`)
-        13.  List of request parameters to hide (default: `[]`)
-        14.  List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        8.  Whether to send the `Server: Kora` response header (default: `false`)
+        9.  Whether to always send the `Date` response header (default: `true`)
+        10.  Maximum allowed size of an incoming request body (default: `256MiB`)
+        11.  Enables module logging (default: `false`)
+        12.  Enables call stack logging on exception (default: `true`)
+        13.  Query parameter names whose values are masked in the log, compared case-insensitively (default: `[]`). See [Masking](#telemetry-masking)
+        14.  Request and response header names whose values are masked in the log, compared case-insensitively (default: `[ "authorization", "cookie", "set-cookie" ]`). See [Masking](#telemetry-masking)
         15.  Whether to log the full request path instead of the route template; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
         16.  Maximum request body size that may be written to the log; a larger body is logged without content (default: `2MiB`)
         17.  Maximum response body size that may be written to the log; a larger body is logged without content (default: `2MiB`)
@@ -187,13 +187,13 @@ Basic HTTP server configuration parameters:
           socketWriteTimeout: "0s" #(5)!
           socketKeepAliveEnabled: false #(6)!
           headerKeepAliveEnabled: false #(7)!
-          headerServerDateEnabled: true #(8)!
-          maxRequestBodySize: "256MiB" #(9)!
+          headerServerNameEnabled: false #(8)!
+          headerServerDateEnabled: true #(9)!
+          maxRequestBodySize: "256MiB" #(10)!
           telemetry:
             logging:
-              enabled: false #(10)!
-              stacktrace: true #(11)!
-              mask: "***" #(12)!
+              enabled: false #(11)!
+              stacktrace: true #(12)!
               maskQueries: [ ] #(13)!
               maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(14)!
               pathFull: false #(15)!
@@ -220,13 +220,13 @@ Basic HTTP server configuration parameters:
         5.  Maximum time to wait for writing data to a socket or connection; `0s` disables the timeout (default: `0s`)
         6.  Whether to enable `TCP keep-alive` for a socket or connection (default: `false`)
         7.  Whether to always send the `Connection: keep-alive` response header (default: `false`)
-        8.  Whether to always send the `Date` response header (default: `true`)
-        9.  Maximum allowed size of an incoming request body (default: `256MiB`)
-        10.  Enables module logging (default: `false`)
-        11.  Enables call stack logging on exception (default: `true`)
-        12.  Mask used to hide specified headers and request or response parameters (default: `***`)
-        13.  List of request parameters to hide (default: `[]`)
-        14.  List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        8.  Whether to send the `Server: Kora` response header (default: `false`)
+        9.  Whether to always send the `Date` response header (default: `true`)
+        10.  Maximum allowed size of an incoming request body (default: `256MiB`)
+        11.  Enables module logging (default: `false`)
+        12.  Enables call stack logging on exception (default: `true`)
+        13.  Query parameter names whose values are masked in the log, compared case-insensitively (default: `[]`). See [Masking](#telemetry-masking)
+        14.  Request and response header names whose values are masked in the log, compared case-insensitively (default: `[ "authorization", "cookie", "set-cookie" ]`). See [Masking](#telemetry-masking)
         15.  Whether to log the full request path instead of the route template; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
         16.  Maximum request body size that may be written to the log; a larger body is logged without content (default: `2MiB`)
         17.  Maximum response body size that may be written to the log; a larger body is logged without content (default: `2MiB`)
@@ -314,6 +314,9 @@ by both servers, because they configure a single `XnioWorker`:
 
 Request handling itself does not use a bounded blocking pool: each connection is dispatched to a virtual thread,
 so there are no `blockingThreads` or `virtualThreadsEnabled` options.
+The response body is written to the socket over `NIO` by the `Undertow` I/O threads. A body whose content is not already in memory
+is buffered on the request's virtual thread and sent in one piece while it fits into `64KiB`; a larger one is streamed through a bounded pipe,
+so a large response is never held in memory as a whole.
 
 For everything that has no configuration option, Kora provides `Configurer<T>` extension points.
 A `Configurer<T>` receives the object being built and returns the object to use:
@@ -328,19 +331,14 @@ A `Configurer<T>` receives the object being built and returns the object to use:
             return builder -> builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
         }
 
-        default Configurer<HttpHandler> handlerConfigurer() { //(2)!
-            return handler -> new RequestDumpingHandler(handler);
-        }
-
-        default Configurer<XnioWorker.Builder> workerConfigurer() { //(3)!
+        default Configurer<XnioWorker.Builder> workerConfigurer() { //(2)!
             return builder -> builder.setWorkerName("my-worker");
         }
     }
     ```
 
     1.  Configures the `Undertow` builder of the public server before it is started
-    2.  Wraps the root `HttpHandler` of the public server
-    3.  Configures the `XnioWorker` shared by both servers
+    2.  Configures the `XnioWorker` shared by both servers
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -351,19 +349,15 @@ A `Configurer<T>` receives the object being built and returns the object to use:
         fun undertowConfigurer(): Configurer<Undertow.Builder> = //(1)!
             Configurer { builder -> builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true) }
 
-        fun handlerConfigurer(): Configurer<HttpHandler> = //(2)!
-            Configurer { handler -> RequestDumpingHandler(handler) }
-
-        fun workerConfigurer(): Configurer<XnioWorker.Builder> = //(3)!
+        fun workerConfigurer(): Configurer<XnioWorker.Builder> = //(2)!
             Configurer { builder -> builder.setWorkerName("my-worker") }
     }
     ```
 
     1.  Configures the `Undertow` builder of the public server before it is started
-    2.  Wraps the root `HttpHandler` of the public server
-    3.  Configures the `XnioWorker` shared by both servers
+    2.  Configures the `XnioWorker` shared by both servers
 
-An untagged `Configurer<Undertow.Builder>` or `Configurer<HttpHandler>` applies to the **public** server.
+An untagged `Configurer<Undertow.Builder>` applies to the **public** server.
 To configure the system server, mark the component with the `@SystemApi` tag.
 
 ## SomeController declarative { #somecontroller-declarative }
@@ -690,7 +684,7 @@ The [JSON](json.md) module is required.
 
 ##### Form UrlEncoded { #form-urlencoded }
 
-Declare a `FormUrlEncoded` (from `ru.tinkoff.kora.http.common.form`) argument to accept a request with the
+Declare a `FormUrlEncoded` (from `io.koraframework.http.common.form`) argument to accept a request with the
 `application/x-www-form-urlencoded` content type ([form data](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1)).
 No `@Json` or `@Mapping` annotation is needed — Kora has a built-in reader for this type.
 
@@ -716,9 +710,7 @@ No `@Json` or `@Mapping` annotation is needed — Kora has a built-in reader for
     }
     ```
 
-    1. Reads the `name` field from the submitted form
-
-    1. `FormUrlEncoded.get(String)` returns `FormPart(String name, List<String> values)` or `null`
+    1. Reads the `name` field from the submitted form; `FormUrlEncoded.get(String)` returns `FormPart(String name, List<String> values)` or `null`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -736,21 +728,18 @@ No `@Json` or `@Mapping` annotation is needed — Kora has a built-in reader for
     }
     ```
 
-    1. Reads the `name` field from the submitted form
-
-    1. `FormUrlEncoded.get(String)` returns `FormPart(String name, List<String> values)` or `null`
+    1. Reads the `name` field from the submitted form; `FormUrlEncoded.get(String)` returns `FormPart(String name, List<String> values)` or `null`
 
 ##### Form Multipart { #form-multipart }
 
-Declare a `FormMultipart` (from `ru.tinkoff.kora.http.common.form`) argument to accept a `multipart/form-data`
+Declare a `FormMultipart` (from `io.koraframework.http.common.form`) argument to accept a `multipart/form-data`
 request ([binary form](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2)), typically used for file uploads.
 No `@Json` or `@Mapping` annotation is needed.
 
-`FormMultipart.parts()` returns the list of parts, where each `FormMultipart.FormPart` is one of the following sealed subtypes:
-
-* `MultipartData` — a text field: `name()`, `content()` (`String`)
-* `MultipartFile` — a file loaded into memory: `name()`, `fileName()`, `contentType()`, `content()` (`byte[]`)
-* `MultipartFileStream` — a streamed file: `name()`, `fileName()`, `contentType()`, `content()` (`Flow.Publisher<ByteBuffer>`)
+`FormMultipart.parts()` returns the list of parts. `FormMultipart.FormPart` is a sealed interface with the subtypes
+`MultipartData`, `MultipartFile` and `MultipartFileStream`, but the server reads the whole request into memory and
+delivers **every** part, text fields included, as `MultipartFile`: `name()`, `fileName()`, `contentType()` and `content()` (`byte[]`).
+`MultipartData` and `MultipartFileStream` are used when a form is sent, for example by an [HTTP client](http-client.md).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -762,26 +751,20 @@ No `@Json` or `@Mapping` annotation is needed.
         @HttpRoute(method = HttpMethod.POST, path = "/form/multipart")
         public String handle(FormMultipart body) {
             for (FormMultipart.FormPart part : body.parts()) {
-                if (part instanceof FormMultipart.FormPart.MultipartData data) { //(1)!
-                    String value = data.content();
-                } else if (part instanceof FormMultipart.FormPart.MultipartFile file) { //(2)!
-                    String fileName = file.fileName();
+                if (part instanceof FormMultipart.FormPart.MultipartFile file) { //(1)!
+                    String name = file.name();
+                    String fileName = file.fileName(); //(2)!
                     String contentType = file.contentType();
                     byte[] content = file.content();
                 }
-            }
-            for (var part : body.parts()) { //(1)!
-                System.out.println(part.name());
             }
             return "OK";
         }
     }
     ```
 
-    1. A text field of the form
-    2. A file uploaded within the form
-
-    1. `FormMultipart.parts()` returns a sealed `FormPart`: `MultipartData`, `MultipartFile` or `MultipartFileStream`
+    1. Every part of an incoming form is a `MultipartFile`
+    2. `fileName()` and `contentType()` are `null` when the part does not declare them, as with a plain text field
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -793,16 +776,11 @@ No `@Json` or `@Mapping` annotation is needed.
         @HttpRoute(method = HttpMethod.POST, path = "/form/multipart")
         fun handle(body: FormMultipart): String {
             for (part in body.parts()) {
-                when (part) {
-                    is FormMultipart.FormPart.MultipartData -> { //(1)!
-                        val value = part.content()
-                    }
-                    is FormMultipart.FormPart.MultipartFile -> { //(2)!
-                        val fileName = part.fileName()
-                        val contentType = part.contentType()
-                        val content = part.content()
-                    }
-                    else -> {}
+                if (part is FormMultipart.FormPart.MultipartFile) { //(1)!
+                    val name = part.name()
+                    val fileName = part.fileName() //(2)!
+                    val contentType = part.contentType()
+                    val content = part.content()
                 }
             }
             return "OK"
@@ -810,10 +788,8 @@ No `@Json` or `@Mapping` annotation is needed.
     }
     ```
 
-    1. A text field of the form
-    2. A file uploaded within the form
-
-    1. `FormMultipart.parts()` returns a sealed `FormPart`: `MultipartData`, `MultipartFile` or `MultipartFileStream`
+    1. Every part of an incoming form is a `MultipartFile`
+    2. `fileName()` and `contentType()` are `null` when the part does not declare them, as with a plain text field
 
 #### Cookie { #cookie }
 
@@ -1363,9 +1339,6 @@ Available signatures for declarative `HTTP` handler methods out of the box:
 === ":simple-kotlin: `Kotlin`"
 
     By `T` we mean the type of the return value — a body type, an [`HttpResponseEntity<T>`](#response-entity), or the full [`HttpServerResponse`](#response).
-
-    - `myMethod(): T` — **blocking**: the handler runs on a thread from the `blockingThreads` pool (or a virtual thread when `virtualThreadsEnabled` is on, see [Configuration](#configuration))
-    - `suspend myMethod(): T` — **non-blocking** [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (requires the [kotlinx-coroutines-core](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) dependency as `implementation`)
 
     - `myMethod(): T`
     - `myMethod(): Unit` — answers `200` with an empty body
@@ -2218,68 +2191,162 @@ Request and response logs are written by two separate loggers, so their level ca
     1. `INFO` logs the operation only, `DEBUG` adds headers and query parameters
     2. `TRACE` additionally writes the body, limited by `maxRequestBodyLogSize` / `maxResponseBodyLogSize`
 
-Headers listed in `maskHeaders` and query parameters listed in `maskQueries` are replaced with the `mask` value.
-The logged operation uses the route template by default and the full path when `pathFull = true` or the logger level is `TRACE`.
+The logged operation uses the route template by default and the full path when `pathFull = true`, or at the `TRACE` logger level when `pathFull` is not set.
+Values of sensitive headers, query parameters and body fields are masked, see [Masking](#telemetry-masking).
 
+Metrics require `httpServer.telemetry.metrics.enabled` **and** a `MeterRegistry` supplied by a [metrics](metrics.md) module.
+The server reports the `http.server.request.duration` timer, with the buckets from `httpServer.telemetry.metrics.slo` and the tags
+`server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address` and `error.type`,
+and the `http.server.active_requests` gauge with the same tags except `http.response.status_code` and `error.type`;
+both carry everything declared in `httpServer.telemetry.metrics.tags`.
 Metrics and tracing are described in the [Metrics Reference](metrics.md#http-server) section.
 
 ### Logging { #telemetry-logging }
 
-Server logging is written through `SLF4J` under the `ru.tinkoff.kora.http.server.common.HttpServer` logger. Enabling logging in the
-configuration (`httpServer.telemetry.logging.enabled = true`) turns the telemetry on, but **what** is actually written is governed by the
-log level of that logger, so you control verbosity from your logging framework (`logback`, etc.) without restarting with a different config:
+Server logging is written through `SLF4J` to the `io.koraframework.http.server.common.HttpServer.request` and
+`io.koraframework.http.server.common.HttpServer.response` loggers. Enabling logging in the configuration (`httpServer.telemetry.logging.enabled = true`)
+turns the logger on, but **what** is actually written is governed by the level of these loggers, so you control verbosity from your logging framework
+(`logback`, etc.) without restarting with a different config:
 
 | Log level | What is logged |
 |-----------|----------------|
-| `INFO`    | Request start and end line: method, path template, response status, result code, and duration |
-| `DEBUG`   | Additionally request and response **headers** |
-| `TRACE`   | Additionally the full (non-templated) request path |
+| `INFO`    | Server name and port, authority and operation (method and route template); the response record adds the result code, the status code and the processing time in milliseconds |
+| `DEBUG`   | Additionally request query parameters and headers, and response headers |
+| `TRACE`   | Additionally request and response bodies, and the full request path instead of the route template |
+
+A request that failed with an exception is logged by the response logger at `WARN`.
 
 The following configuration fields shape the output (see [Configuration](#configuration) for the full list):
 
-* `pathTemplate` — when `true` (default), the low-cardinality route template (`/users/{id}`) is logged and used as the metric/trace label instead of the resolved path (`/users/42`); at `TRACE` the resolved path is logged
-* `maskHeaders` — header names whose values are replaced with `mask` (default masks `authorization`, `cookie`, `set-cookie`)
-* `maskQueries` — query parameter names whose values are replaced with `mask`
-* `mask` — the replacement string (default `***`)
+* `pathFull` — `true` always logs the full request path (`/users/42`), `false` always logs the route template (`/users/{id}`); when not set, the template is used except at `TRACE`
+* `maskHeaders` / `maskQueries` — header and query parameter names whose values are masked, see [Masking](#telemetry-masking)
+* `maxRequestBodyLogSize` / `maxResponseBodyLogSize` — a larger body is logged without its content
 * `stacktrace` — when `true` (default), logs the exception stack trace when a request fails
 
-Example `logback` configuration that enables full header logging for the server:
+Example `logback` configuration that enables header logging for the server:
 
 ```xml
-<logger name="ru.tinkoff.kora.http.server.common.HttpServer" level="DEBUG"/>
+<logger name="io.koraframework.http.server.common.HttpServer" level="DEBUG"/>
 ```
+
+### Masking { #telemetry-masking }
+
+Values of the headers listed in `maskHeaders` (default: `authorization`, `cookie`, `set-cookie`) and of the query parameters
+listed in `maskQueries` are replaced with the result of the `MaskingStrategy` tagged `@Tag(HttpServerTelemetry.class)`,
+which by default writes `***`. Names are compared case-insensitively, and every value of a repeated header or parameter is masked separately.
+To change how the values are masked, register your own strategy with the same tag — it replaces the default one.
+Any `MaskingStrategy` fits, including the built-in [strategies](logging-aspect.md#masking-strategies) of the logging module:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends UndertowPublicHttpServerModule {
+
+        @Tag(HttpServerTelemetry.class)
+        default MaskingStrategy httpServerMaskingStrategy() {
+            return new MaskingKeepLast("***", 4);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : UndertowPublicHttpServerModule {
+
+        @Tag(HttpServerTelemetry::class)
+        fun httpServerMaskingStrategy(): MaskingStrategy = MaskingKeepLast("***", 4)
+    }
+    ```
+
+Request and response bodies logged at `TRACE` are masked by a `DataMasker` component tagged `@Tag(HttpServerTelemetry.class)`
+that matches the body format, chosen by `Content-Type`: `json` for `*/json` and `*+json`, `xml` for `*/xml` and `*+xml`,
+`form-urlencoded` for `application/x-www-form-urlencoded`. The built-in `JsonDataMasker`, `XmlDataMasker` and `FormUrlencodedDataMasker`
+(package `io.koraframework.logging.common.masking.raw`) take the fields to mask as `MaskingPathRules`.
+There are no body maskers by default, so a body is logged as is until you register one:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends UndertowPublicHttpServerModule {
+
+        @Tag(HttpServerTelemetry.class)
+        default DataMasker httpServerJsonMasker() {
+            return new JsonDataMasker(MaskingPathRules.builder() //(1)!
+                .mask("password", new MaskingFull()) //(2)!
+                .mask("card.number", new MaskingKeepLast("***", 4)) //(3)!
+                .build());
+        }
+    }
+    ```
+
+    1.  Masks `JSON` bodies; `XmlDataMasker` and `FormUrlencodedDataMasker` are built the same way
+    2.  A field name masks the field wherever it appears
+    3.  A dotted path masks the field reached from the root of the payload
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : UndertowPublicHttpServerModule {
+
+        @Tag(HttpServerTelemetry::class)
+        fun httpServerJsonMasker(): DataMasker =
+            JsonDataMasker(MaskingPathRules.builder() //(1)!
+                .mask("password", MaskingFull()) //(2)!
+                .mask("card.number", MaskingKeepLast("***", 4)) //(3)!
+                .build())
+    }
+    ```
+
+    1.  Masks `JSON` bodies; `XmlDataMasker` and `FormUrlencodedDataMasker` are built the same way
+    2.  A field name masks the field wherever it appears
+    3.  A dotted path masks the field reached from the root of the payload
+
+A masker walks the raw bytes without building a document, never fails on a damaged payload and masks everything after the point where it loses
+track of the structure. Its output is limited to `64KiB` by default; the rest is replaced with `<masked:truncated>` (`<!--masked:truncated-->` for `XML`).
 
 ### Custom logger { #telemetry-custom-logger }
 
-To fully control the log format or destination, provide your own `HttpServerLoggerFactory` (or `HttpServerLogger`) component — it replaces the
-default `Slf4jHttpServerLoggerFactory`. The same applies to metrics (`HttpServerMetricsFactory`) and tracing (`HttpServerTracerFactory`):
-supplying any of these components overrides the corresponding default, while the others keep their default implementation.
+The telemetry is assembled from graph components, so each part is replaced by registering your own component of the same type:
+`DefaultHttpServerLoggerFactory` for logs, `DefaultHttpServerMetricsFactory` for metrics, `DefaultHttpServerBodyConverter` for the way
+bodies are turned into log text, or the whole `HttpServerTelemetryFactory`. A custom logger can reuse
+`io.koraframework.http.common.telemetry.MaskingUtils.toMaskedString(...)` to mask headers and query parameters with a `MaskingStrategy`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class MyHttpServerLoggerFactory implements HttpServerLoggerFactory {
+    public final class MyHttpServerLoggerFactory extends DefaultHttpServerLoggerFactory {
+
+        public MyHttpServerLoggerFactory(@Tag(HttpServerTelemetry.class) MaskingStrategy maskingStrategy) {
+            super(maskingStrategy);
+        }
 
         @Override
-        public HttpServerLogger get(HttpServerLoggerConfig logging) {
-            return new MyHttpServerLogger(); //(1)!
+        public DefaultHttpServerLogger create(DefaultHttpServerTelemetry.TelemetryContext context) {
+            return super.create(context); //(1)!
         }
     }
     ```
 
-    1. Your `HttpServerLogger` implementation controlling exactly what and how to log
+    1. Return your own `DefaultHttpServerLogger` subclass here to change the format or destination of the records
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class MyHttpServerLoggerFactory : HttpServerLoggerFactory {
+    class MyHttpServerLoggerFactory(
+        @Tag(HttpServerTelemetry::class) maskingStrategy: MaskingStrategy
+    ) : DefaultHttpServerLoggerFactory(maskingStrategy) {
 
-        override fun get(logging: HttpServerLoggerConfig): HttpServerLogger {
-            return MyHttpServerLogger() //(1)!
+        override fun create(context: DefaultHttpServerTelemetry.TelemetryContext): DefaultHttpServerLoggerFactory.DefaultHttpServerLogger {
+            return super.create(context) //(1)!
         }
     }
     ```
 
-    1. Your `HttpServerLogger` implementation controlling exactly what and how to log
+    1. Return your own `DefaultHttpServerLogger` subclass here to change the format or destination of the records

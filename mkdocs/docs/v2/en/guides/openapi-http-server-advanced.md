@@ -1158,7 +1158,8 @@ This is useful when the API surface is mixed: part public, part protected, part 
 
 ### 3. Basic Authentication { #3-basic-authentication }
 
-Basic auth is another common option. `http` schemes with `basic` or `bearer` are read from the `Authorization` header:
+Basic auth is another common option. `http` schemes with `basic` or `bearer` are read from the `Authorization` header, and the extractor receives the raw header value with its `Basic ` or `Bearer `
+prefix, so decoding the credentials is up to the extractor:
 
 ```yaml
 components:
@@ -1176,10 +1177,11 @@ security:
     ```java
     @Tag(ApiSecurity.BasicAuth.class)
     default HttpServerPrincipalExtractor<String, Principal> basicHttpServerPrincipalExtractor() {
-        return (request, credentials) -> {
-            if (credentials == null) {
+        return (request, header) -> {
+            if (header == null || !header.startsWith("Basic ")) {
                 throw new SecurityException("Missing credentials");
             }
+            var credentials = new String(Base64.getDecoder().decode(header.substring("Basic ".length())), StandardCharsets.UTF_8);
             var parts = credentials.split(":", 2);
             if (parts.length != 2) {
                 throw new SecurityException("Invalid basic auth format");
@@ -1194,10 +1196,11 @@ security:
     ```kotlin
     @Tag(ApiSecurity.BasicAuth::class)
     fun basicHttpServerPrincipalExtractor(): HttpServerPrincipalExtractor<String, Principal> {
-        return HttpServerPrincipalExtractor { _, credentials ->
-            if (credentials == null) {
+        return HttpServerPrincipalExtractor { _, header ->
+            if (header == null || !header.startsWith("Basic ")) {
                 throw SecurityException("Missing credentials")
             }
+            val credentials = String(Base64.getDecoder().decode(header.removePrefix("Basic ")), Charsets.UTF_8)
             val parts = credentials.split(":", limit = 2)
             if (parts.size != 2) {
                 throw SecurityException("Invalid basic auth format")
@@ -1230,11 +1233,11 @@ security:
     ```java
     @Tag(ApiSecurity.BearerAuth.class)
     default HttpServerPrincipalExtractor<String, Principal> bearerHttpServerPrincipalExtractor(JwtService jwtService) {
-        return (request, token) -> {
-            if (token == null || token.isBlank()) {
+        return (request, header) -> {
+            if (header == null || !header.startsWith("Bearer ")) {
                 throw new SecurityException("Missing bearer token");
             }
-            return new UserPrincipal(jwtService.extractUserFromToken(token));
+            return new UserPrincipal(jwtService.extractUserFromToken(header.substring("Bearer ".length())));
         };
     }
     ```
@@ -1244,11 +1247,11 @@ security:
     ```kotlin
     @Tag(ApiSecurity.BearerAuth::class)
     fun bearerHttpServerPrincipalExtractor(jwtService: JwtService): HttpServerPrincipalExtractor<String, Principal> {
-        return HttpServerPrincipalExtractor { _, token ->
-            if (token.isNullOrBlank()) {
+        return HttpServerPrincipalExtractor { _, header ->
+            if (header == null || !header.startsWith("Bearer ")) {
                 throw SecurityException("Missing bearer token")
             }
-            UserPrincipal(jwtService.extractUserFromToken(token))
+            UserPrincipal(jwtService.extractUserFromToken(header.removePrefix("Bearer ")))
         }
     }
     ```
@@ -1256,7 +1259,8 @@ security:
 This works well when the caller is an end user, when you want token expiration, and when you need claims, roles, or tenant information inside the token.
 
 An `oauth2` or `openId` scheme is wired the same way, but its operations declare **scopes**. For those, the principal must implement `PrincipalWithScopes` so the generated interceptor can compare the
-granted scopes against the ones the operation requires.
+granted scopes against the ones the operation requires. A principal that is authenticated but lacks a required scope gets `403 Forbidden` rather than `401 Unauthorized`, unless another
+requirement of the operation matches.
 
 ### 5. Multiple Schemes { #5-multiple-schemes }
 

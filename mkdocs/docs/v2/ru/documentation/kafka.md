@@ -1,10 +1,10 @@
 ---
 seo_title: "Kafka в Kora: справочник по @KafkaListener и @KafkaPublisher"
 seo_description: "Справочник по Kafka в Kora: консьюмеры и продюсеры, аннотации слушателей и публикаторов, конфигурация, сериализация, ошибки, ребалансировка, транзакции."
-keywords: ["Kora Framework", "фреймворк Kora", "Kafka в Kora", "@KafkaListener", "@KafkaPublisher", "транзакции Kafka"]
-description: "Explains Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry. Use when working with @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher."
+keywords: ["Kora Framework", "фреймворк Kora", "Kafka в Kora", "@KafkaListener", "@KafkaPublisher", "транзакции Kafka", "маскирование логов Kafka"]
+description: "Explains Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry with TRACE payload logging and masking. Use when working with @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher, telemetry.logging.maskHeaders, MaskingStrategy, DataMasker, JsonDataMasker, DefaultKafkaConsumerBodyConverter."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry; key triggers include @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher, KafkaSkipRecordException, KafkaPublishException, RecordValueDeserializationException, ConsumerAwareRebalanceListener."
+  use_when: "Use this file for Kora docs or implementation questions about Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry (TRACE key/value logging, header and payload masking); key triggers include @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher, KafkaSkipRecordException, KafkaPublishException, RecordValueDeserializationException, ConsumerAwareRebalanceListener, KafkaAssignConsumerContainer, maskHeaders, MaskingStrategy, DataMasker, JsonDataMasker, DefaultKafkaConsumerBodyConverter, KafkaConsumerTelemetry, KafkaPublisherTelemetry."
 ---
 
 Модуль `Kafka` предоставляет декларативную интеграцию с [Apache Kafka](https://kafka.apache.org/): чтение сообщений через
@@ -213,19 +213,20 @@ agent:
                 telemetry {
                     logging {
                         enabled = false //(12)!
+                        maskHeaders = ["authorization", "cookie", "set-cookie"] //(13)!
                     }
                     metrics {
-                        enabled = false //(13)!
-                        driverMetrics = false //(14)!
-                        slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(15)!
-                        tags = { //(16)!
+                        enabled = false //(14)!
+                        driverMetrics = false //(15)!
+                        slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(16)!
+                        tags = { //(17)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
                     }
                     tracing {
-                        enabled = true //(17)!
-                        attributes = { //(18)!
+                        enabled = true //(18)!
+                        attributes = { //(19)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
@@ -257,12 +258,13 @@ agent:
             Если время истекло, старт приложения завершается ошибкой. Если параметр не указан, потребитель подключается в фоне и недоступный брокер не блокирует старт.
         11. Официальные `Properties` для `Kafka Consumer`, смотрите [Apache Kafka Consumer Configs](https://kafka.apache.org/documentation/#consumerconfigs) (`обязательное`, по умолчанию отсутствует)
         12. Включает логирование модуля (по умолчанию: `false`)
-        13. Включает метрики модуля (по умолчанию: `false`)
-        14. Регистрирует метрики драйвера `Apache Kafka` у используемого `KafkaConsumer` в `MeterRegistry` (по умолчанию: `false`)
-        15. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        16. Настройка тегов метрик (по умолчанию: `{}`)
-        17. Включает трассировку модуля (по умолчанию: `true`)
-        18. Настройка атрибутов трассировки (по умолчанию: `{}`)
+        13. Имена заголовков, значения которых в `TRACE`-логах заменяются тегированной `MaskingStrategy`; сравниваются без учета регистра (по умолчанию: `["authorization", "cookie", "set-cookie"]`); смотрите [Логирование и маскирование](#telemetry-consumer-logging)
+        14. Включает метрики модуля (по умолчанию: `false`)
+        15. Регистрирует метрики драйвера `Apache Kafka` у используемого `KafkaConsumer` в `MeterRegistry` (по умолчанию: `false`)
+        16. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        17. Настройка тегов метрик (по умолчанию: `{}`)
+        18. Включает трассировку модуля (по умолчанию: `true`)
+        19. Настройка атрибутов трассировки (по умолчанию: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -287,16 +289,17 @@ agent:
             telemetry:
               logging:
                 enabled: false #(12)!
+                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(13)!
               metrics:
-                enabled: false #(13)!
-                driverMetrics: false #(14)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(15)!
-                tags: #(16)!
+                enabled: false #(14)!
+                driverMetrics: false #(15)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
+                tags: #(17)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(17)!
-                attributes: #(18)!
+                enabled: true #(18)!
+                attributes: #(19)!
                   key1: value1
                   key2: value2
         ```
@@ -323,12 +326,13 @@ agent:
             Если время истекло, старт приложения завершается ошибкой. Если параметр не указан, потребитель подключается в фоне и недоступный брокер не блокирует старт.
         11. Официальные `Properties` для `Kafka Consumer`, смотрите [Apache Kafka Consumer Configs](https://kafka.apache.org/documentation/#consumerconfigs) (`обязательное`, по умолчанию отсутствует)
         12. Включает логирование модуля (по умолчанию: `false`)
-        13. Включает метрики модуля (по умолчанию: `false`)
-        14. Регистрирует метрики драйвера `Apache Kafka` у используемого `KafkaConsumer` в `MeterRegistry` (по умолчанию: `false`)
-        15. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        16. Настройка тегов метрик (по умолчанию: `{}`)
-        17. Включает трассировку модуля (по умолчанию: `true`)
-        18. Настройка атрибутов трассировки (по умолчанию: `{}`)
+        13. Имена заголовков, значения которых в `TRACE`-логах заменяются тегированной `MaskingStrategy`; сравниваются без учета регистра (по умолчанию: `["authorization", "cookie", "set-cookie"]`); смотрите [Логирование и маскирование](#telemetry-consumer-logging)
+        14. Включает метрики модуля (по умолчанию: `false`)
+        15. Регистрирует метрики драйвера `Apache Kafka` у используемого `KafkaConsumer` в `MeterRegistry` (по умолчанию: `false`)
+        16. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        17. Настройка тегов метрик (по умолчанию: `{}`)
+        18. Включает трассировку модуля (по умолчанию: `true`)
+        19. Настройка атрибутов трассировки (по умолчанию: `{}`)
 
 Метрики модуля описаны в разделе [Справочник метрик](metrics.md#kafka).
 
@@ -372,7 +376,8 @@ agent:
 приложения: например, для сброса локального кеша, обновления справочников в памяти или доставки служебного события
 каждому экземпляру приложения.
 
-Стратегия `assign` требует явного списка `topics` и не поддерживает `topicsPattern`.
+Стратегия `assign` требует явного списка `topics` из одного или нескольких топиков и не поддерживает `topicsPattern`:
+контейнер падает при старте с `IllegalArgumentException`, если указан `topicsPattern` или список `topics` пуст.
 Список разделов обновляется каждые `partitionRefreshInterval` и распределяется между `threads` потребителями,
 а начальная позиция чтения управляется параметром `offset`.
 
@@ -1212,10 +1217,69 @@ public interface KafkaConsumerTelemetry {
 - `DefaultKafkaConsumerLoggerFactory` создает логгер, который пишет начало и конец опроса и обработки сообщений;
 - `DefaultKafkaConsumerMetricsFactory` создает измерители длительности пачки, длительности события и отставания.
 
-Обе фабрики внедряются в `KafkaModule` как необязательные зависимости, поэтому собственный `@Component`-наследник любой из них
-заменяет только эту часть телеметрии по умолчанию. Собственный компонент `KafkaConsumerTelemetryFactory` заменяет телеметрию целиком.
+`DefaultKafkaConsumerLoggerFactory` зарегистрирована в `KafkaModule` как `@DefaultComponent`, а `DefaultKafkaConsumerMetricsFactory` внедряется как необязательная зависимость,
+поэтому собственный `@Component`-наследник любой из них заменяет только эту часть телеметрии по умолчанию.
+Собственный компонент `KafkaConsumerTelemetryFactory` заменяет телеметрию целиком.
 
 Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#kafka).
+
+#### Логирование и маскирование { #telemetry-consumer-logging }
+
+При `telemetry.logging.enabled = true` слушатель пишет события в логгер, названный по методу слушателя: полное имя класса и имя метода.
+Содержимое записи логируется только на уровне `TRACE`: тогда событие `KafkaListener starting handling record...` помимо `topic`,
+`partition` и `offset` содержит `headers`, `key` и `value` записи. На уровне `DEBUG` и выше содержимое записей не логируется.
+
+Заголовки из списка `telemetry.logging.maskHeaders` пишутся со значением, замененным компонентом `MaskingStrategy`
+с тегом `@Tag(KafkaConsumerTelemetry.class)`. Стратегия по умолчанию заменяет значение на `***`; стратегия получает исходное значение заголовка (`byte[]`).
+Имена заголовков сравниваются без учета регистра.
+
+Ключ и значение переводятся в текст компонентом `DefaultKafkaConsumerBodyConverter` из исходных байтов записи, прочитанных как `UTF-8`.
+Если десериализатор ключа или значения — `JsonKafkaDeserializer` (ключ или значение с `@Json`), байты проходят через
+`DataMasker` (`io.koraframework.logging.common.masking.raw`) формата `json` с тегом `@Tag(KafkaConsumerTelemetry.class)`.
+По умолчанию такой маскировщик не зарегистрирован, поэтому без него содержимое логируется как есть. Зарегистрируйте `JsonDataMasker` с правилами маскирования:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends KafkaModule {
+
+        @Tag(KafkaConsumerTelemetry.class)
+        default DataMasker kafkaJsonDataMasker() {
+            return new JsonDataMasker(MaskingPathRules.builder()
+                .mask("password", new MaskingFull()) //(1)!
+                .mask("user.token", new MaskingKeepLast()) //(2)!
+                .build());
+        }
+    }
+    ```
+
+    1.  Один сегмент совпадает с полем с таким именем на любой глубине; `MaskingFull` заменяет значение на `***`
+    2.  Путь через точку сопоставляется от корня содержимого, `*` совпадает ровно с одним сегментом; `MaskingKeepLast` оставляет последние 4 символа после `***`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : KafkaModule {
+
+        @Tag(KafkaConsumerTelemetry::class)
+        fun kafkaJsonDataMasker(): DataMasker = JsonDataMasker(
+            MaskingPathRules.builder()
+                .mask("password", MaskingFull()) //(1)!
+                .mask("user.token", MaskingKeepLast()) //(2)!
+                .build()
+        )
+    }
+    ```
+
+    1.  Один сегмент совпадает с полем с таким именем на любой глубине; `MaskingFull` заменяет значение на `***`
+    2.  Путь через точку сопоставляется от корня содержимого, `*` совпадает ровно с одним сегментом; `MaskingKeepLast` оставляет последние 4 символа после `***`
+
+`DefaultKafkaConsumerBodyConverter` зарегистрирован как `@DefaultComponent` и служит точкой расширения для маскирования содержимого:
+`@Component`-наследник может переопределить `selectKeyDataMasker(ConsumerRecord)` и `selectValueDataMasker(ConsumerRecord)`, чтобы выбрать маскировщик
+другого формата (например, `XmlDataMasker` или `FormUrlencodedDataMasker`), или `convertBody(byte[], DataMasker)`, чтобы изменить перевод байтов в текст.
+Маскирование заголовков меняется собственным компонентом `MaskingStrategy` с тегом `@Tag(KafkaConsumerTelemetry.class)`.
 
 ## Продюсер { #producer }
 
@@ -1321,19 +1385,20 @@ public interface KafkaConsumerTelemetry {
                 telemetry {
                   logging {
                     enabled = false //(2)!
+                    maskHeaders = ["authorization", "cookie", "set-cookie"] //(3)!
                   }
                   metrics {
-                    enabled = false //(3)!
-                    driverMetrics = false //(4)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
-                    tags = { //(6)!
+                    enabled = false //(4)!
+                    driverMetrics = false //(5)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(6)!
+                    tags = { //(7)!
                       "key1" = "value1"
                       "key2" = "value2"
                     }
                   }
                   tracing {
-                    enabled = true //(7)!
-                    attributes = { //(8)!
+                    enabled = true //(8)!
+                    attributes = { //(9)!
                       "key1" = "value1"
                       "key2" = "value2"
                     }
@@ -1345,12 +1410,13 @@ public interface KafkaConsumerTelemetry {
 
         1.  Официальные `Properties` для `Kafka Producer`, смотрите [Apache Kafka Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) (`обязательное`, по умолчанию отсутствует)
         2.  Включает логирование модуля (по умолчанию: `false`)
-        3.  Включает метрики модуля (по умолчанию: `false`)
-        4.  Регистрирует метрики драйвера `Apache Kafka` у используемого `KafkaProducer` в `MeterRegistry` (по умолчанию: `false`)
-        5.  Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        6.  Настройка тегов метрик (по умолчанию: `{}`)
-        7.  Включает трассировку модуля (по умолчанию: `true`)
-        8.  Настройка атрибутов трассировки (по умолчанию: `{}`)
+        3.  Имена заголовков, значения которых в `TRACE`-логах заменяются тегированной `MaskingStrategy`; сравниваются без учета регистра (по умолчанию: `["authorization", "cookie", "set-cookie"]`); смотрите [Логирование и маскирование](#telemetry-producer-logging)
+        4.  Включает метрики модуля (по умолчанию: `false`)
+        5.  Регистрирует метрики драйвера `Apache Kafka` у используемого `KafkaProducer` в `MeterRegistry` (по умолчанию: `false`)
+        6.  Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        7.  Настройка тегов метрик (по умолчанию: `{}`)
+        8.  Включает трассировку модуля (по умолчанию: `true`)
+        9.  Настройка атрибутов трассировки (по умолчанию: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -1362,28 +1428,30 @@ public interface KafkaConsumerTelemetry {
             telemetry:
               logging:
                 enabled: false #(2)!
+                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(3)!
               metrics:
-                enabled: false #(3)!
-                driverMetrics: false #(4)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
-                tags: #(6)!
+                enabled: false #(4)!
+                driverMetrics: false #(5)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(6)!
+                tags: #(7)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(7)!
-                attributes: #(8)!
+                enabled: true #(8)!
+                attributes: #(9)!
                   key1: value1
                   key2: value2
         ```
 
         1.  Официальные `Properties` для `Kafka Producer`, смотрите [Apache Kafka Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) (`обязательное`, по умолчанию отсутствует)
         2.  Включает логирование модуля (по умолчанию: `false`)
-        3.  Включает метрики модуля (по умолчанию: `false`)
-        4.  Регистрирует метрики драйвера `Apache Kafka` у используемого `KafkaProducer` в `MeterRegistry` (по умолчанию: `false`)
-        5.  Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        6.  Настройка тегов метрик (по умолчанию: `{}`)
-        7.  Включает трассировку модуля (по умолчанию: `true`)
-        8.  Настройка атрибутов трассировки (по умолчанию: `{}`)
+        3.  Имена заголовков, значения которых в `TRACE`-логах заменяются тегированной `MaskingStrategy`; сравниваются без учета регистра (по умолчанию: `["authorization", "cookie", "set-cookie"]`); смотрите [Логирование и маскирование](#telemetry-producer-logging)
+        4.  Включает метрики модуля (по умолчанию: `false`)
+        5.  Регистрирует метрики драйвера `Apache Kafka` у используемого `KafkaProducer` в `MeterRegistry` (по умолчанию: `false`)
+        6.  Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        7.  Настройка тегов метрик (по умолчанию: `{}`)
+        8.  Включает трассировку модуля (по умолчанию: `true`)
+        9.  Настройка атрибутов трассировки (по умолчанию: `{}`)
 
 Конфигурация `topic` описывает настройки конкретного `@KafkaPublisher.Topic`, ниже приведен пример конфигурации по пути `kafka.someProducer.someTopic`.
 
@@ -2164,8 +2232,17 @@ public interface KafkaPublisherTelemetry {
 `KafkaPublisherTransactionObservation` фиксирует отправленные в транзакцию сдвиги, коммиты и откаты.
 
 Реализация по умолчанию — `DefaultKafkaPublisherTelemetryFactory`, зарегистрированная в `KafkaModule` как `@DefaultComponent`.
-Она объединяет `DefaultKafkaPublisherLoggerFactory` для логирования и `DefaultKafkaPublisherMetricsFactory` для метрик,
+Она объединяет `DefaultKafkaPublisherLoggerFactory` для логирования (сама по себе `@DefaultComponent`) и `DefaultKafkaPublisherMetricsFactory` для метрик,
 обе внедряются как необязательные зависимости, поэтому любую из них можно заменить собственным `@Component`-наследником.
 Собственный компонент `KafkaPublisherTelemetryFactory` заменяет телеметрию целиком.
 
 Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#kafka).
+
+#### Логирование и маскирование { #telemetry-producer-logging }
+
+При `telemetry.logging.enabled = true` продюсер пишет события в логгер с именем интерфейса продюсера.
+На уровне `TRACE` событие `KafkaPublisher starting record sending...` дополнительно содержит `headers` записи;
+заголовки из списка `telemetry.logging.maskHeaders` пишутся со значением, замененным компонентом `MaskingStrategy`
+с тегом `@Tag(KafkaPublisherTelemetry.class)` (стратегия по умолчанию пишет `***`). Имена заголовков сравниваются без учета регистра.
+
+Продюсер никогда не логирует ключ и значение записи, ни на одном уровне.

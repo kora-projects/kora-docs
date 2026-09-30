@@ -186,20 +186,20 @@ so to use `EPOLL`, `KQUEUE` or `URING` the corresponding Netty dependency must b
 | `URING`   | [`io.netty:netty-transport-native-io_uring`](https://mvnrepository.com/artifact/io.netty/netty-transport-native-io_uring) | Linux         | `linux-x86_64`, `linux-aarch_64`, `linux-riscv64` |
 
 The `classifier` must match the target platform, and the version must match the rest of the `io.netty` artifacts on the `classpath`.
-Kora 2.0 brings Netty `4.2.17.Final`:
+Kora 2.0 brings Netty `4.2.18.Final`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    runtimeOnly "io.netty:netty-transport-native-epoll:4.2.17.Final:linux-x86_64"
+    runtimeOnly "io.netty:netty-transport-native-epoll:4.2.18.Final:linux-x86_64"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    runtimeOnly("io.netty:netty-transport-native-epoll:4.2.17.Final:linux-x86_64")
+    runtimeOnly("io.netty:netty-transport-native-epoll:4.2.18.Final:linux-x86_64")
     ```
 
 The native artifact brings the matching `netty-transport-classes-*` artifact transitively, so it does not have to be declared separately.

@@ -1,10 +1,10 @@
 ---
 seo_title: "Kora Logging Aspect: @Log, Masking and MDC"
-seo_description: "Reference for Kora's logging aspect: log method arguments and results with @Log, selective logging, structured values, masking sensitive data and MDC."
+seo_description: "Reference for Kora's logging aspect: log method arguments and results with @Log, selective logging, structured values, masking sensitive data and raw payloads, and MDC."
 keywords: ["Kora Framework", "Kora @Log", "logging aspect", "data masking", "MDC", "compile-time AOP"]
-description: "Explains Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, MDC enrichment and supported signatures. Use when working with @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingStrategy, StructuredArgument, StructuredArgumentMapper, MDC."
+description: "Explains Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, raw payload masking, MDC enrichment and supported signatures. Use when working with @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingPathRules, DataMasker, JsonDataMasker, XmlDataMasker, FormUrlencodedDataMasker, MaskingStrategy, StructuredArgument, StructuredArgumentMapper, MDC."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, MDC enrichment and supported signatures; key triggers include @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingStrategy, MaskingFull, MaskingKeepFirst, MaskingKeepLast, StructuredArgument, StructuredArgumentMapper, MDC."
+  use_when: "Use this file for Kora docs or implementation questions about Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, masking of raw JSON, XML and form-urlencoded payloads, MDC enrichment and supported signatures; key triggers include @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingPathRules, DataMasker, JsonDataMasker, XmlDataMasker, FormUrlencodedDataMasker, MaskingStrategy, MaskingFull, MaskingKeepFirst, MaskingKeepLast, StructuredArgument, StructuredArgumentMapper, MDC."
 ---
 
 The declarative logging module lets you describe method logging with `@Log`, `@Mask` and `@Mdc` annotations.
@@ -67,7 +67,7 @@ Argument and result values are added to structured data only when the correspond
 A detail level is never *less* verbose than the event level: if the event is logged at `DEBUG`, a parameter declared as `@Log(Level.INFO)` is still emitted at `DEBUG`, because it is pointless to describe an event that is not written at all.
 Which detail level is active depends on the effective logger level configured through `logging.levels` — see [logging levels configuration](logging-slf4j.md#configuration).
 
-Values are written into a structured `data` marker; with the `ConsoleTextRecordEncoder` from [Logback](logging-slf4j.md#logback) it is rendered on a separate line after the message.
+Values are written into a structured `data` marker; the [text encoder](logging-slf4j.md#record-format) of Logback renders it on a separate line after the message, and the [JSON encoder](logging-slf4j.md#json-format) writes it as the top-level `data` field.
 
 ### Arguments { #argument }
 
@@ -653,7 +653,70 @@ A rule key is either a field name or a dotted path from the logged root object:
 - `credentials.cardNumber` - masks `cardNumber` only when it is reached through the `credentials` field;
 - `payments.*.cardNumber` - `*` matches exactly one dynamic path segment, which is what map keys produce.
 
+Elements of an array or a collection do not add a segment of their own, so `items.password` also matches `password` inside every element of `items`.
+
 The same rules can also be assembled through the builder: `MaskingRules.builder(User.class).mask("password", new MaskingFull()).build()`.
+`MaskingRules<T>` extends `MaskingPathRules`, the type-agnostic rule engine that is also used for [raw payloads](#raw-payload-masking).
+
+#### Raw Payload Masking { #raw-payload-masking }
+
+`@Mask` works while a typed value is being written.
+Transport telemetry also logs payloads that are only bytes — an HTTP request or response body, a Kafka record value — and for those the `io.koraframework.logging.common.masking.raw` package provides `DataMasker`.
+A `DataMasker` is a soft parser: it walks the raw bytes once, copying them to the output and replacing matched values, without decoding the payload or building a document from it.
+
+| Masker | `format()` | Masks |
+|---|---|---|
+| `JsonDataMasker` | `json` | field values; an object or an array matched as a whole is replaced by a single string |
+| `XmlDataMasker` | `xml` | element text and attribute values; namespace prefixes are ignored, so `<ns:password>` matches `password` |
+| `FormUrlencodedDataMasker` | `form-urlencoded` | parameter values; names are percent-decoded before matching, so `pass%77ord` matches `password` |
+
+The rules are a `MaskingPathRules` — the same engine `MaskingRules<T>` extends, with the same [key syntax](#masking-rules), but not bound to a logged type:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface MaskingModule {
+
+        @Tag(HttpServerTelemetry.class) //(1)!
+        default DataMasker httpServerJsonMasker() {
+            return new JsonDataMasker(MaskingPathRules.builder()
+                .mask("password", new MaskingFull())
+                .mask("card.number", new MaskingKeepLast())
+                .build());
+        }
+    }
+    ```
+
+    1. Nothing is registered by default: a module that logs raw payloads collects the `DataMasker` components carrying its own telemetry tag and picks one by the `format()` matching the payload.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface MaskingModule {
+
+        @Tag(HttpServerTelemetry::class) //(1)!
+        fun httpServerJsonMasker(): DataMasker = JsonDataMasker(
+            MaskingPathRules.builder()
+                .mask("password", MaskingFull())
+                .mask("card.number", MaskingKeepLast())
+                .build()
+        )
+    }
+    ```
+
+    1. Nothing is registered by default: a module that logs raw payloads collects the `DataMasker` components carrying its own telemetry tag and picks one by the `format()` matching the payload.
+
+The tag is `HttpServerTelemetry` for the [HTTP server](http-server.md), `HttpClientTelemetry` for the [HTTP client](http-client.md) and `KafkaConsumerTelemetry` for the [Kafka](kafka.md) consumer.
+A masker can also be called directly: `mask(byte[])` reads the payload as `UTF-8`, and `mask(byte[], Charset)` uses the encoding declared by the transport.
+
+A payload is untrusted, so masking differs from `@Mask` in a few ways:
+
+- names are compared case insensitively for `ASCII` letters, so `Password` does not slip past a `password` rule;
+- masking fails closed: once `JsonDataMasker` or `XmlDataMasker` loses track of the structure, everything after that point is replaced with `<masked:unparseable>` or `<!--masked:unparseable-->`, so a damaged or non-`JSON` body never leaks; in a form-urlencoded payload the damage stays local to one parameter, whose value is masked;
+- output longer than the limit (default: `64` KiB) is cut and ends with `<masked:truncated>` or `<!--masked:truncated-->`, and `JSON` and `XML` nesting is limited to `64` levels by default; both limits are constructor arguments;
+- a strategy that throws or returns `null` produces `***`, and for an object or an array masked as a whole the strategy receives `null`.
 
 ### MDC (Mapped Diagnostic Context) { #mdc-mapped-diagnostic-context }
 
@@ -675,7 +738,7 @@ For `@Mdc` on a parameter, the key is taken from `key`, then from `value`; if bo
 The entry value is the parameter value.
 
 Parameters of type `String`, `Integer`/`Int`, `Long`, `Boolean` and `StructuredArgumentWriter` keep their `JSON` type, other primitives are written through `String.valueOf(...)`, and any other type is written through `toString()`.
-A `null` value of a non-primitive parameter simply adds no `MDC` entry.
+A `null` value of a `String`, `Integer`/`Int`, `Long` or `Boolean` parameter is written as `JSON` `null`, a `StructuredArgumentWriter` parameter must not be `null`, and a `null` value of any other non-primitive type simply adds no `MDC` entry.
 
 #### Parameter Annotation { #parameter-annotation }
 

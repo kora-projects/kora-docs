@@ -95,8 +95,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-9.5.1-bin.zip
     ```kotlin
     plugins {
         id("application")
-        kotlin("jvm") version ("2.4.10") //(1)!
-        id("com.google.devtools.ksp") version ("2.3.11")
+        kotlin("jvm") version ("2.4.20") //(1)!
+        id("com.google.devtools.ksp") version ("2.3.12")
     }
 
     repositories {

@@ -6,9 +6,9 @@ search:
   exclude: true
 title: Контрактный HTTP-клиент с OpenAPI
 summary: Continue the HTTP Client guide by replacing the handwritten declarative client with an OpenAPI-generated client
-description: "Contract-first Kora HTTP client from an OpenAPI file: the org.openapi.generator Gradle plugin with generatorName kora, configOptions mode java-client / kotlin-client, clientConfig and clientConfigPrefix, the generated @HttpClient interface with @ResponseCodeMapper, sealed <Api>Responses wrappers, OptArgs holders for optional parameters, enum fromValue, and testing the generated client against a Testcontainers copy of the server."
+description: "Contract-first Kora HTTP client from an OpenAPI file: the org.openapi.generator Gradle plugin with generatorName kora, configOptions mode java-client / kotlin-client, clientConfig and clientConfigPrefix, the generated @HttpClient interface with @ResponseCodeMapper, sealed <Api>Responses wrappers, clientResponseMode SUCCESSFUL with typed error exceptions, OptArgs holders for optional parameters, enum fromValue, and testing the generated client against a Testcontainers copy of the server."
 agent:
-  use_when: "Use this file for questions about generating a Kora HTTP client from an OpenAPI contract step by step: GenerateTask, generatorName kora, mode java-client and kotlin-client, clientConfig versus clientConfigPrefix and the httpClient.<prefix>.<api> configuration path with a lower-case first letter, the generated @HttpClient interface, @HttpRoute and @ResponseCodeMapper annotations, <Api>ClientResponseMappers, sealed <Api>Responses matching, <Api><Operation>OptArgs holders, generated enum fromValue, HttpClientResponseException, and KoraAppTestConfigModifier with Testcontainers."
+  use_when: "Use this file for questions about generating a Kora HTTP client from an OpenAPI contract step by step: GenerateTask, generatorName kora, mode java-client and kotlin-client, clientConfig versus clientConfigPrefix and the httpClient.<prefix>.<api> configuration path with a lower-case first letter, the generated @HttpClient interface, @HttpRoute and @ResponseCodeMapper annotations, <Api>ClientResponseMappers, sealed <Api>Responses matching, <Api><Operation>OptArgs holders, generated enum fromValue, HttpClientResponseException, clientResponseMode SEALED versus SUCCESSFUL with typed <Api><Type>HttpClientResponseException errors, and KoraAppTestConfigModifier with Testcontainers."
 tags: openapi, http-client, contract-first, code-generation, swagger
 ---
 
@@ -500,7 +500,7 @@ Kora делает это особенно практичным, потому ч�
 
     plugins {
         id "application"
-        id "org.openapi.generator" version "7.24.0" //(3)!
+        id "org.openapi.generator" version "7.25.0" //(3)!
     }
 
     dependencies {
@@ -554,7 +554,7 @@ Kora делает это особенно практичным, потому ч�
         id("org.jetbrains.kotlin.jvm")
         id("com.google.devtools.ksp")
         id("application")
-        id("org.openapi.generator") version "7.24.0" //(3)!
+        id("org.openapi.generator") version "7.25.0" //(3)!
     }
 
     dependencies {
@@ -1224,6 +1224,65 @@ Path-параметр из файла OpenAPI становится обычны�
 Вызовы клиента **синхронные**: `usersApi.getUser(...)` возвращает обертку ответа напрямую. Реактивных и `suspend`-режимов генерации клиента в Kora 2.0 нет, а метод контроллера, вызывающий клиент, сам
 синхронный и выполняется на виртуальном потоке Undertow, который несет запрос.
 
+### Режим успешных ответов { #successful-response-mode }
+
+Запечатанные обертки выше дает режим ответов по умолчанию, `SEALED` (см. [режим ответов](../documentation/openapi-codegen.md#client-response-mode)). Когда вызывающему коду нужен только успешный
+исход, генератор может сузить каждый метод до его ответа `2xx`, а объявленные ошибки выбрасывать исключениями. Для этого нужна одна опция генерации:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    configOptions = [
+            mode              : "java-client",
+            clientConfigPrefix: "httpClient",
+            clientResponseMode: "SUCCESSFUL", //(1)!
+    ]
+    ```
+
+    1.  По умолчанию `SEALED`; `SUCCESSFUL` возвращает успешный тип и выбрасывает объявленные статусы ошибок.
+
+    ```java
+    try {
+        var user = this.usersApi.getUser(userId).content(); //(1)!
+    } catch (UsersApi.UsersApiErrorResponseTOHttpClientResponseException e) { //(2)!
+        var message = e.getContent().message(); //(3)!
+        var status = e.getCode(); //(4)!
+    }
+    ```
+
+    1.  `getUser` теперь возвращает сам `GetUserApiResponse.GetUser200ApiResponse`, поэтому проверка `instanceof` не нужна.
+    2.  `404` и `500` объявляют один и тот же `ErrorResponseTO`, поэтому их покрывает один класс исключения, вложенный в `UsersApi`. Он наследует `HttpClientResponseException`.
+    3.  Разобранное тело `ErrorResponseTO`.
+    4.  Фактический статус, `404` или `500`.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    configOptions = mapOf(
+        "mode" to "kotlin-client",
+        "clientConfigPrefix" to "httpClient",
+        "clientResponseMode" to "SUCCESSFUL", //(1)!
+    )
+    ```
+
+    1.  По умолчанию `SEALED`; `SUCCESSFUL` возвращает успешный тип и выбрасывает объявленные статусы ошибок.
+
+    ```kotlin
+    try {
+        val user = usersApi.getUser(userId).content //(1)!
+    } catch (e: UsersApi.UsersApiErrorResponseTOHttpClientResponseException) { //(2)!
+        val message = e.content.message //(3)!
+        val status = e.code //(4)!
+    }
+    ```
+
+    1.  `getUser` теперь возвращает сам `GetUserApiResponse.GetUser200ApiResponse`, поэтому проверка `is` не нужна.
+    2.  `404` и `500` объявляют один и тот же `ErrorResponseTO`, поэтому их покрывает один класс исключения, вложенный в `UsersApi`. Он наследует `HttpClientResponseException`.
+    3.  Разобранное тело `ErrorResponseTO`.
+    4.  Фактический статус, `404` или `500`.
+
+Статус, не объявленный в контракте, по-прежнему дает обычный `HttpClientResponseException`. Этот гайд остается на режиме по умолчанию `SEALED`, потому что `ClientTestController` разбирает обертки.
+
 ## Конфигурация { #config }
 
 Поскольку сгенерированный клиент создан с `clientConfigPrefix = "httpClient"`, а сгенерированный интерфейс называется `UsersApi`, его конфигурация времени выполнения живет по пути
@@ -1609,6 +1668,7 @@ curl -X POST http://localhost:8081/client/test-all-user-endpoints
 - клиентскому режиму нужен `clientConfig` или `clientConfigPrefix`, и форма с префиксом делает первую букву имени API строчной
 - сгенерированные обертки вроде `GetUserApiResponse` и `DeleteUserApiResponse` делают HTTP-исходы явными
 - добавление `500` в файл OpenAPI порождает и отдельные варианты `500`; необъявленный статус приводит к `HttpClientResponseException`
+- `clientResponseMode = "SUCCESSFUL"` возвращает успешный тип напрямую и выбрасывает объявленные статусы ошибок как типизированные наследники `HttpClientResponseException`
 - держатели `<Api><Operation>OptArgs` сохраняют читаемость вызовов, когда у операции много опциональных параметров
 - сгенерированные перечисления разбираются через `fromValue`, а сгенерированные модели `Kotlin` безопаснее создавать именованными аргументами
 
@@ -1671,7 +1731,7 @@ httpClient.usersApi
 **Вызов бросает `HttpClientResponseException` вместо возврата обертки:**
 
 Сервер ответил статусом, который контракт не объявляет, поэтому ни один маппер ответа не подошел. Либо добавьте статус в контракт, либо добавьте ответ `default`, чтобы генератор сводил несовпавшие коды
-в один вариант.
+в один вариант. При `clientResponseMode = "SUCCESSFUL"` объявленный статус ошибки выбрасывается намеренно, как сгенерированный `<Api><Type>HttpClientResponseException`.
 
 **Тесты на контейнерах не достучатся до серверного приложения:**
 

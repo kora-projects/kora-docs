@@ -381,7 +381,7 @@ agent:
 
     Требуется добавить библиотеку [Mockito](https://site.mockito.org/) как зависимость в `build.gradle`:
     ```groovy
-    testImplementation "org.mockito:mockito-core:5.23.0"
+    testImplementation "org.mockito:mockito-core:5.24.0"
     ```
 
     Kora компилируется под `Java 25`, поэтому библиотека заглушек должна приносить версию `Byte Buddy`, которая понимает class-файлы `Java 25`.
@@ -486,7 +486,7 @@ agent:
     Для более подробного описания того, как работают Kora и [Mockito](https://site.mockito.org/), следует прочитать вкладку Java этого раздела.
     Для улучшения взаимодействия между Mockito и Kotlin можно использовать библиотеку [Mockito Kotlin](https://github.com/mockito/mockito-kotlin).
     ```groovy
-    testImplementation("org.mockito:mockito-core:5.18.0")
+    testImplementation("org.mockito:mockito-core:5.24.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     ```
 

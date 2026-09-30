@@ -1,10 +1,10 @@
 ---
 seo_title: "HTTP-сервер Kora: контроллеры, маршрутизация, перехватчики"
 seo_description: "Справочник по HTTP-серверу Kora: декларативные и императивные контроллеры, маршрутизация, маппинг запросов и ответов, перехватчики, ошибки, Undertow."
-keywords: ["Kora Framework", "фреймворк Kora", "HTTP-сервер Kora", "@HttpController", "REST-контроллер", "Undertow"]
-description: "Explains Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration. Use when working with @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith."
+keywords: ["Kora Framework", "фреймворк Kora", "HTTP-сервер Kora", "@HttpController", "REST-контроллер", "Undertow", "маскирование телеметрии HTTP"]
+description: "Explains Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization, telemetry masking and Undertow configuration. Use when working with @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, MaskingStrategy, DataMasker."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration; key triggers include @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpServerInterceptor, HttpServerParameterReader, UndertowPublicHttpServerModule, @Tag(HttpServer.class), httpServer.port, httpServer.system."
+  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration; key triggers include @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpServerInterceptor, HttpServerParameterReader, UndertowPublicHttpServerModule, @Tag(HttpServer.class), httpServer.port, httpServer.system, headerServerNameEnabled, maskHeaders, maskQueries, MaskingStrategy tagged @Tag(HttpServerTelemetry.class), DataMasker, JsonDataMasker, MaskingPathRules, MaskingUtils, http.server.request.duration."
 ---
 
 Модуль `HTTP-сервера` описывает входящую HTTP-границу приложения: прием запроса, разбор параметров, чтение тела,
@@ -119,13 +119,13 @@ agent:
             socketWriteTimeout = "0s" //(5)!
             socketKeepAliveEnabled = false //(6)!
             headerKeepAliveEnabled = false //(7)!
-            headerServerDateEnabled = true //(8)!
-            maxRequestBodySize = "256MiB" //(9)!
+            headerServerNameEnabled = false //(8)!
+            headerServerDateEnabled = true //(9)!
+            maxRequestBodySize = "256MiB" //(10)!
             telemetry {
                 logging {
-                    enabled = false //(10)!
-                    stacktrace = true //(11)!
-                    mask = "***" //(12)!
+                    enabled = false //(11)!
+                    stacktrace = true //(12)!
                     maskQueries = [ ] //(13)!
                     maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(14)!
                     pathFull = false //(15)!
@@ -159,13 +159,13 @@ agent:
         5.  Максимальное время ожидания записи данных в сокет или соединение, `0s` отключает таймаут (по умолчанию: `0s`)
         6.  Включать ли `TCP keep-alive` для сокета или соединения (по умолчанию: `false`)
         7.  Всегда ли отправлять заголовок ответа `Connection: keep-alive` (по умолчанию: `false`)
-        8.  Всегда ли отправлять заголовок ответа `Date` (по умолчанию: `true`)
-        9.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
-        10.  Включает логирование модуля (по умолчанию: `false`)
-        11.  Включает логирование стектрейса при исключении (по умолчанию: `true`)
-        12.  Маска, которой скрываются указанные заголовки и параметры запроса или ответа (по умолчанию: `***`)
-        13.  Список параметров запроса, которые надо скрыть (по умолчанию: `[]`)
-        14.  Список заголовков запроса или ответа, которые надо скрыть (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
+        8.  Отправлять ли заголовок ответа `Server: Kora` (по умолчанию: `false`)
+        9.  Всегда ли отправлять заголовок ответа `Date` (по умолчанию: `true`)
+        10.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
+        11.  Включает логирование модуля (по умолчанию: `false`)
+        12.  Включает логирование стектрейса при исключении (по умолчанию: `true`)
+        13.  Имена параметров запроса, значения которых маскируются в логе, без учета регистра (по умолчанию: `[]`). Подробнее в разделе [Маскирование](#telemetry-masking)
+        14.  Имена заголовков запроса и ответа, значения которых маскируются в логе, без учета регистра (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`). Подробнее в разделе [Маскирование](#telemetry-masking)
         15.  Логировать ли полный путь запроса вместо шаблона маршрута; если не указано, используется шаблон, а на уровне `TRACE` — полный путь (по умолчанию не указано, опционально)
         16.  Максимальный размер тела запроса, который может быть записан в лог; тело большего размера логируется без содержимого (по умолчанию: `2MiB`)
         17.  Максимальный размер тела ответа, который может быть записан в лог; тело большего размера логируется без содержимого (по умолчанию: `2MiB`)
@@ -187,13 +187,13 @@ agent:
           socketWriteTimeout: "0s" #(5)!
           socketKeepAliveEnabled: false #(6)!
           headerKeepAliveEnabled: false #(7)!
-          headerServerDateEnabled: true #(8)!
-          maxRequestBodySize: "256MiB" #(9)!
+          headerServerNameEnabled: false #(8)!
+          headerServerDateEnabled: true #(9)!
+          maxRequestBodySize: "256MiB" #(10)!
           telemetry:
             logging:
-              enabled: false #(10)!
-              stacktrace: true #(11)!
-              mask: "***" #(12)!
+              enabled: false #(11)!
+              stacktrace: true #(12)!
               maskQueries: [ ] #(13)!
               maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(14)!
               pathFull: false #(15)!
@@ -220,13 +220,13 @@ agent:
         5.  Максимальное время ожидания записи данных в сокет или соединение, `0s` отключает таймаут (по умолчанию: `0s`)
         6.  Включать ли `TCP keep-alive` для сокета или соединения (по умолчанию: `false`)
         7.  Всегда ли отправлять заголовок ответа `Connection: keep-alive` (по умолчанию: `false`)
-        8.  Всегда ли отправлять заголовок ответа `Date` (по умолчанию: `true`)
-        9.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
-        10.  Включает логирование модуля (по умолчанию: `false`)
-        11.  Включает логирование стектрейса при исключении (по умолчанию: `true`)
-        12.  Маска, которой скрываются указанные заголовки и параметры запроса или ответа (по умолчанию: `***`)
-        13.  Список параметров запроса, которые надо скрыть (по умолчанию: `[]`)
-        14.  Список заголовков запроса или ответа, которые надо скрыть (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
+        8.  Отправлять ли заголовок ответа `Server: Kora` (по умолчанию: `false`)
+        9.  Всегда ли отправлять заголовок ответа `Date` (по умолчанию: `true`)
+        10.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
+        11.  Включает логирование модуля (по умолчанию: `false`)
+        12.  Включает логирование стектрейса при исключении (по умолчанию: `true`)
+        13.  Имена параметров запроса, значения которых маскируются в логе, без учета регистра (по умолчанию: `[]`). Подробнее в разделе [Маскирование](#telemetry-masking)
+        14.  Имена заголовков запроса и ответа, значения которых маскируются в логе, без учета регистра (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`). Подробнее в разделе [Маскирование](#telemetry-masking)
         15.  Логировать ли полный путь запроса вместо шаблона маршрута; если не указано, используется шаблон, а на уровне `TRACE` — полный путь (по умолчанию не указано, опционально)
         16.  Максимальный размер тела запроса, который может быть записан в лог; тело большего размера логируется без содержимого (по умолчанию: `2MiB`)
         17.  Максимальный размер тела ответа, который может быть записан в лог; тело большего размера логируется без содержимого (по умолчанию: `2MiB`)
@@ -314,6 +314,9 @@ agent:
 
 Сама обработка запроса не использует ограниченный пул блокирующих потоков: каждое соединение обслуживается
 виртуальным потоком, поэтому опций `blockingThreads` и `virtualThreadsEnabled` больше нет.
+Тело ответа записывается в сокет через `NIO` потоками ввода-вывода `Undertow`. Тело, содержимое которого еще не находится в памяти,
+буферизуется на виртуальном потоке запроса и отправляется целиком, пока укладывается в `64KiB`; большее тело передается потоком
+через ограниченный канал, поэтому большой ответ никогда не держится в памяти полностью.
 
 Для всего, что не вынесено в конфигурацию, Kora предоставляет точки расширения `Configurer<T>`.
 `Configurer<T>` получает собираемый объект и возвращает тот, который будет использован:
@@ -328,19 +331,14 @@ agent:
             return builder -> builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
         }
 
-        default Configurer<HttpHandler> handlerConfigurer() { //(2)!
-            return handler -> new RequestDumpingHandler(handler);
-        }
-
-        default Configurer<XnioWorker.Builder> workerConfigurer() { //(3)!
+        default Configurer<XnioWorker.Builder> workerConfigurer() { //(2)!
             return builder -> builder.setWorkerName("my-worker");
         }
     }
     ```
 
     1.  Настраивает билдер `Undertow` публичного сервера до его старта
-    2.  Оборачивает корневой `HttpHandler` публичного сервера
-    3.  Настраивает `XnioWorker`, общий для обоих серверов
+    2.  Настраивает `XnioWorker`, общий для обоих серверов
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -351,19 +349,15 @@ agent:
         fun undertowConfigurer(): Configurer<Undertow.Builder> = //(1)!
             Configurer { builder -> builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true) }
 
-        fun handlerConfigurer(): Configurer<HttpHandler> = //(2)!
-            Configurer { handler -> RequestDumpingHandler(handler) }
-
-        fun workerConfigurer(): Configurer<XnioWorker.Builder> = //(3)!
+        fun workerConfigurer(): Configurer<XnioWorker.Builder> = //(2)!
             Configurer { builder -> builder.setWorkerName("my-worker") }
     }
     ```
 
     1.  Настраивает билдер `Undertow` публичного сервера до его старта
-    2.  Оборачивает корневой `HttpHandler` публичного сервера
-    3.  Настраивает `XnioWorker`, общий для обоих серверов
+    2.  Настраивает `XnioWorker`, общий для обоих серверов
 
-`Configurer<Undertow.Builder>` или `Configurer<HttpHandler>` без тега применяется к **публичному** серверу.
+`Configurer<Undertow.Builder>` без тега применяется к **публичному** серверу.
 Чтобы настроить системный сервер, пометьте компонент тегом `@SystemApi`.
 
 ## SomeController декларативный { #somecontroller-declarative }
@@ -690,7 +684,7 @@ public User get(@Path("id") UserId id) {
 
 ##### Form UrlEncoded { #form-urlencoded }
 
-Объявите аргумент `FormUrlEncoded` (из `ru.tinkoff.kora.http.common.form`), чтобы принять запрос с типом содержимого
+Объявите аргумент `FormUrlEncoded` (из `io.koraframework.http.common.form`), чтобы принять запрос с типом содержимого
 `application/x-www-form-urlencoded` ([форма данных](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1)).
 Аннотации `@Json` или `@Mapping` не требуются — для этого типа в Kora есть встроенный reader.
 
@@ -716,9 +710,7 @@ public User get(@Path("id") UserId id) {
     }
     ```
 
-    1. Читает поле `name` из отправленной формы
-
-    1. `FormUrlEncoded.get(String)` возвращает `FormPart(String name, List<String> values)` либо `null`
+    1. Читает поле `name` из отправленной формы; `FormUrlEncoded.get(String)` возвращает `FormPart(String name, List<String> values)` либо `null`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -736,19 +728,18 @@ public User get(@Path("id") UserId id) {
     }
     ```
 
-    1. Читает поле `name` из отправленной формы
+    1. Читает поле `name` из отправленной формы; `FormUrlEncoded.get(String)` возвращает `FormPart(String name, List<String> values)` либо `null`
 
-    1. `FormUrlEncoded.get(String)` возвращает `FormPart(String name, List<String> values)` либо `null`
+##### Form Multipart { #form-multipart }
 
-Объявите аргумент `FormMultipart` (из `ru.tinkoff.kora.http.common.form`), чтобы принять запрос `multipart/form-data`
+Объявите аргумент `FormMultipart` (из `io.koraframework.http.common.form`), чтобы принять запрос `multipart/form-data`
 ([бинарная форма](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2)), обычно используется для загрузки файлов.
 Аннотации `@Json` или `@Mapping` не требуются.
 
-`FormMultipart.parts()` возвращает список частей, где каждая `FormMultipart.FormPart` — один из sealed-подтипов:
-
-* `MultipartData` — текстовое поле: `name()`, `content()` (`String`)
-* `MultipartFile` — файл, загруженный в память: `name()`, `fileName()`, `contentType()`, `content()` (`byte[]`)
-* `MultipartFileStream` — потоковый файл: `name()`, `fileName()`, `contentType()`, `content()` (`Flow.Publisher<ByteBuffer>`)
+`FormMultipart.parts()` возвращает список частей. `FormMultipart.FormPart` — sealed-интерфейс с подтипами
+`MultipartData`, `MultipartFile` и `MultipartFileStream`, но сервер читает запрос в память целиком и
+отдает **каждую** часть, включая текстовые поля, как `MultipartFile`: `name()`, `fileName()`, `contentType()` и `content()` (`byte[]`).
+`MultipartData` и `MultipartFileStream` используются при отправке формы, например [HTTP-клиентом](http-client.md).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -760,26 +751,20 @@ public User get(@Path("id") UserId id) {
         @HttpRoute(method = HttpMethod.POST, path = "/form/multipart")
         public String handle(FormMultipart body) {
             for (FormMultipart.FormPart part : body.parts()) {
-                if (part instanceof FormMultipart.FormPart.MultipartData data) { //(1)!
-                    String value = data.content();
-                } else if (part instanceof FormMultipart.FormPart.MultipartFile file) { //(2)!
-                    String fileName = file.fileName();
+                if (part instanceof FormMultipart.FormPart.MultipartFile file) { //(1)!
+                    String name = file.name();
+                    String fileName = file.fileName(); //(2)!
                     String contentType = file.contentType();
                     byte[] content = file.content();
                 }
-            }
-            for (var part : body.parts()) { //(1)!
-                System.out.println(part.name());
             }
             return "OK";
         }
     }
     ```
 
-    1. Текстовое поле формы
-    2. Файл, загруженный в форме
-
-    1. `FormMultipart.parts()` возвращает запечатанный `FormPart`: `MultipartData`, `MultipartFile` либо `MultipartFileStream`
+    1. Каждая часть входящей формы — `MultipartFile`
+    2. `fileName()` и `contentType()` равны `null`, если часть их не объявляет, как у обычного текстового поля
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -791,16 +776,11 @@ public User get(@Path("id") UserId id) {
         @HttpRoute(method = HttpMethod.POST, path = "/form/multipart")
         fun handle(body: FormMultipart): String {
             for (part in body.parts()) {
-                when (part) {
-                    is FormMultipart.FormPart.MultipartData -> { //(1)!
-                        val value = part.content()
-                    }
-                    is FormMultipart.FormPart.MultipartFile -> { //(2)!
-                        val fileName = part.fileName()
-                        val contentType = part.contentType()
-                        val content = part.content()
-                    }
-                    else -> {}
+                if (part is FormMultipart.FormPart.MultipartFile) { //(1)!
+                    val name = part.name()
+                    val fileName = part.fileName() //(2)!
+                    val contentType = part.contentType()
+                    val content = part.content()
                 }
             }
             return "OK"
@@ -808,7 +788,8 @@ public User get(@Path("id") UserId id) {
     }
     ```
 
-    1. `FormMultipart.parts()` возвращает запечатанный `FormPart`: `MultipartData`, `MultipartFile` либо `MultipartFileStream`
+    1. Каждая часть входящей формы — `MultipartFile`
+    2. `fileName()` и `contentType()` равны `null`, если часть их не объявляет, как у обычного текстового поля
 
 #### Cookie { #cookie }
 
@@ -2210,68 +2191,162 @@ HTTP-сервер использует контракт телеметрии д�
     1. На уровне `INFO` логируется только операция, `DEBUG` добавляет заголовки и параметры запроса
     2. `TRACE` дополнительно пишет тело, ограниченное `maxRequestBodyLogSize` / `maxResponseBodyLogSize`
 
-Заголовки из `maskHeaders` и параметры запроса из `maskQueries` заменяются значением `mask`.
-В логируемой операции по умолчанию используется шаблон маршрута, а полный путь — при `pathFull = true` либо на уровне логгера `TRACE`.
+В логируемой операции по умолчанию используется шаблон маршрута, а полный путь — при `pathFull = true`, а если `pathFull` не задан, — на уровне логгера `TRACE`.
+Значения чувствительных заголовков, параметров запроса и полей тела маскируются, см. [Маскирование](#telemetry-masking).
 
+Для метрик нужны `httpServer.telemetry.metrics.enabled` **и** `MeterRegistry` из модуля [метрик](metrics.md).
+Сервер пишет таймер `http.server.request.duration` с бакетами из `httpServer.telemetry.metrics.slo` и тегами
+`server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address` и `error.type`,
+а также gauge `http.server.active_requests` с теми же тегами, кроме `http.response.status_code` и `error.type`;
+к обоим добавляется все, что объявлено в `httpServer.telemetry.metrics.tags`.
 Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#http-server).
 
 ### Логирование { #telemetry-logging }
 
-Логирование сервера пишется через `SLF4J` под логгером `ru.tinkoff.kora.http.server.common.HttpServer`. Включение логирования в конфигурации
-(`httpServer.telemetry.logging.enabled = true`) активирует телеметрию, но **что именно** пишется, определяется уровнем логирования этого логгера,
-поэтому детализацией вы управляете из вашего фреймворка логирования (`logback` и т.д.) без перезапуска с другой конфигурацией:
+Логирование сервера пишется через `SLF4J` в логгеры `io.koraframework.http.server.common.HttpServer.request` и
+`io.koraframework.http.server.common.HttpServer.response`. Включение логирования в конфигурации (`httpServer.telemetry.logging.enabled = true`)
+активирует логгер, но **что именно** пишется, определяется уровнем этих логгеров, поэтому детализацией вы управляете из вашего фреймворка логирования
+(`logback` и т.д.) без перезапуска с другой конфигурацией:
 
 | Уровень лога | Что логируется |
 |--------------|----------------|
-| `INFO`  | Строка начала и конца запроса: метод, шаблон пути, статус ответа, код результата и длительность |
-| `DEBUG` | Дополнительно **заголовки** запроса и ответа |
-| `TRACE` | Дополнительно полный (нешаблонизированный) путь запроса |
+| `INFO`  | Имя и порт сервера, authority и операция (метод и шаблон маршрута); запись об ответе добавляет код результата, код статуса и время обработки в миллисекундах |
+| `DEBUG` | Дополнительно параметры и заголовки запроса, а также заголовки ответа |
+| `TRACE` | Дополнительно тела запроса и ответа, а также полный путь запроса вместо шаблона маршрута |
+
+Запрос, завершившийся исключением, логируется логгером ответа на уровне `WARN`.
 
 Следующие поля конфигурации формируют вывод (полный список см. в [Конфигурации](#configuration)):
 
-* `pathTemplate` — при `true` (по умолчанию) логируется шаблон маршрута с низкой кардинальностью (`/users/{id}`) и используется как метка метрик/трассировки вместо разрешённого пути (`/users/42`); на `TRACE` логируется разрешённый путь
-* `maskHeaders` — имена заголовков, значения которых заменяются на `mask` (по умолчанию маскируются `authorization`, `cookie`, `set-cookie`)
-* `maskQueries` — имена query-параметров, значения которых заменяются на `mask`
-* `mask` — строка замены (по умолчанию `***`)
+* `pathFull` — `true` всегда логирует полный путь запроса (`/users/42`), `false` всегда логирует шаблон маршрута (`/users/{id}`); если не задано, используется шаблон, кроме уровня `TRACE`
+* `maskHeaders` / `maskQueries` — имена заголовков и параметров запроса, значения которых маскируются, см. [Маскирование](#telemetry-masking)
+* `maxRequestBodyLogSize` / `maxResponseBodyLogSize` — тело большего размера логируется без содержимого
 * `stacktrace` — при `true` (по умолчанию) логирует стектрейс исключения при ошибке обработки запроса
 
 Пример конфигурации `logback`, включающей логирование заголовков сервера:
 
 ```xml
-<logger name="ru.tinkoff.kora.http.server.common.HttpServer" level="DEBUG"/>
+<logger name="io.koraframework.http.server.common.HttpServer" level="DEBUG"/>
 ```
+
+### Маскирование { #telemetry-masking }
+
+Значения заголовков из `maskHeaders` (по умолчанию: `authorization`, `cookie`, `set-cookie`) и параметров запроса из `maskQueries`
+заменяются результатом `MaskingStrategy` с тегом `@Tag(HttpServerTelemetry.class)`, которая по умолчанию пишет `***`.
+Имена сравниваются без учета регистра, а каждое значение повторяющегося заголовка или параметра маскируется отдельно.
+Чтобы изменить способ маскирования, зарегистрируйте свою стратегию с тем же тегом — она заменит стратегию по умолчанию.
+Подходит любая `MaskingStrategy`, в том числе встроенные [стратегии](logging-aspect.md#masking-strategies) модуля логирования:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends UndertowPublicHttpServerModule {
+
+        @Tag(HttpServerTelemetry.class)
+        default MaskingStrategy httpServerMaskingStrategy() {
+            return new MaskingKeepLast("***", 4);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : UndertowPublicHttpServerModule {
+
+        @Tag(HttpServerTelemetry::class)
+        fun httpServerMaskingStrategy(): MaskingStrategy = MaskingKeepLast("***", 4)
+    }
+    ```
+
+Тела запроса и ответа, логируемые на уровне `TRACE`, маскирует компонент `DataMasker` с тегом `@Tag(HttpServerTelemetry.class)`,
+подходящий под формат тела, который выбирается по `Content-Type`: `json` для `*/json` и `*+json`, `xml` для `*/xml` и `*+xml`,
+`form-urlencoded` для `application/x-www-form-urlencoded`. Встроенные `JsonDataMasker`, `XmlDataMasker` и `FormUrlencodedDataMasker`
+(пакет `io.koraframework.logging.common.masking.raw`) принимают маскируемые поля в виде `MaskingPathRules`.
+По умолчанию маскировщиков тела нет, поэтому тело логируется как есть, пока вы не зарегистрируете маскировщик:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends UndertowPublicHttpServerModule {
+
+        @Tag(HttpServerTelemetry.class)
+        default DataMasker httpServerJsonMasker() {
+            return new JsonDataMasker(MaskingPathRules.builder() //(1)!
+                .mask("password", new MaskingFull()) //(2)!
+                .mask("card.number", new MaskingKeepLast("***", 4)) //(3)!
+                .build());
+        }
+    }
+    ```
+
+    1.  Маскирует тела в формате `JSON`; `XmlDataMasker` и `FormUrlencodedDataMasker` создаются так же
+    2.  Имя поля маскирует это поле в любом месте тела
+    3.  Путь через точку маскирует поле, достижимое по этому пути от корня тела
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : UndertowPublicHttpServerModule {
+
+        @Tag(HttpServerTelemetry::class)
+        fun httpServerJsonMasker(): DataMasker =
+            JsonDataMasker(MaskingPathRules.builder() //(1)!
+                .mask("password", MaskingFull()) //(2)!
+                .mask("card.number", MaskingKeepLast("***", 4)) //(3)!
+                .build())
+    }
+    ```
+
+    1.  Маскирует тела в формате `JSON`; `XmlDataMasker` и `FormUrlencodedDataMasker` создаются так же
+    2.  Имя поля маскирует это поле в любом месте тела
+    3.  Путь через точку маскирует поле, достижимое по этому пути от корня тела
+
+Маскировщик проходит по сырым байтам, не строя документ, никогда не падает на поврежденных данных и маскирует все, начиная с места,
+где он потерял структуру. Его вывод по умолчанию ограничен `64KiB`, остаток заменяется на `<masked:truncated>` (`<!--masked:truncated-->` для `XML`).
 
 ### Свой логгер { #telemetry-custom-logger }
 
-Чтобы полностью управлять форматом или назначением лога, предоставьте свой компонент `HttpServerLoggerFactory` (или `HttpServerLogger`) — он заменит
-фабрику по умолчанию `Slf4jHttpServerLoggerFactory`. То же касается метрик (`HttpServerMetricsFactory`) и трассировки (`HttpServerTracerFactory`):
-предоставление любого из этих компонентов переопределяет соответствующую реализацию по умолчанию, остальные сохраняют реализацию по умолчанию.
+Телеметрия собирается из компонентов графа, поэтому каждую ее часть заменяет ваш собственный компонент того же типа:
+`DefaultHttpServerLoggerFactory` для логов, `DefaultHttpServerMetricsFactory` для метрик, `DefaultHttpServerBodyConverter` для превращения
+тел в текст лога или вся `HttpServerTelemetryFactory` целиком. Свой логгер может использовать
+`io.koraframework.http.common.telemetry.MaskingUtils.toMaskedString(...)`, чтобы маскировать заголовки и параметры запроса через `MaskingStrategy`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class MyHttpServerLoggerFactory implements HttpServerLoggerFactory {
+    public final class MyHttpServerLoggerFactory extends DefaultHttpServerLoggerFactory {
+
+        public MyHttpServerLoggerFactory(@Tag(HttpServerTelemetry.class) MaskingStrategy maskingStrategy) {
+            super(maskingStrategy);
+        }
 
         @Override
-        public HttpServerLogger get(HttpServerLoggerConfig logging) {
-            return new MyHttpServerLogger(); //(1)!
+        public DefaultHttpServerLogger create(DefaultHttpServerTelemetry.TelemetryContext context) {
+            return super.create(context); //(1)!
         }
     }
     ```
 
-    1. Ваша реализация `HttpServerLogger`, управляющая тем, что и как логировать
+    1. Верните здесь свой подкласс `DefaultHttpServerLogger`, чтобы изменить формат или назначение записей
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class MyHttpServerLoggerFactory : HttpServerLoggerFactory {
+    class MyHttpServerLoggerFactory(
+        @Tag(HttpServerTelemetry::class) maskingStrategy: MaskingStrategy
+    ) : DefaultHttpServerLoggerFactory(maskingStrategy) {
 
-        override fun get(logging: HttpServerLoggerConfig): HttpServerLogger {
-            return MyHttpServerLogger() //(1)!
+        override fun create(context: DefaultHttpServerTelemetry.TelemetryContext): DefaultHttpServerLoggerFactory.DefaultHttpServerLogger {
+            return super.create(context) //(1)!
         }
     }
     ```
 
-    1. Ваша реализация `HttpServerLogger`, управляющая тем, что и как логировать
+    1. Верните здесь свой подкласс `DefaultHttpServerLogger`, чтобы изменить формат или назначение записей

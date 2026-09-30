@@ -273,13 +273,14 @@ nullable-типом в Kotlin. Отсутствие обязательного �
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    private static String read_name(JsonParser __parser, int[] __receivedFields) {
+    private static String read_name(JsonParser __parser) {
       var __token = __parser.nextToken();
-      __receivedFields[0] = __receivedFields[0] | (1 << 0);
       if (__token == JsonToken.VALUE_STRING) {
-        return __parser.getText();
+        return __parser.getString();
+      } else if (__token == JsonToken.VALUE_NULL) {
+        throw __requiredFieldNull(__parser, ".name");
       } else {
-        throw new StreamReadException(__parser, "Expecting [VALUE_STRING] token for field 'name', got " + __token);
+        throw __unexpectedToken(__parser, ".name", "a string");
       }
     }
 
@@ -289,14 +290,16 @@ nullable-типом в Kotlin. Отсутствие обязательного �
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    private fun read_name(__parser: JsonParser, __receivedFields: IntArray): String {
+    private fun read_name(__parser: JsonParser): String {
       val __token = __parser.nextToken()
 
-      __receivedFields[0] = __receivedFields[0] or (1 shl 0)
       if (__token == JsonToken.VALUE_STRING) {
-        return __parser.text
+        return __parser.string
       }
-      throw StreamReadException(__parser, "Expecting [VALUE_STRING] token for field 'name', got " + __token)
+      if (__token == JsonToken.VALUE_NULL) {
+        throw __requiredFieldNull(__parser, ".name")
+      }
+      throw __unexpectedToken(__parser, ".name", "a string")
     }
 
     return UserRequest(
@@ -308,7 +311,7 @@ nullable-типом в Kotlin. Отсутствие обязательного �
 Оба поля `UserRequest` обязательны, поэтому читатель ведет битовую маску полученных полей и сообщает обо всех отсутствующих полях сразу:
 
 ```text
-Some of required json fields were not received: name(name) email(email)
+Failed to read json UserRequest: missing required field(s): name, email (at <root>)
 ```
 
 Сгенерированный писатель ответа пишет ровно те поля DTO, которые образуют контракт HTTP-ответа:
@@ -569,13 +572,13 @@ Some of required json fields were not received: name(name) email(email)
     ```java
     var bufferingParser = new BufferingJsonParser(__parser);
     var discriminator = DiscriminatorHelper.readStringDiscriminator(bufferingParser, "status");
-    if (discriminator == null) throw new StreamReadException(__parser, "Discriminator required, but not provided, expected one of: [OK, ERROR]");
+    if (discriminator == null) throw new StreamReadException(__parser, "Failed to read json UserResult: missing required discriminator field \"status\", expected one of [OK, ERROR] (at " + __jsonPath(__parser) + ")");
     var bufferedParser = JsonParserSequence.createFlattened(false, bufferingParser.reset(), __parser);
     bufferedParser.nextToken();
     return switch(discriminator) {
       case "OK" -> userSuccessReader.read(bufferedParser);
       case "ERROR" -> userErrorReader.read(bufferedParser);
-      default -> throw new StreamReadException(__parser, "Unknown discriminator: '" + discriminator + "'");
+      default -> throw new StreamReadException(__parser, "Failed to read json UserResult: unknown discriminator value \"" + discriminator + "\" for field \"status\", expected one of [OK, ERROR] (at " + __jsonPath(__parser) + ")");
     };
     ```
 
@@ -584,13 +587,13 @@ Some of required json fields were not received: name(name) email(email)
     ```kotlin
     val bufferingParser = BufferingJsonParser(__parser)
     val discriminator = DiscriminatorHelper.readStringDiscriminator(bufferingParser, "status")
-    if (discriminator == null) throw StreamReadException(__parser, "Discriminator required, but not provided, expected one of: [ERROR, OK]")
+    if (discriminator == null) throw StreamReadException(__parser, "Failed to read json UserResult: missing required discriminator field \"status\", expected one of [ERROR, OK] (at " + __jsonPath(__parser) + ")")
     val bufferedParser = JsonParserSequence.createFlattened(false, bufferingParser.reset(), __parser)
     bufferedParser.nextToken()
     return when(discriminator) {
       "ERROR" -> userErrorReader.read(bufferedParser)
       "OK" -> userSuccessReader.read(bufferedParser)
-      else -> throw StreamReadException(__parser, "Unknown discriminator")
+      else -> throw StreamReadException(__parser, "Failed to read json UserResult: unknown discriminator value \"" + discriminator + "\" for field \"status\", expected one of [ERROR, OK] (at " + __jsonPath(__parser) + ")")
     }
     ```
 
@@ -929,7 +932,7 @@ curl -X POST http://localhost:8080/users \
 - Поставьте `@Json` на сам тип DTO, а не только на сигнатуру контроллера.
 - Проверьте, что обработчик Kora подключен: `annotationProcessor "io.koraframework:annotation-processors"` для Java, `ksp("io.koraframework:symbol-processors")` для Kotlin.
 
-**Запрос падает с `Some of required json fields were not received`**
+**Запрос падает с `missing required field(s)`**
 
 - Перечисленные поля объявлены не допускающими `null`. Либо присылайте их, либо сделайте необязательными через `@Nullable` в Java или nullable-тип в Kotlin.
 

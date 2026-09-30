@@ -126,14 +126,14 @@ So `JDK` `25` is the minimum for compiling and running an application on Kora, r
 
     Requires at least [`JDK` `25`](https://openjdk.org/projects/jdk/25/), it is recommended to use the latest available `GA` release of the `JDK`.
 
-    Use the same versions the framework itself is built with: [`Kotlin` `2.4.10`](https://github.com/JetBrains/kotlin/releases) and [`KSP` `2.3.11`](https://github.com/google/ksp/releases).
+    Use the same versions the framework itself is built with: [`Kotlin` `2.4.20`](https://github.com/JetBrains/kotlin/releases) and [`KSP` `2.3.12`](https://github.com/google/ksp/releases).
     A mismatch between the `Kotlin` compiler and the compiler embedded in `KSP` leads to symbol processor failures that are hard to diagnose, so both versions are pinned together.
 
     Minimal configuration in `build.gradle.kts`:
     ```kotlin
     plugins {
-        kotlin("jvm") version "2.4.10"
-        id("com.google.devtools.ksp") version "2.3.11"
+        kotlin("jvm") version "2.4.20"
+        id("com.google.devtools.ksp") version "2.3.12"
     }
 
     kotlin {
@@ -184,7 +184,7 @@ So `JDK` `25` is the minimum for compiling and running an application on Kora, r
 ## Build System { #build-system }
 
 Kora is designed to be built with [Gradle](https://gradle.org/guides/) because `Gradle` has good support for annotation processors, `KSP`, incremental builds, and dependency management.
-The framework itself and all Kora example projects are built with `Gradle` `9.5.1`, so `Gradle` `9.5+` is the recommended version.
+The framework itself is built with `Gradle` `9.7.1` and the Kora example projects with `Gradle` `9.5.1`, so `Gradle` `9.5+` is the recommended version.
 
 To avoid specifying versions for each Kora dependency separately, use the [`BOM`](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import) `io.koraframework:kora-bom`.
 The `BOM` version is specified once, and the rest of the Kora dependencies are declared without an explicit version.
@@ -237,8 +237,8 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
     ```kotlin
     plugins {
         id("application")
-        kotlin("jvm") version "2.4.10"
-        id("com.google.devtools.ksp") version "2.3.11"
+        kotlin("jvm") version "2.4.20"
+        id("com.google.devtools.ksp") version "2.3.12"
     }
 
     kotlin {
@@ -448,8 +448,8 @@ The [application plugin](https://docs.gradle.org/current/userguide/application_p
     ```kotlin
     plugins {
         id("application") //(1)!
-        kotlin("jvm") version "2.4.10"
-        id("com.google.devtools.ksp") version "2.3.11"
+        kotlin("jvm") version "2.4.20"
+        id("com.google.devtools.ksp") version "2.3.12"
     }
     ```
 

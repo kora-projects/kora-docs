@@ -1,10 +1,10 @@
 ---
 seo_title: "Kora Metrics: Micrometer and Prometheus Reference"
-seo_description: "Reference for Kora metrics: Micrometer registry, Prometheus export, per-module telemetry configuration, customization and the full list of standard metrics."
-keywords: ["Kora Framework", "Kora metrics", "Micrometer", "Prometheus", "telemetry", "JVM metrics"]
-description: "Explains Kora metrics with Micrometer, Prometheus export through the system HTTP server, per-module telemetry.metrics configuration, registry and metric factory customization, and a full metric reference. Use when working with MetricsModule, MeterRegistry, MetricsScraper, PrometheusMeterRegistryInitializer, telemetry.metrics.enabled, httpServer.system.metricsPath, Metrics Reference."
+seo_description: "Reference for Kora metrics: Micrometer registry, Prometheus export, the application-wide metrics switch and common tags, per-module telemetry configuration, customization and the full list of standard metrics."
+keywords: ["Kora Framework", "Kora metrics", "Micrometer", "Prometheus", "telemetry", "JVM metrics", "MetricsConfig", "MetricsTagsProvider", "common tags"]
+description: "Explains Kora metrics with Micrometer, Prometheus export through the system HTTP server, the application-wide metrics section (enabled switch and common tags), MetricsTagsProvider, per-module telemetry.metrics configuration, registry and metric factory customization, and a full metric reference. Use when working with MetricsModule, MetricsConfig, MetricsTagsProvider, MeterRegistry, MetricsScraper, PrometheusMeterRegistryInitializer, metrics.enabled, metrics.tags, telemetry.metrics.enabled, httpServer.system.metricsPath, Metrics Reference."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora metrics with Micrometer, Prometheus export through the system HTTP server, the per-module telemetry.metrics block, registry and metric factory customization, and module-specific metric names and tags; key triggers include MetricsModule, MeterRegistry, MetricsScraper, PrometheusMeterRegistryInitializer, DefaultHttpServerMetricsFactory, telemetry.metrics.enabled, telemetry.metrics.slo, httpServer.system.metricsPath, Metrics Reference."
+  use_when: "Use this file for Kora docs or implementation questions about Kora metrics with Micrometer, Prometheus export through the system HTTP server, the application-wide metrics section with its enabled switch (no-op MeterRegistry) and common tags, contributing common tags from a MetricsTagsProvider component, the per-module telemetry.metrics block, registry and metric factory customization, and module-specific metric names and tags; key triggers include MetricsModule, MetricsConfig, MetricsTagsProvider, MeterRegistry, MetricsScraper, PrometheusMeterRegistryInitializer, DefaultHttpServerMetricsFactory, metrics.enabled, metrics.tags, telemetry.metrics.enabled, telemetry.metrics.slo, http.response.status_code, httpServer.system.metricsPath, Metrics Reference."
 ---
 
 Module for collecting application metrics using [Micrometer](https://micrometer.io/docs/concepts#_purpose).
@@ -52,14 +52,92 @@ For a step-by-step walkthrough before the reference details, see [Observability]
     ```
 
 `MetricsModule` lives in the `io.koraframework.micrometer.module` package.
-It only provides the registry and the scrape endpoint contract — the metric values themselves are produced by the modules you connect
+It provides the registry, the application-wide common tags and the scrape endpoint contract — the metric values themselves are produced by the modules you connect
 ([HTTP server](http-server.md), [HTTP client](http-client.md), [Database](database-common.md), [Kafka](kafka.md) and so on).
 
 ## Configuration { #configuration }
 
-The module itself has no configuration section: in Kora 2.0 there is no global `metrics { }` block.
-Everything is configured in two places — the path and port of the scrape endpoint on the system server,
-and a `telemetry.metrics` block inside each module that reports metrics.
+Metrics are configured in three places: the application-wide `metrics` section of `MetricsModule`,
+the path and port of the scrape endpoint on the system server, and a `telemetry.metrics` block inside each module that reports metrics.
+
+### Application metrics { #application-config }
+
+The `metrics` section is described by the `MetricsConfig` class from the `io.koraframework.micrometer.module` package (default values are specified):
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    metrics {
+        enabled = true //(1)!
+        tags { //(2)!
+            "application" = "example-service"
+            "environment" = "stage"
+        }
+    }
+    ```
+
+    1.  Application-wide metrics switch (default: `true`)
+    2.  Common tags added to every metric in the registry: module, `JVM` and custom metrics alike (default: `{}`)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    metrics:
+      enabled: true #(1)!
+      tags: #(2)!
+        application: "example-service"
+        environment: "stage"
+    ```
+
+    1.  Application-wide metrics switch (default: `true`)
+    2.  Common tags added to every metric in the registry: module, `JVM` and custom metrics alike (default: `{}`)
+
+With `metrics.enabled = false`, `MetricsModule` provides a no-op `MeterRegistry` instead of `PrometheusMeterRegistry`:
+no module, `JVM`, `kora.up` or custom metric is recorded, `PrometheusMeterRegistryInitializer` components are not applied,
+and `/metrics` answers with an empty body. This switches metrics off without removing `MetricsModule` from the application,
+for example in a test or a local profile.
+
+This `MetricsConfig` is a different class from the per-module `TelemetryConfig.MetricsConfig` described in [Module metrics](#module-metrics),
+and the defaults are opposite: `metrics.enabled` is `true`, while `<module>.telemetry.metrics.enabled` is `false`.
+A module reports metrics only when both switches are on.
+
+#### Common tags provider { #tags-provider }
+
+When a tag value is known only at startup (a host name, a region read from the environment, a build version),
+register a `MetricsTagsProvider` component from the `io.koraframework.micrometer.module` package:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class HostMetricsTagsProvider implements MetricsTagsProvider {
+
+        @Override
+        public Map<String, String> tags() {
+            return Map.of("host", System.getenv().getOrDefault("HOSTNAME", "unknown"));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class HostMetricsTagsProvider : MetricsTagsProvider {
+
+        override fun tags(): Map<String, String> {
+            return mapOf("host" to (System.getenv("HOSTNAME") ?: "unknown"))
+        }
+    }
+    ```
+
+Any number of providers can be registered. `MetricsModule` collects all of them, merges their tags with `metrics.tags`,
+and installs one global `MeterFilter.commonTags(...)` on the registry through a `PrometheusMeterRegistryInitializer`.
+On a key conflict the value from `metrics.tags` wins over every provider.
+Tags are resolved once, when the registry is created, so a provider must not return per-request values.
+That initializer is a `@DefaultComponent`, so declaring your own `PrometheusMeterRegistryInitializer` switches it off, see [Personalization](#personalization).
+
+### Scrape endpoint { #scrape-endpoint }
 
 Example of the system `HTTP` server path configuration described in the `SystemHttpServerConfig` class (default values are specified):
 
@@ -144,6 +222,7 @@ That is also the way to silence a noisy integration after you have enabled metri
 
 Metrics are only produced when **both** conditions hold: `MetricsModule` is connected (so a `MeterRegistry` exists in the container)
 and the module's `telemetry.metrics.enabled` is `true`. If either is missing, the module falls back to a no-op telemetry implementation.
+The application-wide [`metrics.enabled = false`](#application-config) overrides both: the module then records into a no-op `MeterRegistry` and nothing is exported.
 
 ### Configuration paths { #configuration-paths }
 
@@ -210,7 +289,7 @@ so user code injects the `MeterRegistry` contract:
     ```
 
 The registry automatically gets standard `Micrometer` binders: `ClassLoaderMetrics`, `JvmMemoryMetrics`, `JvmGcMetrics`, `ProcessorMetrics`, `JvmThreadMetrics`, `FileDescriptorMetrics`, `UptimeMetrics`.
-These are bound when the registry is created and do **not** depend on any `telemetry.metrics.enabled` flag.
+These are bound when the registry is created and do **not** depend on any `telemetry.metrics.enabled` flag; only the application-wide `metrics.enabled = false` removes them.
 Kora also registers the `kora.up` metric with value `1` and the `version` tag.
 
 Kora additionally bridges the `Micrometer` registry to an `OpenTelemetry` `MeterProvider` (`MicrometerMeterProvider` from `io.opentelemetry.contrib.metrics.micrometer`), so libraries instrumented with the `OpenTelemetry` metrics API publish through the same registry.
@@ -231,6 +310,7 @@ Point your `Prometheus` scrape target (or any compatible collector) at the same 
 The endpoint always answers `200`. What it returns depends on what is bound in the container:
 
 - `MetricsModule` connected — the `Prometheus` text exposition of the registry snapshot.
+- `MetricsModule` connected with `metrics.enabled = false` — an empty body, because the registry is a no-op one.
 - `MetricsModule` not connected — the body `# Metric Scraper disabled`, because no `MetricsScraper` component exists.
 - A custom `MeterRegistry` that is not a `PrometheusMeterRegistry` — an empty body, because that registry cannot be scraped in the `Prometheus` format.
   Provide your own `MetricsScraper` implementation in that case: it overrides the `@DefaultComponent` supplied by `MetricsModule`.
@@ -337,7 +417,8 @@ All initializers found in the container are applied in sequence, each receiving 
 
 **Important**, `PrometheusMeterRegistryInitializer` is applied only once when the application is initialized.
 
-For example, we want to add a common tag for all metrics:
+Common tags for all metrics do not need an initializer: use [`metrics.tags`](#application-config) or a [`MetricsTagsProvider`](#tags-provider).
+An initializer is for the rest of the registry settings, for example a `MeterFilter` that drops metrics you do not collect:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -345,9 +426,9 @@ For example, we want to add a common tag for all metrics:
     @Module
     public interface MetricsConfigModule {
 
-        default PrometheusMeterRegistryInitializer commonTagsInit() {
+        default PrometheusMeterRegistryInitializer denyGcMetricsInit() {
             return registry -> {
-                registry.config().commonTags("tag", "value");
+                registry.config().meterFilter(MeterFilter.denyNameStartsWith("jvm.gc"));
                 return registry;
             };
         }
@@ -360,14 +441,21 @@ For example, we want to add a common tag for all metrics:
     @Module
     interface MetricsConfigModule {
 
-        fun commonTagsInit(): PrometheusMeterRegistryInitializer {
+        fun denyGcMetricsInit(): PrometheusMeterRegistryInitializer {
             return PrometheusMeterRegistryInitializer {
-                it.config().commonTags("tag", "value")
+                it.config().meterFilter(MeterFilter.denyNameStartsWith("jvm.gc"))
                 it
             }
         }
     }
     ```
+
+!!! warning "Your own initializer turns off the common tags"
+
+    `MetricsModule` installs the common tags through a `PrometheusMeterRegistryInitializer` declared as `@DefaultComponent`.
+    As soon as the container has any other `PrometheusMeterRegistryInitializer`, the registry receives only the non-default initializers,
+    so `metrics.tags` and `MetricsTagsProvider` are no longer applied.
+    If you declare an initializer and still need common tags, add them in it with `registry.config().commonTags(...)`.
 
 Standard metrics also have their own settings, for example the `slo` histogram buckets for `Timer` metrics, configured per module under [`telemetry.metrics`](#module-metrics).
 When `slo` is not overridden, `TelemetryConfig.MetricsConfig#DEFAULT_SLO` is used — 14 buckets:
@@ -455,13 +543,14 @@ When a tag has to depend on the current request, add it to the metric key instea
 every factory exposes `create<Metric>Key(...)` methods and key records with a `withExtraTags(Tags)` copy method for exactly that purpose.
 
 If the extra tags are the same for every metric of a module, do not write a factory at all — use the [`telemetry.metrics.tags`](#module-metrics) configuration key.
+Tags shared by every metric of the application belong in [`metrics.tags`](#application-config) or a [`MetricsTagsProvider`](#tags-provider).
 
 ## Standard { #standard }
 
 All Kora metrics follow the [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) for names and tags,
 and each module uses exactly one naming scheme — there is no configurable specification version.
 Tag keys come from the `io.opentelemetry.semconv` attribute constants, so for example an `HTTP` server metric carries
-`http.request.method`, `http.route`, `url.scheme`, `server.address` and `error.type`.
+`http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address` and `error.type`.
 
 The `Prometheus` exposition names are derived from the `Micrometer` name by the `Prometheus` naming convention:
 
@@ -480,16 +569,18 @@ The `error.type` tag is always present on metrics that can fail — it holds the
 - [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) — monotonically increasing counter
 - [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) — current metric value
 
-Every metric listed below additionally carries the tags configured in that module's [`telemetry.metrics.tags`](#module-metrics).
+Every metric listed below additionally carries the tags configured in that module's [`telemetry.metrics.tags`](#module-metrics)
+and the application-wide common tags from [`metrics.tags`](#application-config) and [`MetricsTagsProvider`](#tags-provider).
 
 ### HTTP server { #http-server }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `http.server.request.duration` | `http_server_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `HTTP` server request processing duration | `server.name`, `server.port`, `http.request.method`, `http.route`, `url.scheme`, `server.address`, `error.type` |
+| `http.server.request.duration` | `http_server_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `HTTP` server request processing duration | `server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address`, `error.type` |
 | `http.server.active_requests` | `http_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of active `HTTP` requests | `server.name`, `server.port`, `http.request.method`, `http.route`, `url.scheme`, `server.address` |
 
 `server.name` distinguishes the public server (`kora-undertow`) from the system one (`kora-undertow-system`); a request that matched no route reports `http.route` as `UNKNOWN_ROUTE`.
+`http.response.status_code` is the response status code, so the request rate and latency can be split by status on `http.server.request.duration`; `http.server.active_requests` has no status tag because it is counted before the response exists.
 
 See [HTTP server](http-server.md) module documentation for more details.
 
@@ -587,10 +678,10 @@ which are attached to the underlying cache when `telemetry.metrics.enabled = tru
 | `cache.puts` | `cache_puts_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of cache writes | `cache` |
 | `cache.evictions` | `cache_evictions_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of evicted entries | `cache` |
 | `cache.eviction.weight` | `cache_eviction_weight_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Total weight of evicted entries | `cache` |
-| `cache.loads` | `cache_loads_seconds` / `_count` / `_sum` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Cache value load duration | `cache`, `result` (`success` / `failure`) |
 | `cache.size` | `cache_size` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Current cache size | `cache` |
 
 All `Caffeine` metrics carry the `cache` tag holding the cache name plus the tags from `telemetry.metrics.tags`.
+Kora builds a plain (non-loading) `Caffeine` cache, so the binder's loading metrics `cache.load` and `cache.load.duration` are not registered.
 
 See [Cache](cache.md) module documentation for more details.
 

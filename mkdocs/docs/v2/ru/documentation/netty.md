@@ -187,20 +187,20 @@ Netty — это библиотека сетевого взаимодейств�
 | `URING`   | [`io.netty:netty-transport-native-io_uring`](https://mvnrepository.com/artifact/io.netty/netty-transport-native-io_uring) | Linux         | `linux-x86_64`, `linux-aarch_64`, `linux-riscv64` |
 
 `Классификатор` должен соответствовать целевой платформе, а версия — остальным артефактам `io.netty` в `пути классов`.
-Kora 2.0 приносит Netty `4.2.17.Final`:
+Kora 2.0 приносит Netty `4.2.18.Final`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    runtimeOnly "io.netty:netty-transport-native-epoll:4.2.17.Final:linux-x86_64"
+    runtimeOnly "io.netty:netty-transport-native-epoll:4.2.18.Final:linux-x86_64"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    runtimeOnly("io.netty:netty-transport-native-epoll:4.2.17.Final:linux-x86_64")
+    runtimeOnly("io.netty:netty-transport-native-epoll:4.2.18.Final:linux-x86_64")
     ```
 
 Платформенный артефакт транзитивно приносит соответствующий артефакт `netty-transport-classes-*`, объявлять его отдельно не требуется.

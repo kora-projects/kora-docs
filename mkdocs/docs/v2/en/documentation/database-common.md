@@ -4,7 +4,7 @@ seo_description: "Common Kora database model for JDBC and Cassandra: entities, i
 keywords: ["Kora Framework", "Kora repository", "Kora database", "SQL macros", "entity mapping", "batch queries"]
 description: "Common Kora database model shared by the JDBC and Cassandra modules: entities, identifiers, naming, embedded fields, query parameters, SQL macros, batch queries, affected rows, several databases in one application, and query telemetry. Use when working with @Repository, @Query, @Table, @Column, @Id, @Embedded, @Batch, @Mapping and UpdateCount."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about the common database model shared by the JDBC and Cassandra modules: entities and views, @Table, @Column, @Id, @Embedded, naming strategies, @Repository and @Query, query parameter binding, SQL macros (%{return#selects}, %{entity#inserts}, %{entity#where = @id}), @Batch, UpdateCount, several databases in one application, and DatabaseTelemetry."
+  use_when: "Use this file for Kora docs or implementation questions about the common database model shared by the JDBC and Cassandra modules: entities and views, @Table, @Column, @Id, @Embedded, naming strategies, @Repository and @Query, query parameter binding, SQL macros (%{return#selects}, %{entity#inserts}, %{entity#where = @id}), @Batch, UpdateCount, several databases in one application, DatabaseTelemetry, and JdbcExecutor.inTx / inTxKt transactions in repository default methods."
 ---
 
 Basic principles and mechanisms of database modules in Kora.
@@ -915,7 +915,8 @@ building a result from several queries, or keeping a database operation sequence
     ```
 
     1.  `inTx` is heavily overloaded, so Kotlin cannot infer which functional interface a bare lambda implements —
-        the SAM constructor `JdbcExecutor.SqlSupplier` (or `JdbcExecutor.SqlRunnable` for a method without a result) must be written explicitly.
+        the SAM constructor `JdbcExecutor.SqlSupplier` (or `JdbcExecutor.SqlRunnable` for a method without a result) must be written explicitly,
+        or the `inTxKt { … }` extension that accepts a plain lambda is used instead, see [JDBC transactions](database-jdbc.md#transaction).
 
 When you build `SQL` manually through the driver's executor rather than using a `@Query` method,
 the query still flows through Kora telemetry. The executed query is described by a shared

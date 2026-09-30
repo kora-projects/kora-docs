@@ -2,9 +2,9 @@
 seo_title: "Кодогенерация OpenAPI в Kora: серверы и клиенты"
 seo_description: "Справочник по генерации кода из OpenAPI в Kora: режимы для клиентов и серверов на Java и Kotlin, опции, расширения, валидация и авторизация."
 keywords: ["Kora Framework", "фреймворк Kora", "OpenAPI в Kora", "openapi-generator", "генерация кода OpenAPI", "contract-first"]
-description: "Explains Kora OpenAPI code generation for HTTP clients and servers, generator modes, configuration options, generator extensions, validation, authorization and JsonNullable models. Use when working with openapi-generator, mode, clientConfig, clientConfigPrefix, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes."
+description: "Explains Kora OpenAPI code generation for HTTP clients and servers, generator modes, configuration options, generator extensions, validation, authorization and JsonNullable models. Use when working with openapi-generator, mode, clientConfig, clientConfigPrefix, clientResponseMode, SEALED, SUCCESSFUL, HttpClientResponseException, SuccessfulResponseMapper, typeMappings, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes."
 agent:
-    use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI code generation for HTTP clients and servers, the four generation modes, generator configOptions, generator extensions for annotations and interceptors, server validation, generated authorization and models; key triggers include openapi-generator, java-client, java-server, kotlin-client, kotlin-server, clientConfig, clientConfigPrefix, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes, fromValue."
+    use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI code generation for HTTP clients and servers, the four generation modes, generator configOptions, generator extensions for annotations and interceptors, server validation, generated authorization and models; key triggers include openapi-generator, java-client, java-server, kotlin-client, kotlin-server, clientConfig, clientConfigPrefix, clientResponseMode, SEALED, SUCCESSFUL, typed HttpClientResponseException errors, SuccessfulResponseMapper, typeMappings date-time, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes, fromValue."
 ---
 
 Этот модуль генерирует код Kora из контракта `OpenAPI` с помощью [OpenAPI Generator](https://openapi-generator.tech/docs/plugins#gradle).
@@ -31,7 +31,7 @@ agent:
     Зависимость плагина в `build.gradle`:
     ```groovy
     plugins {
-        id "org.openapi.generator" version "7.24.0"
+        id "org.openapi.generator" version "7.25.0"
     }
     ```
 
@@ -51,7 +51,7 @@ agent:
     Зависимость плагина в `build.gradle.kts`:
     ```groovy
     plugins {
-        id("org.openapi.generator") version("7.24.0")
+        id("org.openapi.generator") version("7.25.0")
     }
     ```
 
@@ -68,7 +68,7 @@ Kora собирается под `JDK 25`, поэтому демон `Gradle` т
 
 Настройте параметры [плагина OpenAPI Generator](https://openapi-generator.tech/docs/plugins#gradle):
 
-- Параметры `Gradle`-плагина описаны в [документации плагина](https://github.com/OpenAPITools/openapi-generator/blob/v7.24.0/modules/openapi-generator-gradle-plugin/README.adoc).
+- Параметры `Gradle`-плагина описаны в [документации плагина](https://github.com/OpenAPITools/openapi-generator/blob/v7.25.0/modules/openapi-generator-gradle-plugin/README.adoc).
 - Параметр плагина `configOptions` описан в [документации по конфигурации](https://openapi-generator.tech/docs/configuration/).
 - Параметр плагина `openapiNormalizer` описан в [документации по настройке](https://openapi-generator.tech/docs/customization/#normalizer-opts).
 
@@ -103,7 +103,7 @@ Kora поддерживает ровно четыре режима:
 | `globalProperties`  | Ограничивает, какие сущности генерируются (по умолчанию: `{}`). Полезно, когда нужно сгенерировать только `apis`, только `models` или отдельные модели и операции. Используйте осторожно: обычным клиентам и серверам Kora, как правило, нужны классы API, модели и мапперы вместе. |
 | `openapiNormalizer` | Предобрабатывает контракт `OpenAPI` перед генерацией (по умолчанию: `{}`). Часто используется, чтобы отключить стандартные преобразования через `DISABLE_ALL`, сгенерировать только выбранные операции через `FILTER` или управлять правилами вроде `SIMPLIFY_ONEOF_ANYOF`.         |
 | `importMappings`    | Сопоставляет имя схемы с существующим классом (по умолчанию: `{}`). Полезно, когда модель написана вручную или приходит из другого модуля, например `Money: "com.example.Money"`.                                                                                                   |
-| `typeMappings`      | Сопоставляет тип `OpenAPI Generator` с типом языка (по умолчанию: `{}`). Используется для точечной замены типов, например замены `OffsetDateTime` на специфичный для проекта тип времени.                                                                                           |
+| `typeMappings`      | Сопоставляет тип `OpenAPI Generator` с типом языка (по умолчанию: `{}`). Генератор Kora выводит большинство типов из самой схемы; для `date-time` он учитывает сопоставление `DateTime` (или `date-time`) с `Instant`, `ZonedDateTime` или `LocalDateTime`, записанными простым или полным именем. Любое другое значение оставляет `OffsetDateTime`. |
 | `schemaMappings`    | Сопоставляет схему `OpenAPI` с внешним типом без генерации модели (по умолчанию: `{}`). Аналогично `importMappings`, но настраивается на уровне схемы и полезно для переиспользования общих DTO.                                                                                    |
 | `skipValidateSpec`  | Пропускает валидацию контракта `OpenAPI` перед генерацией (по умолчанию: `false`). В обычных сборках валидацию лучше оставлять включённой; используйте `true` только временно для внешних контрактов, которые нельзя быстро исправить.                                              |
 | `cleanupOutput`     | Очищает `outputDir` перед генерацией (по умолчанию: `false`). Полезно, когда контракт часто меняется и файлы удалённых операций или моделей должны исчезать. Не указывайте в `outputDir` каталог с написанным вручную кодом.                                                        |
@@ -280,6 +280,7 @@ Kora поддерживает ровно четыре режима:
 Мапперы `JSON` всегда связываются через `io.koraframework.json.common.annotation.Json` и генерируются процессором аннотаций [JSON](json.md),
 поэтому параметр с именем аннотации не нужен.
 Голый `type: object`, использованный как *свойство модели*, всегда генерируется как `Object` / `Any` независимо от `rawBodyMode` — этот параметр влияет только на тела запросов и ответов.
+Свойство-словарь произвольной формы (`type: object` с `additionalProperties: true`) генерируется как `Map<String, Object>` / `Map<String, Any>`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -638,7 +639,7 @@ Kora поддерживает ровно четыре режима:
     2. Таймаут запроса по умолчанию для всех операций
     3. Блок переопределения для отдельной операции, названный по `operationId` (здесь `getValues`)
 
-Каждый метод клиента возвращает обёртку `*ApiResponses` своей операции, поэтому результат разбирается по подтипу ответа:
+В [режиме ответов](#client-response-mode) по умолчанию `SEALED` каждый метод клиента возвращает обёртку `*ApiResponses` своей операции, поэтому результат разбирается по подтипу ответа:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -664,6 +665,83 @@ Kora поддерживает ровно четыре режима:
     ```
 
     1. `content` — это десериализованное тело ответа со статусом `200`
+
+### Режим ответов { #client-response-mode }
+
+`clientResponseMode` определяет, что возвращают сгенерированные методы клиента (по умолчанию: `SEALED`). Значение нечувствительно к регистру.
+
+| Значение     | Поведение                                                                                                                                                |
+|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `SEALED`     | Каждый метод возвращает полный тип `<OperationId>ApiResponse` своей операции, и каждый объявленный статус, включая ошибки, возвращается как значение. См. [Ответы](#responses). |
+| `SUCCESSFUL` | Метод возвращает только успешную (`2xx`) часть ответа, а объявленные статусы ошибок выбрасываются как типизированные исключения.                         |
+
+В режиме `SUCCESSFUL` возвращаемый тип сужается настолько, насколько позволяет контракт:
+
+- один ответ `2xx` — его запись `<OperationId><Code>ApiResponse` (сам `<OperationId>ApiResponse`, если это единственный объявленный ответ)
+- несколько ответов `2xx` с одним типом тела — общий интерфейс `<OperationId><Type>ApiResponse`
+- несколько ответов `2xx` с разными телами — полный тип `<OperationId>ApiResponse`, как в `SEALED`
+
+Каждый статус вне `2xx` и ответ `default`, объявленные операцией, превращаются в класс исключения, вложенный в сгенерированный интерфейс API.
+Генерируется по одному классу на каждый различный тип тела ошибки в API, с именем `<Api><Type>HttpClientResponseException`
+(`<Api>NoContentHttpClientResponseException` для ответов-ошибок без тела).
+Он наследует `HttpClientResponseException`, поэтому `getCode()`, `getHeaders()` и сырое тело `getBytes()` остаются доступны,
+и добавляет разобранное тело ошибки как `getContent()` в `Java` / `content` в `Kotlin`.
+Для операции `createPet`, объявляющей `200` с телом `Pet` и `400` / `404` с телом `ErrorResponse`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    configOptions = [
+        mode: "java-client",
+        clientConfigPrefix: "httpClient.petV3",
+        clientResponseMode: "SUCCESSFUL" //(1)!
+    ]
+    ```
+
+    1. По умолчанию `SEALED`
+
+    ```java
+    try {
+        Pet pet = petsApi.createPet(newPet).content(); //(1)!
+    } catch (PetsApi.PetsApiErrorResponseHttpClientResponseException e) { //(2)!
+        ErrorResponse error = e.getContent(); //(3)!
+        int status = e.getCode();
+    }
+    ```
+
+    1. Возвращает `PetsApiResponses.CreatePetApiResponse.CreatePet200ApiResponse` напрямую, без `instanceof`
+    2. Выбрасывается и для `400`, и для `404`, поскольку они объявляют одинаковое тело `ErrorResponse`
+    3. Разобранное тело ошибки
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    configOptions = mapOf(
+        "mode" to "kotlin-client",
+        "clientConfigPrefix" to "httpClient.petV3",
+        "clientResponseMode" to "SUCCESSFUL" //(1)!
+    )
+    ```
+
+    1. По умолчанию `SEALED`
+
+    ```kotlin
+    try {
+        val pet: Pet = petsApi.createPet(newPet).content //(1)!
+    } catch (e: PetsApi.PetsApiErrorResponseHttpClientResponseException) { //(2)!
+        val error: ErrorResponse = e.content //(3)!
+        val status = e.code
+    }
+    ```
+
+    1. Возвращает `PetsApiResponses.CreatePetApiResponse.CreatePet200ApiResponse` напрямую, без проверки `is`
+    2. Выбрасывается и для `400`, и для `404`, поскольку они объявляют одинаковое тело `ErrorResponse`
+    3. Разобранное тело ошибки
+
+Статус, не объявленный в контракте, при отсутствии ответа `default` выбрасывается как обычный `HttpClientResponseException`.
+Если тело ошибки не удаётся разобрать, клиент также выбрасывает обычный `HttpClientResponseException` с сырым телом, а ошибка разбора прикрепляется как подавленное (suppressed) исключение.
+Для операции, объявляющей ответы-ошибки, разбор выполняет сгенерированный компонент `<Api>ClientResponseMappers.<OperationId>SuccessfulResponseMapper`, привязанный к методу через `@Mapping`,
+поэтому ничего не нужно регистрировать вручную.
 
 ### Необязательные аргументы { #client-optional-args }
 
@@ -727,6 +805,7 @@ Kora поддерживает ровно четыре режима:
 Для схем `apiKey` и `basic` генератор создаёт читатели конфигурации `@DefaultComponent` и провайдеры токенов, поэтому не требуется никаких компонентов — только значения конфигурации.
 Схема `apiKey` читает одну строку; схема `basic` читает объект `username`/`password`.
 Оба значения необязательны: когда их нет, схема просто не предоставляет токен.
+Для схемы `basic` сгенерированный перехватчик отправляет `Authorization: Basic <token>`, где токен — это `Base64` от байтов `username:password` в `UTF-8`.
 
 ===! ":material-code-json: `Hocon`"
 
@@ -782,7 +861,7 @@ Kora поддерживает ровно четыре режима:
 
 Для схем `bearer`, `oauth2` и `openId` генератор не знает, откуда берётся токен, поэтому ожидает компонент
 [`HttpClientTokenProvider`](http-client.md#token-provider), помеченный сгенерированным классом-маркером этой схемы.
-Возвращённое значение отправляется как весь заголовок `Authorization` целиком, поэтому оно должно включать префикс `Bearer `, если этого требует схема:
+Сгенерированный перехватчик отправляет возвращённое значение в заголовке `Authorization` после префикса `Bearer `, поэтому провайдер возвращает сам токен без префикса:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -792,7 +871,7 @@ Kora поддерживает ровно четыре режима:
 
         @Tag(ApiSecurity.BearerAuth.class) //(1)!
         default HttpClientTokenProvider bearerTokenProvider() {
-            return request -> "Bearer my-token"; //(2)!
+            return request -> "my-token"; //(2)!
         }
     }
     ```
@@ -808,7 +887,7 @@ Kora поддерживает ровно четыре режима:
 
         @Tag(ApiSecurity.BearerAuth::class) //(1)!
         fun bearerTokenProvider(): HttpClientTokenProvider {
-            return HttpClientTokenProvider { "Bearer my-token" } //(2)!
+            return HttpClientTokenProvider { "my-token" } //(2)!
         }
     }
     ```
@@ -830,7 +909,8 @@ Kora поддерживает ровно четыре режима:
 
 Чтобы передавать учётные данные явно на каждый вызов вместо перехватчика, включите `authAsMethodArgument`.
 Значение авторизации тогда становится аргументом метода клиента типа `@Nullable String` с аннотацией `@Header`, `@Query` или `@Cookie` в соответствии со схемой,
-а `ApiSecurity` не генерируется вовсе. `primaryAuth` выбирает, какая схема станет этим аргументом, когда операция перечисляет несколько:
+а `ApiSecurity` не генерируется вовсе. Аргумент отправляется как есть, поэтому для схемы с заголовком `Authorization` он уже должен содержать префикс схемы, например `Bearer `.
+`primaryAuth` выбирает, какая схема станет этим аргументом, когда операция перечисляет несколько:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1109,6 +1189,9 @@ Kora поддерживает ровно четыре режима:
 
     1. Выбрасывает `IllegalArgumentException` для значения, которого нет в контракте
     2. Возвращает `"available"` — значение, объявленное в контракте
+
+Встроенный `enum`, объявленный в `items` свойства-массива, генерируется как перечисление, вложенное в модель, а свойство сохраняет тип коллекции:
+для свойства `tags` это `List` из вложенного `TagsEnum`.
 
 Для каждого сгенерированного перечисления генератор также создаёт `@Module` с `@DefaultComponent` `JsonReader`, `JsonWriter` и конвертерами HTTP-параметров,
 поэтому перечисления работают как тела запросов, параметры запроса, параметры пути и заголовки без единого написанного вручную маппера.
@@ -1552,7 +1635,8 @@ Kora поддерживает ровно четыре режима:
 
 Для каждой схемы приложение должно предоставить компонент `HttpServerPrincipalExtractor<T, P>`, помеченный соответствующим классом-маркером.
 `T` — это извлекаемые учётные данные, `P` — получаемый principal.
-Извлекатель получает запрос и значение учётных данных и возвращает аутентифицированный principal либо `null`, если учётные данные не приняты:
+Извлекатель получает запрос и значение учётных данных и возвращает аутентифицированный principal либо `null`, если учётные данные не приняты.
+Для схем `http` `basic`/`bearer` и `oauth2` учётные данные — это сырое значение заголовка `Authorization` вместе с префиксом `Basic ` или `Bearer `:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1651,6 +1735,8 @@ Kora поддерживает ровно четыре режима:
 `@Tag(ApiSecurity.HeaderAuth1WithQueryAuth.class)` и `ApiSecurity.HeaderAuth1WithQueryAuthAuthData`.
 
 Когда ни одно требование безопасности операции не выполнено, сгенерированный перехватчик выбрасывает `HttpServerResponseException.of(401, "Unauthorized")`.
+Если требование `oauth2` дало principal, у которого нет одного из требуемых операцией scope, и ни одно другое требование не подошло,
+вместо этого выбрасывается `HttpServerResponseException.of(403, "Forbidden")`.
 Если контракт перечисляет среди альтернатив пустое требование (`security: [{}]`), запрос вместо этого пропускается без аутентификации.
 
 Безопасность сервера поддерживает схемы `apiKey` в заголовке, параметре запроса или cookie, а также схемы `http` `basic`/`bearer` плюс `oauth2`/`openId`,

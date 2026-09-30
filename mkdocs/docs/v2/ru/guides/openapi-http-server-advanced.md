@@ -1161,7 +1161,8 @@ paths:
 
 ### 3. Basic Authentication { #3-basic-authentication }
 
-Basic-аутентификация — еще один распространенный вариант. Схемы `http` с `basic` или `bearer` читаются из заголовка `Authorization`:
+Basic-аутентификация — еще один распространенный вариант. Схемы `http` с `basic` или `bearer` читаются из заголовка `Authorization`, и извлекатель получает сырое значение заголовка с
+префиксом `Basic ` или `Bearer `, поэтому декодирование учетных данных — задача самого извлекателя:
 
 ```yaml
 components:
@@ -1179,10 +1180,11 @@ security:
     ```java
     @Tag(ApiSecurity.BasicAuth.class)
     default HttpServerPrincipalExtractor<String, Principal> basicHttpServerPrincipalExtractor() {
-        return (request, credentials) -> {
-            if (credentials == null) {
+        return (request, header) -> {
+            if (header == null || !header.startsWith("Basic ")) {
                 throw new SecurityException("Missing credentials");
             }
+            var credentials = new String(Base64.getDecoder().decode(header.substring("Basic ".length())), StandardCharsets.UTF_8);
             var parts = credentials.split(":", 2);
             if (parts.length != 2) {
                 throw new SecurityException("Invalid basic auth format");
@@ -1197,10 +1199,11 @@ security:
     ```kotlin
     @Tag(ApiSecurity.BasicAuth::class)
     fun basicHttpServerPrincipalExtractor(): HttpServerPrincipalExtractor<String, Principal> {
-        return HttpServerPrincipalExtractor { _, credentials ->
-            if (credentials == null) {
+        return HttpServerPrincipalExtractor { _, header ->
+            if (header == null || !header.startsWith("Basic ")) {
                 throw SecurityException("Missing credentials")
             }
+            val credentials = String(Base64.getDecoder().decode(header.removePrefix("Basic ")), Charsets.UTF_8)
             val parts = credentials.split(":", limit = 2)
             if (parts.size != 2) {
                 throw SecurityException("Invalid basic auth format")
@@ -1234,11 +1237,11 @@ security:
     ```java
     @Tag(ApiSecurity.BearerAuth.class)
     default HttpServerPrincipalExtractor<String, Principal> bearerHttpServerPrincipalExtractor(JwtService jwtService) {
-        return (request, token) -> {
-            if (token == null || token.isBlank()) {
+        return (request, header) -> {
+            if (header == null || !header.startsWith("Bearer ")) {
                 throw new SecurityException("Missing bearer token");
             }
-            return new UserPrincipal(jwtService.extractUserFromToken(token));
+            return new UserPrincipal(jwtService.extractUserFromToken(header.substring("Bearer ".length())));
         };
     }
     ```
@@ -1248,11 +1251,11 @@ security:
     ```kotlin
     @Tag(ApiSecurity.BearerAuth::class)
     fun bearerHttpServerPrincipalExtractor(jwtService: JwtService): HttpServerPrincipalExtractor<String, Principal> {
-        return HttpServerPrincipalExtractor { _, token ->
-            if (token.isNullOrBlank()) {
+        return HttpServerPrincipalExtractor { _, header ->
+            if (header == null || !header.startsWith("Bearer ")) {
                 throw SecurityException("Missing bearer token")
             }
-            UserPrincipal(jwtService.extractUserFromToken(token))
+            UserPrincipal(jwtService.extractUserFromToken(header.removePrefix("Bearer ")))
         }
     }
     ```
@@ -1260,7 +1263,8 @@ security:
 Это хорошо работает, когда вызывающий — конечный пользователь, когда нужен срок жизни токена и когда внутри токена важны claims, роли или информация о тенанте.
 
 Схема `oauth2` или `openId` подключается так же, но ее операции объявляют **скоупы**. Для них принципал должен реализовывать `PrincipalWithScopes`, чтобы сгенерированный перехватчик мог сравнить
-выданные скоупы с требуемыми операцией.
+выданные скоупы с требуемыми операцией. Аутентифицированный принципал без требуемого скоупа получает `403 Forbidden`, а не `401 Unauthorized`, если только не подходит другое
+требование операции.
 
 ### 5. Несколько схем { #5-multiple-schemes }
 

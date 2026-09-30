@@ -4,7 +4,7 @@ seo_description: "Справочник DI-контейнера Kora на эта�
 keywords: ["Kora Framework", "фреймворк Kora", "внедрение зависимостей Kora", "DI-контейнер", "DI на этапе компиляции", "@Component", "@Module"]
 description: "Explains Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers. Use when working with @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers; key triggers include @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf, All, PromiseOf, GraphInterceptor, KoraApplication.run."
+  use_when: "Use this file for Kora docs or implementation questions about Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers; key triggers include @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf, All, PromiseOf, GraphInterceptor, GraphCondition, RefreshableGraph, KoraApplication.run, keepAlive."
 ---
 
 Контейнер зависимостей — это ядро фреймворка `Kora`. Он строит граф зависимостей, проверяет его,
@@ -516,7 +516,7 @@ agent:
 Если расширение это умеет, оно выполняет необходимую генерацию кода и сообщает, как получить такой компонент.
 
 Например, есть расширения, которые умеют создавать оптимальные компоненты `JsonReader` и `JsonWriter`, репозитории,
-декларативные `HTTP`-клиенты, `gRPC`-заглушки, преобразователи конфигурации, валидаторы, а также мапперы `MapStruct` и `Konvert`.
+декларативные `HTTP`-клиенты, `gRPC`-заглушки, преобразователи конфигурации, валидаторы, а также мапперы `MapStruct` в Java и `Konvert` в Kotlin.
 Доступные расширения обнаруживаются через механизм `ServiceLoader` во всех зависимостях, поданных в область обработчика аннотаций.
 
 Этот механизм системного уровня и чаще всего используется внутренними модулями `Kora`.
@@ -822,7 +822,8 @@ public interface GraphCondition {
 `Kora` не падает во время компиляции: она выберет тот, чье условие выполнилось во время работы.
 Если не выполнилось ни одно или выполнилось больше одного, граф не инициализируется.
 
-`GraphCondition` также предоставляет `GraphCondition.and(...)` и `GraphCondition.or(...)` для композиции условий.
+`GraphCondition` также предоставляет `GraphCondition.and(...)` и `GraphCondition.or(...)` для композиции условий:
+`and(...)` выполняется, только когда выполнены все условия, `or(...)` — как только выполнено хотя бы одно из них.
 
 ### Необязательные зависимости { #optional-dependencies }
 
@@ -1223,6 +1224,8 @@ Fix:
 настоящий компонент из графа при первом обращении (и разрешает заново после обновления графа), поэтому оба компонента
 могут быть созданы. От разработчика ничего не требуется, но нужно помнить, что проксируемая сторона становится
 работоспособной только после полной сборки графа, поэтому вызывать ее из конструктора нельзя.
+Прокси может заменить только один компонент: если цикл замыкается на зависимости-списке `All<T>`,
+на `TypeRef<T>` или на самом `Graph`, о цикле сообщается той же ошибкой компиляции `Circular dependency found:`.
 
 В примере ниже `ServiceAImpl` и `ServiceBImpl` ссылаются друг на друга через интерфейсы, поэтому цикл разрывается
 автоматически сгенерированным `PromisedProxy`, и граф успешно собирается:
@@ -1386,9 +1389,16 @@ Fix:
     }
     ```
 
-Сигнатура `KoraApplication.run` — `public static void run(Supplier<ApplicationGraphDraw> supplier)`.
-Метод строит граф, логирует длительность инициализации, регистрирует shutdown-hook, освобождающий граф,
-и затем блокирует вызывающий поток до остановки. Если инициализация упала, ошибка логируется, а JVM завершается с кодом `-1`.
+У `KoraApplication.run` две перегрузки:
+
+* `run(Supplier<ApplicationGraphDraw> supplier)` — то же самое, что `run(supplier, true)`.
+* `run(Supplier<ApplicationGraphDraw> supplier, boolean keepAlive)` определяет, ждет ли вызывающий поток остановки приложения.
+
+Обе строят граф, логируют длительность инициализации в миллисекундах и регистрируют shutdown-hook, освобождающий граф.
+При `keepAlive = true` вызывающий поток затем блокируется, пока shutdown-hook не освободит граф.
+При `keepAlive = false` метод возвращает управление сразу после инициализации: shutdown-hook по-прежнему освобождает граф при завершении JVM,
+но JVM продолжает работать, только пока живы другие не-daemon потоки.
+Если инициализация упала, ошибка логируется, а JVM завершается с кодом `-1`.
 
 Если нужен сам объект графа — в тестах или в продвинутых сценариях, где компонент достают вручную или инициируют обновление, —
 вызовите `ApplicationGraph.graph().init()`, который возвращает `InitializedGraph` (это `RefreshableGraph` с методами
@@ -1404,6 +1414,10 @@ Fix:
 которые зависят от изменившегося. Это происходит атомарно: контейнер собирает затронутую часть графа
 во временную копию, и только когда все компоненты в ней успешно инициализированы, подменяет ее и освобождает
 замененные объекты. Если хотя бы один компонент упал, временные объекты освобождаются, а старый граф остается на месте.
+
+Пересоздаются только компоненты, чьи зависимости действительно были заменены; компоненты, не зависящие от изменившейся части, сохраняют свои экземпляры.
+Если пересозданный компонент равен (`equals`) предыдущему экземпляру, контейнер оставляет предыдущий экземпляр, отбрасывает новый,
+и зависящие от него компоненты из-за него не пересоздаются. Если `equals` бросает исключение, компонент считается изменившимся.
 
 ### Жизненный цикл компонента { #component-lifecycle }
 
@@ -1726,4 +1740,6 @@ public interface GraphInterceptor<T> {
 
 Перехватчик привязывается к компоненту по **точному** объявленному типу этого компонента — `GraphInterceptor<JdbcDataSource>`
 перехватывает компонент, объявленный как `JdbcDataSource`, а не его подтипы — и по тегу: перехватчик без тега перехватывает
-компоненты без тега, а `@Tag(Tag.Any.class)` на перехватчике заставляет его перехватывать компоненты с любым тегом.
+компоненты без тега, перехватчик с `@Tag(SomeTag.class)` перехватывает только компоненты с этим тегом,
+а `@Tag(Tag.Any.class)` на перехватчике заставляет его перехватывать компоненты с любым тегом, а также компоненты без тега.
+Java annotation processor и Kotlin symbol processor применяют одинаковые правила сопоставления по тегу.

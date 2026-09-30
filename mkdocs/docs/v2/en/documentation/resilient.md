@@ -1,10 +1,10 @@
 ---
 seo_title: "Kora Resilience: Circuit Breaker, Retry, Timeout, Rate Limiter"
 seo_description: "Reference for Kora resilience: circuit breakers, retries with backoff and jitter, timeouts, rate limiters, fallbacks, exception filters and configuration."
-keywords: ["Kora Framework", "Kora resilience", "circuit breaker Java", "retry backoff", "rate limiter", "fault tolerance"]
-description: "Explains Kora resilience aspects built on typed specification interfaces: circuit breakers, retries with backoff/jitter/budget, timeouts, rate limiters, fallback methods, exception filtering, telemetry, configuration, and supported signatures. Use when working with @CircuitBreakable, @Retryable, @Timeout, @RateLimited, @Fallback, @CircuitBreakerSpec, @RetrySpec, @TimeoutSpec, @RateLimiterSpec, ResilientModule."
+keywords: ["Kora Framework", "Kora resilience", "circuit breaker Java", "retry backoff", "rate limiter", "distributed rate limiter", "retry budget", "fault tolerance"]
+description: "Explains Kora resilience aspects built on typed specification interfaces: circuit breakers, retries with backoff/jitter/budget, timeouts, rate limiters (token bucket or fixed window, local or Redis-backed distributed), distributed retry budgets, fallback methods, exception filtering, telemetry, configuration, and supported signatures. Use when working with @CircuitBreakable, @Retryable, @Timeout, @RateLimited, @Fallback, @CircuitBreakerSpec, @RetrySpec, @TimeoutSpec, @RateLimiterSpec, @RateLimiterDistributedSpec, NonRetryableException, NonCircuitableException, RetryBudgetFactory, ResilientModule, LettuceDistributedResilientModule."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about resilience aspects bound to typed specification interfaces, circuit breaker implementations, retry backoff/jitter/budget, timeouts, rate limiting, fallback methods, exception filtering, telemetry and supported signatures; key triggers include @CircuitBreakable, @CircuitBreakerSpec, @Retryable, @RetrySpec, @Timeout, @TimeoutSpec, @RateLimited, @RateLimiterSpec, @Fallback, Fallback.Reason, CircuitBreaker, CircuitBreakerPredicate, Retry, RetryPredicate, Timeouter, RateLimiter, CallNotPermittedException, RetryExhaustedException, TimeoutExhaustedException, RateLimitExceededException, ResilientException, ResilientModule."
+  use_when: "Use this file for Kora docs or implementation questions about resilience aspects bound to typed specification interfaces, circuit breaker implementations, retry backoff/jitter/budget, custom and distributed retry budgets, timeouts, rate limiting algorithms (TOKEN_BUCKET default, FIXED_WINDOW), distributed Redis-backed rate limiting, fallback methods, exception filtering, telemetry and supported signatures; key triggers include @CircuitBreakable, @CircuitBreakerSpec, @Retryable, @RetrySpec, @Timeout, @TimeoutSpec, @RateLimited, @RateLimiterSpec, @RateLimiterDistributedSpec, @Fallback, Fallback.Reason, CircuitBreaker, CircuitBreakerPredicate, NonCircuitableException, Retry, RetryPredicate, NonRetryableException, RetryBudget, KoraRetryBudget, RetryBudgetFactory, DistributedRetryBudgetFactory, Timeouter, RateLimiter, RateLimiterConfig.type, DistributedRateLimiterConfig, DistributedRateLimiterClient, LettuceDistributedResilientModule, resilient-kora-distributed-redis-lettuce, CallNotPermittedException, RetryExhaustedException, TimeoutExhaustedException, RateLimitExceededException, ResilientException, ResilientModule."
 ---
 
 Module for building a fault-tolerant application using mechanisms such as [CircuitBreaker](#circuitbreaker),
@@ -49,6 +49,47 @@ For a step-by-step walkthrough before the reference details, see [Resilience](..
 The annotation processor (`annotation-processors`) or the `KSP` processor (`symbol-processors`) is required: it both
 generates the specification implementations and applies the aspects.
 
+### Distributed state { #dependency-distributed }
+
+By default every limiter and retry budget keeps its state in the memory of one application instance. The
+[distributed rate limiter](#ratelimiter-distributed) and the [distributed retry budget](#retry-budget-factory) share that
+state between instances through `Redis`. They need an extra module backed by the `Lettuce` client:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    [Dependency](general.md#dependencies) `build.gradle`:
+    ```groovy
+    implementation "io.koraframework:resilient-kora-distributed-redis-lettuce"
+    ```
+
+    Module:
+    ```java
+    @KoraApp
+    public interface Application extends ResilientModule, LettuceDistributedResilientModule { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
+    ```groovy
+    implementation("io.koraframework:resilient-kora-distributed-redis-lettuce")
+    ```
+
+    Module:
+    ```kotlin
+    @KoraApp
+    interface Application : ResilientModule, LettuceDistributedResilientModule
+    ```
+
+The artifact brings `resilient-kora-distributed` (the backend-agnostic `DistributedRateLimiterClient` and
+`DistributedRetryBudgetClient` contracts, the algorithms and `@RateLimiterDistributedSpec`) and `redis-lettuce`.
+`LettuceDistributedResilientModule` extends `LettuceModule`, so the connection is configured in the `lettuce` section
+exactly as for the [Redis cache](cache.md#configuration-2). Standalone and cluster clients are both supported, and all
+operations are plain `Redis` commands without server-side `Lua` scripts.
+
+To give the resilience components a Redis client of their own instead of the shared one, register an `AbstractRedisClient`
+tagged with `@Tag(LettuceDistributedResilientModule.class)`.
+
 ## Specifications { #specifications }
 
 A specification is an interface that extends a resilience contract and carries the annotation with the configuration path:
@@ -63,6 +104,10 @@ A specification is an interface that extends a resilience contract and carries t
 
 The method annotations live in the `annotation` sub-package of each contract package, for example
 `io.koraframework.resilient.circuitbreaker.annotation.CircuitBreakable`.
+
+`@RateLimited` also accepts an interface annotated with `@RateLimiterDistributedSpec`
+(`io.koraframework.resilient.distributed.ratelimiter.annotation`), which shares its limit across instances — see
+[Distributed rate limiter](#ratelimiter-distributed).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -121,6 +166,10 @@ What the processor does with a specification:
 - generates its implementation and a module that publishes it, and the module is picked up by `@KoraApp` automatically — nothing has to be wired by hand;
 - publishes the specification interface itself as an application graph component, so it can be injected for [imperative use](#imperative-usage);
 - reads the configuration from exactly the path given in the annotation.
+
+The generated implementations inherit a `toString()` that reports their current state — the breaker state and its counters, the
+permits left in a local rate limiter, the retry settings and the retry budget tokens — so logging the injected specification or
+inspecting it in a debugger shows what it is doing right now.
 
 !!! warning "One instance per specification"
 
@@ -344,9 +393,37 @@ Module metrics are described in the [Metrics Reference](metrics.md#resilience) s
 
 ### Exception filtering { #exception-filtering }
 
-`CircuitBreaker` records all errors as failures by default. There are two ways to change that.
+`CircuitBreaker` records every error as a failure by default, except exceptions that implement the
+`NonCircuitableException` marker interface. Marking your own exception type is the simplest way to keep an expected
+business error away from the breaker, and the same type can also implement `NonRetryableException` to opt out of
+[Retry](#exception-filtering-2):
 
-The simplest one is to override `isFailure` right on the specification interface — no extra component and no configuration:
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public final class InvalidPetException extends RuntimeException
+        implements NonCircuitableException, NonRetryableException { //(1)!
+
+        public InvalidPetException(String message) {
+            super(message);
+        }
+    }
+    ```
+
+    1.  `io.koraframework.resilient.circuitbreaker.NonCircuitableException` and `io.koraframework.resilient.retry.NonRetryableException` are marker interfaces without methods.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class InvalidPetException(message: String) : RuntimeException(message),
+        NonCircuitableException, NonRetryableException //(1)!
+    ```
+
+    1.  `io.koraframework.resilient.circuitbreaker.NonCircuitableException` and `io.koraframework.resilient.retry.NonRetryableException` are marker interfaces without methods.
+
+When the decision cannot be expressed through the exception type, there are two ways to change the default.
+
+The first one is to override `isFailure` right on the specification interface — no extra component and no configuration:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -409,6 +486,12 @@ The second way is a `CircuitBreakerPredicate` component bound to the specificati
 
 An exception that the filter rejects is neither counted as a failure nor as a success: it is simply ignored by the breaker
 and propagates to the caller unchanged.
+
+!!! warning "A custom filter replaces the marker check"
+
+    `NonCircuitableException` is checked by the default `isFailure`. Overriding `isFailure` or registering a tagged
+    `CircuitBreakerPredicate` replaces that check, so a custom filter that should keep honouring the marker has to test
+    `throwable instanceof NonCircuitableException` itself.
 
 ### Imperative usage { #imperative-usage }
 
@@ -727,11 +810,78 @@ rethrown as is — without waiting and without `RetryExhaustedException`.
 
     The budget is off unless the `retryBudget` section is declared. Declaring it with `enabled = false` also leaves it off.
 
+#### Custom and distributed budget { #retry-budget-factory }
+
+The budget itself is a `RetryBudget` (`tryAcquireRetryToken()`, `onSuccess()`, `availableTokens()`), and every retry
+specification obtains its instance from a `RetryBudgetFactory` component through `get(name, config)`, where `name` is the
+simple name of the specification interface and `config` is its `RetryConfig`. A factory that returns `null` leaves the
+retry without a budget. `RetryModule` registers `DefaultRetryBudgetFactory`, which builds the in-memory `KoraRetryBudget`
+from the `retryBudget` section, so by default every application instance has a bucket of its own.
+
+A factory is replaced the usual way: an untagged `RetryBudgetFactory` component overrides the default one for every
+retry, and a factory tagged with a specification, `@Tag(PetRetry.class)`, is used for that retry only and takes precedence
+over the untagged one.
+
+`DistributedRetryBudgetFactory` from the [distributed module](#dependency-distributed) keeps one token balance per
+specification in `Redis`, so the budget caps the retries of all instances together. It is not registered automatically:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends ResilientModule, LettuceDistributedResilientModule {
+
+        default RetryBudgetFactory distributedRetryBudgetFactory(DistributedRetryBudgetClient client) { //(1)!
+            return new DistributedRetryBudgetFactory(client);
+        }
+
+        @Tag(PetRetry.class) //(2)!
+        default RetryBudgetFactory petRetryBudgetFactory(DistributedRetryBudgetClient client) {
+            return new DistributedRetryBudgetFactory(client, "pets:retrybudget", Duration.ofMinutes(30)); //(3)!
+        }
+    }
+    ```
+
+    1.  An untagged factory replaces `DefaultRetryBudgetFactory` for every retry.
+    2.  A factory tagged with the specification is used only by `PetRetry` and wins over the untagged one.
+    3.  Key prefix and idle expiry of the balance key (default: `kora:retrybudget` and `10` minutes).
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : ResilientModule, LettuceDistributedResilientModule {
+
+        fun distributedRetryBudgetFactory(client: DistributedRetryBudgetClient): RetryBudgetFactory = //(1)!
+            DistributedRetryBudgetFactory(client)
+
+        @Tag(PetRetry::class) //(2)!
+        fun petRetryBudgetFactory(client: DistributedRetryBudgetClient): RetryBudgetFactory =
+            DistributedRetryBudgetFactory(client, "pets:retrybudget", Duration.ofMinutes(30)) //(3)!
+    }
+    ```
+
+    1.  An untagged factory replaces `DefaultRetryBudgetFactory` for every retry.
+    2.  A factory tagged with the specification is used only by `PetRetry` and wins over the untagged one.
+    3.  Key prefix and idle expiry of the balance key (default: `kora:retrybudget` and `10` minutes).
+
+The balance is stored under `<keyPrefix>:<specification simple name>`, and every change refreshes the key expiry, so an
+unused budget disappears from `Redis` and starts again from `tokensInitial`. Services that point at the same `Redis` and
+use specifications with the same simple name share one balance unless their key prefixes differ.
+
+!!! note
+
+    The distributed budget reads the same `retryBudget` section and still needs it to be declared: `enabled`, `ratio`,
+    `tokensMax` and `tokensInitial` keep their meaning, while `minTokensPerSecond` is ignored — the shared balance is refilled
+    only by successful calls.
+
 ### Exception filtering { #exception-filtering-2 }
 
-`Retry` retries on every error by default, and the two ways to narrow that down mirror the
+`Retry` retries on every error by default, except exceptions that implement the `NonRetryableException` marker interface
+(see the [example](#exception-filtering) in the circuit breaker section). The two ways to narrow that down further mirror the
 [circuit breaker](#exception-filtering): override `isFailure` on the specification, or register a `RetryPredicate`
-component tagged with the specification. The tagged component wins when both are present.
+component tagged with the specification. The tagged component wins when both are present, and either of them replaces the
+default `NonRetryableException` check.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1037,9 +1187,10 @@ Inject the specification interface and call it directly:
 
 ## RateLimiter { #ratelimiter }
 
-`RateLimiter` caps how many times a method may be called within a period. The limiter is a fixed-window counter: it hands
-out `limitForPeriod` permits, and the counter is reset to that value on the first call after `limitRefreshPeriod` has
-elapsed. Acquiring a permit never blocks — a call that finds no permit left fails immediately with `RateLimitExceededException`.
+`RateLimiter` caps how many times a method may be called within a period: `limitForPeriod` permits per
+`limitRefreshPeriod`. How the permits are handed out is chosen by the [algorithm](#ratelimiter-algorithms), a token bucket
+by default. Acquiring a permit never blocks — a call that finds no permit available fails immediately with
+`RateLimitExceededException`.
 
 ### Declarative usage { #declarative-usage-5 }
 
@@ -1085,7 +1236,8 @@ The section that `@RateLimiterSpec` points at is described by the `RateLimiterCo
             custom {
                 limitForPeriod = 100 //(1)!
                 limitRefreshPeriod = "1s" //(2)!
-                enabled = true //(3)!
+                type = TOKEN_BUCKET //(3)!
+                enabled = true //(4)!
             }
         }
     }
@@ -1093,7 +1245,8 @@ The section that `@RateLimiterSpec` points at is described by the `RateLimiterCo
 
     1.  Number of calls permitted within one period (required, no default).
     2.  Length of the period after which the permits are replenished (required, no default).
-    3.  Enable or disable `RateLimiter` (default: `true`).
+    3.  Rate limiting [algorithm](#ratelimiter-algorithms): `TOKEN_BUCKET` or `FIXED_WINDOW` (default: `TOKEN_BUCKET`).
+    4.  Enable or disable `RateLimiter` (default: `true`).
 
 === ":simple-yaml: `YAML`"
 
@@ -1103,12 +1256,14 @@ The section that `@RateLimiterSpec` points at is described by the `RateLimiterCo
         custom:
           limitForPeriod: 100 #(1)!
           limitRefreshPeriod: "1s" #(2)!
-          enabled: true #(3)!
+          type: TOKEN_BUCKET #(3)!
+          enabled: true #(4)!
     ```
 
     1.  Number of calls permitted within one period (required, no default).
     2.  Length of the period after which the permits are replenished (required, no default).
-    3.  Enable or disable `RateLimiter` (default: `true`).
+    3.  Rate limiting [algorithm](#ratelimiter-algorithms): `TOKEN_BUCKET` or `FIXED_WINDOW` (default: `TOKEN_BUCKET`).
+    4.  Enable or disable `RateLimiter` (default: `true`).
 
 The `telemetry` key inside the same section overrides the module-wide settings described in [Telemetry](#telemetry).
 
@@ -1116,6 +1271,18 @@ The `telemetry` key inside the same section overrides the module-wide settings d
 
     Setting `enabled = false` turns `@RateLimited` into a transparent pass-through — every call is permitted.
     The limiter is per application instance: with several replicas the effective limit is `limitForPeriod` multiplied by the number of replicas.
+    A limit shared by all replicas needs the [distributed rate limiter](#ratelimiter-distributed).
+
+### Algorithms { #ratelimiter-algorithms }
+
+The `type` key selects one of two lock-free implementations, each of which keeps its whole state in a single atomic value:
+
+| `type`                   | Behaviour                                                                                                                                         | When to use                                                                                              |
+|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| `TOKEN_BUCKET` (default) | token bucket implemented with GCRA: permits refill continuously, one every `limitRefreshPeriod / limitForPeriod`, and an idle limiter allows a burst of up to `limitForPeriod` calls | a smooth rate without spikes at period boundaries; the general choice                                     |
+| `FIXED_WINDOW`           | a counter of `limitForPeriod` permits for each consecutive `limitRefreshPeriod` window, counted from the creation of the limiter                   | a strict "N calls per window" quota; up to twice `limitForPeriod` calls may pass around the boundary of two adjacent windows |
+
+`FIXED_WINDOW` packs the counter into 24 bits, so its `limitForPeriod` must stay below `16777216`.
 
 ### Imperative usage { #imperative-usage-5 }
 
@@ -1182,6 +1349,106 @@ Inject the specification interface and call it directly:
     2.  Non-throwing alternative: returns `false` instead of raising an exception.
 
 `acquire()` takes a permit without running anything and throws `RateLimitExceededException` when there is none left.
+
+### Distributed rate limiter { #ratelimiter-distributed }
+
+A local limiter counts only the calls of its own instance. When the limit belongs to the whole service — a partner API
+quota, for example — declare the specification with `@RateLimiterDistributedSpec` instead of `@RateLimiterSpec`: the limit
+is then enforced through `Redis` for all instances together. The distributed module has to be
+[connected](#dependency-distributed).
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @RateLimiterDistributedSpec("resilient.ratelimiter.partner") //(1)!
+    public interface PartnerRateLimiter extends RateLimiter { }
+
+    @Component
+    public class PartnerService {
+
+        @RateLimited(PartnerRateLimiter.class) //(2)!
+        public String getValue() {
+            return "OK";
+        }
+    }
+    ```
+
+    1.  Instead of `@RateLimiterSpec`; the interface still extends `RateLimiter`.
+    2.  The method annotation, the supported signatures and `RateLimitExceededException` are the same as for a local limiter.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @RateLimiterDistributedSpec("resilient.ratelimiter.partner") //(1)!
+    interface PartnerRateLimiter : RateLimiter
+
+    @Component
+    open class PartnerService {
+
+        @RateLimited(PartnerRateLimiter::class) //(2)!
+        open fun value(): String = "OK"
+    }
+    ```
+
+    1.  Instead of `@RateLimiterSpec`; the interface still extends `RateLimiter`.
+    2.  The method annotation, the supported signatures and `RateLimitExceededException` are the same as for a local limiter.
+
+The section is described by `DistributedRateLimiterConfig`:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    resilient {
+        ratelimiter {
+            partner {
+                limitForPeriod = 100 //(1)!
+                limitRefreshPeriod = "1s" //(2)!
+                keyPrefix = "pets" //(3)!
+                algorithm = TOKEN_BUCKET //(4)!
+                enabled = true //(5)!
+            }
+        }
+    }
+    ```
+
+    1.  Number of calls permitted within one period across all instances (required, no default).
+    2.  Length of the period (required, no default).
+    3.  Prefix of the `Redis` keys that namespaces the limiters of this service (required, no default).
+    4.  Algorithm: `TOKEN_BUCKET` or `FIXED_WINDOW`, with the same meaning as for the [local limiter](#ratelimiter-algorithms) (default: `TOKEN_BUCKET`).
+    5.  Enable or disable the limiter (default: `true`).
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    resilient:
+      ratelimiter:
+        partner:
+          limitForPeriod: 100 #(1)!
+          limitRefreshPeriod: "1s" #(2)!
+          keyPrefix: "pets" #(3)!
+          algorithm: TOKEN_BUCKET #(4)!
+          enabled: true #(5)!
+    ```
+
+    1.  Number of calls permitted within one period across all instances (required, no default).
+    2.  Length of the period (required, no default).
+    3.  Prefix of the `Redis` keys that namespaces the limiters of this service (required, no default).
+    4.  Algorithm: `TOKEN_BUCKET` or `FIXED_WINDOW`, with the same meaning as for the [local limiter](#ratelimiter-algorithms) (default: `TOKEN_BUCKET`).
+    5.  Enable or disable the limiter (default: `true`).
+
+The `telemetry` key and the `resilient.telemetry.rateLimiter` settings apply exactly as for a local limiter.
+
+!!! warning "The algorithm key is `algorithm`, not `type`"
+
+    `DistributedRateLimiterConfig` names the algorithm key `algorithm`, while the local `RateLimiterConfig` calls it `type`.
+    A `type` key in a distributed section is ignored and the limiter stays on `TOKEN_BUCKET`.
+
+How it works:
+
+- The generated implementation extends `KoraDistributedRateLimiter` and requires a `DistributedRateLimiterClient` in the graph; `LettuceDistributedResilientModule` provides one.
+- The limiter state lives under the key `<keyPrefix>:<specification simple name>`. `FIXED_WINDOW` uses a separate key per window, `<keyPrefix>:<specification simple name>:<window number>`, where windows are aligned to the wall clock rather than to the start of the application. Keys expire on their own once they are no longer needed.
+- `TOKEN_BUCKET` takes the current time from the wall clock of the calling instance, so clock skew between instances makes the limit approximate. It is also slightly approximate right after an idle period, and exact in the steady state.
+- Every permit costs synchronous `Redis` commands, so it adds a network round trip to the protected call. A `Redis` error is not swallowed: it propagates out of `@RateLimited` to the caller.
 
 ## Fallback { #fallback }
 
@@ -1515,7 +1782,7 @@ All resilience exceptions extend `io.koraframework.resilient.exception.Resilient
 | `CallNotPermittedException`  | `@CircuitBreakable` / `CircuitBreaker#acquire()` when the breaker is `OPEN`, or `HALF_OPEN` with no test calls left | `state()` returns the `CircuitBreaker.State` (`OPEN` / `HALF_OPEN`)                       |
 | `RetryExhaustedException`    | `@Retryable` / `Retry#retry(...)` when every attempt failed                                                       | `name()`; message carries the number of attempts, the last failure is the `getCause()`, earlier failures are suppressed |
 | `TimeoutExhaustedException`  | `@Timeout` / `Timeouter#execute(...)` when the method exceeds `duration`                                          | `name()`                                                                                  |
-| `RateLimitExceededException` | `@RateLimited` / `RateLimiter#acquire()` when no permit is left in the current period                             | `name()`                                                                                  |
+| `RateLimitExceededException` | `@RateLimited` / `RateLimiter#acquire()` when no permit is available                                              | `name()`                                                                                  |
 
 Each exception lives in the `exception` sub-package of its mechanism, for example `io.koraframework.resilient.circuitbreaker.exception.CallNotPermittedException`.
 
@@ -1526,7 +1793,7 @@ Each exception lives in the `exception` sub-package of its mechanism, for exampl
 - `CallNotPermittedException` — the circuit breaker is short-circuiting calls because the failure rate reached `failureRateThreshold`; the call was rejected without invoking the method.
 - `RetryExhaustedException` — the method kept throwing a retryable exception until `attempts` was reached; the underlying failure is available via `getCause()`.
 - `TimeoutExhaustedException` — the method did not complete within `duration`.
-- `RateLimitExceededException` — `limitForPeriod` calls were already permitted within the current `limitRefreshPeriod`.
+- `RateLimitExceededException` — the calls already permitted used up the `limitForPeriod` permits: the token bucket has not refilled yet, or the current `FIXED_WINDOW` window is exhausted.
 
 **Recommendations**
 

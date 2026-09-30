@@ -1,10 +1,10 @@
 ---
 seo_title: "Отказоустойчивость Kora: circuit breaker, retry, таймауты"
 seo_description: "Справочник по отказоустойчивости Kora: circuit breaker, повторы с backoff и jitter, таймауты, rate limiter, fallback, фильтры исключений, конфигурация."
-keywords: ["Kora Framework", "фреймворк Kora", "отказоустойчивость Kora", "circuit breaker", "retry", "rate limiter"]
-description: "Explains Kora resilience aspects built on typed specification interfaces: circuit breakers, retries with backoff/jitter/budget, timeouts, rate limiters, fallback methods, exception filtering, telemetry, configuration, and supported signatures. Use when working with @CircuitBreakable, @Retryable, @Timeout, @RateLimited, @Fallback, @CircuitBreakerSpec, @RetrySpec, @TimeoutSpec, @RateLimiterSpec, ResilientModule."
+keywords: ["Kora Framework", "фреймворк Kora", "отказоустойчивость Kora", "circuit breaker", "retry", "rate limiter", "распределённый rate limiter", "retry budget"]
+description: "Explains Kora resilience aspects built on typed specification interfaces: circuit breakers, retries with backoff/jitter/budget, timeouts, rate limiters (token bucket or fixed window, local or Redis-backed distributed), distributed retry budgets, fallback methods, exception filtering, telemetry, configuration, and supported signatures. Use when working with @CircuitBreakable, @Retryable, @Timeout, @RateLimited, @Fallback, @CircuitBreakerSpec, @RetrySpec, @TimeoutSpec, @RateLimiterSpec, @RateLimiterDistributedSpec, NonRetryableException, NonCircuitableException, RetryBudgetFactory, ResilientModule, LettuceDistributedResilientModule."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about resilience aspects bound to typed specification interfaces, circuit breaker implementations, retry backoff/jitter/budget, timeouts, rate limiting, fallback methods, exception filtering, telemetry and supported signatures; key triggers include @CircuitBreakable, @CircuitBreakerSpec, @Retryable, @RetrySpec, @Timeout, @TimeoutSpec, @RateLimited, @RateLimiterSpec, @Fallback, Fallback.Reason, CircuitBreaker, CircuitBreakerPredicate, Retry, RetryPredicate, Timeouter, RateLimiter, CallNotPermittedException, RetryExhaustedException, TimeoutExhaustedException, RateLimitExceededException, ResilientException, ResilientModule."
+  use_when: "Use this file for Kora docs or implementation questions about resilience aspects bound to typed specification interfaces, circuit breaker implementations, retry backoff/jitter/budget, custom and distributed retry budgets, timeouts, rate limiting algorithms (TOKEN_BUCKET default, FIXED_WINDOW), distributed Redis-backed rate limiting, fallback methods, exception filtering, telemetry and supported signatures; key triggers include @CircuitBreakable, @CircuitBreakerSpec, @Retryable, @RetrySpec, @Timeout, @TimeoutSpec, @RateLimited, @RateLimiterSpec, @RateLimiterDistributedSpec, @Fallback, Fallback.Reason, CircuitBreaker, CircuitBreakerPredicate, NonCircuitableException, Retry, RetryPredicate, NonRetryableException, RetryBudget, KoraRetryBudget, RetryBudgetFactory, DistributedRetryBudgetFactory, Timeouter, RateLimiter, RateLimiterConfig.type, DistributedRateLimiterConfig, DistributedRateLimiterClient, LettuceDistributedResilientModule, resilient-kora-distributed-redis-lettuce, CallNotPermittedException, RetryExhaustedException, TimeoutExhaustedException, RateLimitExceededException, ResilientException, ResilientModule."
 ---
 
 Модуль для построения отказоустойчивого приложения с помощью таких механизмов, как [CircuitBreaker](#circuitbreaker),
@@ -49,6 +49,47 @@ agent:
 Обработчик аннотаций (`annotation-processors`) либо `KSP`-обработчик (`symbol-processors`) обязателен: он одновременно
 генерирует реализации спецификаций и применяет аспекты.
 
+### Распределённое состояние { #dependency-distributed }
+
+По умолчанию каждый ограничитель частоты и бюджет повторов хранит своё состояние в памяти одного экземпляра приложения.
+[Распределённый rate limiter](#ratelimiter-distributed) и [распределённый бюджет повторов](#retry-budget-factory) делят это
+состояние между экземплярами через `Redis`. Для них нужен дополнительный модуль на клиенте `Lettuce`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    [Зависимость](general.md#dependencies) `build.gradle`:
+    ```groovy
+    implementation "io.koraframework:resilient-kora-distributed-redis-lettuce"
+    ```
+
+    Модуль:
+    ```java
+    @KoraApp
+    public interface Application extends ResilientModule, LettuceDistributedResilientModule { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
+    ```groovy
+    implementation("io.koraframework:resilient-kora-distributed-redis-lettuce")
+    ```
+
+    Модуль:
+    ```kotlin
+    @KoraApp
+    interface Application : ResilientModule, LettuceDistributedResilientModule
+    ```
+
+Артефакт подтягивает `resilient-kora-distributed` (независимые от хранилища контракты `DistributedRateLimiterClient` и
+`DistributedRetryBudgetClient`, алгоритмы и `@RateLimiterDistributedSpec`) и `redis-lettuce`.
+`LettuceDistributedResilientModule` расширяет `LettuceModule`, поэтому подключение настраивается в секции `lettuce`
+так же, как для [кеша Redis](cache.md#configuration-2). Поддерживаются и одиночный, и кластерный клиент, а все
+операции выполняются обычными командами `Redis` без серверных `Lua`-скриптов.
+
+Чтобы выделить компонентам отказоустойчивости собственный клиент Redis вместо общего, зарегистрируйте `AbstractRedisClient`
+с тегом `@Tag(LettuceDistributedResilientModule.class)`.
+
 ## Спецификации { #specifications }
 
 Спецификация — это интерфейс, который наследует контракт отказоустойчивости и помечен аннотацией с путём конфигурации:
@@ -63,6 +104,10 @@ agent:
 
 Аннотации методов лежат в подпакете `annotation` рядом с контрактом, например
 `io.koraframework.resilient.circuitbreaker.annotation.CircuitBreakable`.
+
+`@RateLimited` также принимает интерфейс с аннотацией `@RateLimiterDistributedSpec`
+(`io.koraframework.resilient.distributed.ratelimiter.annotation`), лимит которого общий для всех экземпляров — см.
+[Распределённый rate limiter](#ratelimiter-distributed).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -121,6 +166,10 @@ agent:
 - генерирует её реализацию и модуль, который её публикует; модуль подхватывается `@KoraApp` автоматически — вручную ничего подключать не нужно;
 - публикует сам интерфейс спецификации как компонент графа приложения, поэтому его можно внедрить для [императивного использования](#imperative-usage);
 - читает конфигурацию ровно из того пути, который указан в аннотации.
+
+Сгенерированные реализации наследуют `toString()`, который выводит текущее состояние — состояние прерывателя и его счётчики,
+оставшиеся разрешения локального rate limiter, настройки повтора и токены бюджета повторов, — поэтому по записи внедрённой спецификации
+в лог или по её виду в отладчике видно, что она делает прямо сейчас.
 
 !!! warning "Один экземпляр на спецификацию"
 
@@ -344,9 +393,37 @@ agent:
 
 ### Фильтрация исключений { #exception-filtering }
 
-По умолчанию `CircuitBreaker` считает отказом любую ошибку. Изменить это можно двумя способами.
+По умолчанию `CircuitBreaker` считает отказом любую ошибку, кроме исключений, реализующих интерфейс-маркер
+`NonCircuitableException`. Пометить им собственный тип исключения — самый простой способ не пускать ожидаемую бизнес-ошибку
+в статистику прерывателя, а тот же тип может реализовать и `NonRetryableException`, чтобы не попадать под
+[Retry](#exception-filtering-2):
 
-Самый простой — переопределить `isFailure` прямо в интерфейсе-спецификации: без отдельного компонента и без конфигурации:
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public final class InvalidPetException extends RuntimeException
+        implements NonCircuitableException, NonRetryableException { //(1)!
+
+        public InvalidPetException(String message) {
+            super(message);
+        }
+    }
+    ```
+
+    1.  `io.koraframework.resilient.circuitbreaker.NonCircuitableException` и `io.koraframework.resilient.retry.NonRetryableException` — интерфейсы-маркеры без методов.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class InvalidPetException(message: String) : RuntimeException(message),
+        NonCircuitableException, NonRetryableException //(1)!
+    ```
+
+    1.  `io.koraframework.resilient.circuitbreaker.NonCircuitableException` и `io.koraframework.resilient.retry.NonRetryableException` — интерфейсы-маркеры без методов.
+
+Если решение нельзя выразить через тип исключения, изменить поведение по умолчанию можно двумя способами.
+
+Первый — переопределить `isFailure` прямо в интерфейсе-спецификации: без отдельного компонента и без конфигурации:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -409,6 +486,12 @@ agent:
 
 Исключение, отклонённое фильтром, не засчитывается ни как отказ, ни как успех: circuit breaker его просто игнорирует,
 а вызывающему коду оно возвращается без изменений.
+
+!!! warning "Собственный фильтр заменяет проверку маркера"
+
+    `NonCircuitableException` проверяется реализацией `isFailure` по умолчанию. Переопределённый `isFailure` или
+    `CircuitBreakerPredicate` с тегом заменяют эту проверку, поэтому собственный фильтр, который должен по-прежнему
+    учитывать маркер, проверяет `throwable instanceof NonCircuitableException` сам.
 
 ### Императивное использование { #imperative-usage }
 
@@ -726,11 +809,78 @@ agent:
 
     Бюджет выключен, пока секция `retryBudget` не объявлена. Объявление её с `enabled = false` также оставляет бюджет выключенным.
 
+#### Собственный и распределённый бюджет { #retry-budget-factory }
+
+Сам бюджет — это `RetryBudget` (`tryAcquireRetryToken()`, `onSuccess()`, `availableTokens()`), и каждая спецификация
+повтора получает свой экземпляр от компонента `RetryBudgetFactory` через `get(name, config)`, где `name` — простое имя
+интерфейса-спецификации, а `config` — её `RetryConfig`. Если фабрика возвращает `null`, повтор работает без бюджета.
+`RetryModule` регистрирует `DefaultRetryBudgetFactory`, которая строит хранящийся в памяти `KoraRetryBudget` из секции
+`retryBudget`, поэтому по умолчанию у каждого экземпляра приложения своя корзина.
+
+Фабрика заменяется обычным способом: компонент `RetryBudgetFactory` без тега переопределяет фабрику по умолчанию для всех
+повторов, а фабрика с тегом спецификации, `@Tag(PetRetry.class)`, используется только для этого повтора и имеет приоритет
+над фабрикой без тега.
+
+`DistributedRetryBudgetFactory` из [распределённого модуля](#dependency-distributed) хранит один баланс токенов на
+спецификацию в `Redis`, поэтому бюджет ограничивает повторы всех экземпляров вместе. Автоматически она не регистрируется:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends ResilientModule, LettuceDistributedResilientModule {
+
+        default RetryBudgetFactory distributedRetryBudgetFactory(DistributedRetryBudgetClient client) { //(1)!
+            return new DistributedRetryBudgetFactory(client);
+        }
+
+        @Tag(PetRetry.class) //(2)!
+        default RetryBudgetFactory petRetryBudgetFactory(DistributedRetryBudgetClient client) {
+            return new DistributedRetryBudgetFactory(client, "pets:retrybudget", Duration.ofMinutes(30)); //(3)!
+        }
+    }
+    ```
+
+    1.  Фабрика без тега заменяет `DefaultRetryBudgetFactory` для всех повторов.
+    2.  Фабрика с тегом спецификации используется только `PetRetry` и побеждает фабрику без тега.
+    3.  Префикс ключа и время жизни неиспользуемого ключа баланса (по умолчанию: `kora:retrybudget` и `10` минут).
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : ResilientModule, LettuceDistributedResilientModule {
+
+        fun distributedRetryBudgetFactory(client: DistributedRetryBudgetClient): RetryBudgetFactory = //(1)!
+            DistributedRetryBudgetFactory(client)
+
+        @Tag(PetRetry::class) //(2)!
+        fun petRetryBudgetFactory(client: DistributedRetryBudgetClient): RetryBudgetFactory =
+            DistributedRetryBudgetFactory(client, "pets:retrybudget", Duration.ofMinutes(30)) //(3)!
+    }
+    ```
+
+    1.  Фабрика без тега заменяет `DefaultRetryBudgetFactory` для всех повторов.
+    2.  Фабрика с тегом спецификации используется только `PetRetry` и побеждает фабрику без тега.
+    3.  Префикс ключа и время жизни неиспользуемого ключа баланса (по умолчанию: `kora:retrybudget` и `10` минут).
+
+Баланс хранится под ключом `<keyPrefix>:<простое имя спецификации>`, и каждое изменение продлевает срок жизни ключа,
+поэтому неиспользуемый бюджет исчезает из `Redis` и начинается заново с `tokensInitial`. Сервисы, работающие с одним `Redis`
+и использующие спецификации с одинаковым простым именем, делят один баланс, если их префиксы ключей не различаются.
+
+!!! note
+
+    Распределённый бюджет читает ту же секцию `retryBudget`, и она по-прежнему должна быть объявлена: `enabled`, `ratio`,
+    `tokensMax` и `tokensInitial` сохраняют свой смысл, а `minTokensPerSecond` игнорируется — общий баланс пополняется
+    только успешными вызовами.
+
 ### Фильтрация исключений { #exception-filtering-2 }
 
-По умолчанию `Retry` повторяет вызов при любой ошибке, а два способа это сузить повторяют подход
+По умолчанию `Retry` повторяет вызов при любой ошибке, кроме исключений, реализующих интерфейс-маркер
+`NonRetryableException` (см. [пример](#exception-filtering) в разделе circuit breaker). Два способа сузить это дальше повторяют подход
 [circuit breaker](#exception-filtering): переопределить `isFailure` в спецификации либо зарегистрировать компонент
-`RetryPredicate` с тегом спецификации. Если есть оба, побеждает компонент с тегом.
+`RetryPredicate` с тегом спецификации. Если есть оба, побеждает компонент с тегом, и любой из них заменяет проверку
+`NonRetryableException` по умолчанию.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1036,10 +1186,10 @@ agent:
 
 ## RateLimiter { #ratelimiter }
 
-`RateLimiter` ограничивает, сколько раз метод может быть вызван за период. Ограничитель работает как счётчик с
-фиксированным окном: он выдаёт `limitForPeriod` разрешений, а счётчик восстанавливается до этого значения на первом вызове
-после того, как прошёл `limitRefreshPeriod`. Получение разрешения никогда не блокирует — вызов, для которого разрешений
-не осталось, сразу падает с `RateLimitExceededException`.
+`RateLimiter` ограничивает, сколько раз метод может быть вызван за период: `limitForPeriod` разрешений на
+`limitRefreshPeriod`. Способ выдачи разрешений определяет [алгоритм](#ratelimiter-algorithms), по умолчанию это token
+bucket. Получение разрешения никогда не блокирует — вызов, для которого нет доступного разрешения, сразу падает с
+`RateLimitExceededException`.
 
 ### Декларативное использование { #declarative-usage-5 }
 
@@ -1085,7 +1235,8 @@ agent:
             custom {
                 limitForPeriod = 100 //(1)!
                 limitRefreshPeriod = "1s" //(2)!
-                enabled = true //(3)!
+                type = TOKEN_BUCKET //(3)!
+                enabled = true //(4)!
             }
         }
     }
@@ -1093,7 +1244,8 @@ agent:
 
     1.  Количество вызовов, разрешённых в пределах одного периода (обязательное, без значения по умолчанию).
     2.  Длительность периода, по истечении которого разрешения восстанавливаются (обязательное, без значения по умолчанию).
-    3.  Включение или отключение `RateLimiter` (по умолчанию: `true`).
+    3.  [Алгоритм](#ratelimiter-algorithms) ограничения: `TOKEN_BUCKET` или `FIXED_WINDOW` (по умолчанию: `TOKEN_BUCKET`).
+    4.  Включение или отключение `RateLimiter` (по умолчанию: `true`).
 
 === ":simple-yaml: `YAML`"
 
@@ -1103,12 +1255,14 @@ agent:
         custom:
           limitForPeriod: 100 #(1)!
           limitRefreshPeriod: "1s" #(2)!
-          enabled: true #(3)!
+          type: TOKEN_BUCKET #(3)!
+          enabled: true #(4)!
     ```
 
     1.  Количество вызовов, разрешённых в пределах одного периода (обязательное, без значения по умолчанию).
     2.  Длительность периода, по истечении которого разрешения восстанавливаются (обязательное, без значения по умолчанию).
-    3.  Включение или отключение `RateLimiter` (по умолчанию: `true`).
+    3.  [Алгоритм](#ratelimiter-algorithms) ограничения: `TOKEN_BUCKET` или `FIXED_WINDOW` (по умолчанию: `TOKEN_BUCKET`).
+    4.  Включение или отключение `RateLimiter` (по умолчанию: `true`).
 
 Ключ `telemetry` внутри той же секции переопределяет общемодульные настройки из раздела [Телеметрия](#telemetry).
 
@@ -1116,6 +1270,18 @@ agent:
 
     Значение `enabled = false` превращает `@RateLimited` в прозрачный проброс — разрешается любой вызов.
     Ограничитель работает в пределах одного экземпляра приложения: при нескольких репликах фактический лимит равен `limitForPeriod`, умноженному на число реплик.
+    Для лимита, общего для всех реплик, нужен [распределённый rate limiter](#ratelimiter-distributed).
+
+### Алгоритмы { #ratelimiter-algorithms }
+
+Ключ `type` выбирает одну из двух неблокирующих реализаций, каждая из которых хранит всё состояние в одном атомарном значении:
+
+| `type`                   | Поведение                                                                                                                                         | Когда использовать                                                                                       |
+|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| `TOKEN_BUCKET` (по умолчанию) | token bucket на основе GCRA: разрешения восполняются непрерывно, по одному каждые `limitRefreshPeriod / limitForPeriod`, а простаивающий ограничитель допускает всплеск до `limitForPeriod` вызовов | ровный темп без пиков на границах периодов; выбор общего назначения                                       |
+| `FIXED_WINDOW`           | счётчик на `limitForPeriod` разрешений для каждого следующего окна длиной `limitRefreshPeriod`, отсчитываемого от создания ограничителя              | строгая квота «N вызовов на окно»; на стыке двух соседних окон может пройти до двух `limitForPeriod` вызовов |
+
+`FIXED_WINDOW` упаковывает счётчик в 24 бита, поэтому его `limitForPeriod` должен быть меньше `16777216`.
 
 ### Императивное использование { #imperative-usage-5 }
 
@@ -1182,6 +1348,106 @@ agent:
     2.  Вариант без исключения: возвращает `false` вместо ошибки.
 
 `acquire()` забирает разрешение, ничего не выполняя, и бросает `RateLimitExceededException`, когда разрешений не осталось.
+
+### Распределённый rate limiter { #ratelimiter-distributed }
+
+Локальный ограничитель считает только вызовы своего экземпляра. Когда лимит относится ко всему сервису — например, квота
+API партнёра, — объявите спецификацию через `@RateLimiterDistributedSpec` вместо `@RateLimiterSpec`: тогда лимит
+соблюдается через `Redis` для всех экземпляров вместе. Распределённый модуль должен быть
+[подключён](#dependency-distributed).
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @RateLimiterDistributedSpec("resilient.ratelimiter.partner") //(1)!
+    public interface PartnerRateLimiter extends RateLimiter { }
+
+    @Component
+    public class PartnerService {
+
+        @RateLimited(PartnerRateLimiter.class) //(2)!
+        public String getValue() {
+            return "OK";
+        }
+    }
+    ```
+
+    1.  Вместо `@RateLimiterSpec`; интерфейс по-прежнему расширяет `RateLimiter`.
+    2.  Аннотация метода, поддерживаемые сигнатуры и `RateLimitExceededException` те же, что у локального ограничителя.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @RateLimiterDistributedSpec("resilient.ratelimiter.partner") //(1)!
+    interface PartnerRateLimiter : RateLimiter
+
+    @Component
+    open class PartnerService {
+
+        @RateLimited(PartnerRateLimiter::class) //(2)!
+        open fun value(): String = "OK"
+    }
+    ```
+
+    1.  Вместо `@RateLimiterSpec`; интерфейс по-прежнему расширяет `RateLimiter`.
+    2.  Аннотация метода, поддерживаемые сигнатуры и `RateLimitExceededException` те же, что у локального ограничителя.
+
+Секция описана классом `DistributedRateLimiterConfig`:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    resilient {
+        ratelimiter {
+            partner {
+                limitForPeriod = 100 //(1)!
+                limitRefreshPeriod = "1s" //(2)!
+                keyPrefix = "pets" //(3)!
+                algorithm = TOKEN_BUCKET //(4)!
+                enabled = true //(5)!
+            }
+        }
+    }
+    ```
+
+    1.  Количество вызовов, разрешённых в пределах одного периода для всех экземпляров вместе (обязательное, без значения по умолчанию).
+    2.  Длительность периода (обязательное, без значения по умолчанию).
+    3.  Префикс ключей `Redis`, отделяющий ограничители этого сервиса (обязательное, без значения по умолчанию).
+    4.  Алгоритм: `TOKEN_BUCKET` или `FIXED_WINDOW`, с тем же смыслом, что у [локального ограничителя](#ratelimiter-algorithms) (по умолчанию: `TOKEN_BUCKET`).
+    5.  Включение или отключение ограничителя (по умолчанию: `true`).
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    resilient:
+      ratelimiter:
+        partner:
+          limitForPeriod: 100 #(1)!
+          limitRefreshPeriod: "1s" #(2)!
+          keyPrefix: "pets" #(3)!
+          algorithm: TOKEN_BUCKET #(4)!
+          enabled: true #(5)!
+    ```
+
+    1.  Количество вызовов, разрешённых в пределах одного периода для всех экземпляров вместе (обязательное, без значения по умолчанию).
+    2.  Длительность периода (обязательное, без значения по умолчанию).
+    3.  Префикс ключей `Redis`, отделяющий ограничители этого сервиса (обязательное, без значения по умолчанию).
+    4.  Алгоритм: `TOKEN_BUCKET` или `FIXED_WINDOW`, с тем же смыслом, что у [локального ограничителя](#ratelimiter-algorithms) (по умолчанию: `TOKEN_BUCKET`).
+    5.  Включение или отключение ограничителя (по умолчанию: `true`).
+
+Ключ `telemetry` и настройки `resilient.telemetry.rateLimiter` действуют так же, как для локального ограничителя.
+
+!!! warning "Ключ алгоритма называется `algorithm`, а не `type`"
+
+    В `DistributedRateLimiterConfig` ключ алгоритма называется `algorithm`, тогда как в локальном `RateLimiterConfig` — `type`.
+    Ключ `type` в распределённой секции игнорируется, и ограничитель остаётся на `TOKEN_BUCKET`.
+
+Как это работает:
+
+- Сгенерированная реализация наследует `KoraDistributedRateLimiter` и требует `DistributedRateLimiterClient` в графе; его предоставляет `LettuceDistributedResilientModule`.
+- Состояние ограничителя хранится под ключом `<keyPrefix>:<простое имя спецификации>`. `FIXED_WINDOW` использует отдельный ключ на каждое окно, `<keyPrefix>:<простое имя спецификации>:<номер окна>`, причём окна выровнены по системным часам, а не по моменту запуска приложения. Ключи истекают сами, когда становятся не нужны.
+- `TOKEN_BUCKET` берёт текущее время из системных часов вызывающего экземпляра, поэтому расхождение часов между экземплярами делает лимит приблизительным. Он также немного приблизителен сразу после простоя и точен в установившемся режиме.
+- Каждое разрешение стоит синхронных команд `Redis`, то есть добавляет к защищаемому вызову сетевой обмен. Ошибка `Redis` не подавляется: она выходит из `@RateLimited` к вызывающему коду.
 
 ## Fallback { #fallback }
 
@@ -1515,7 +1781,7 @@ agent:
 | `CallNotPermittedException`  | `@CircuitBreakable` / `CircuitBreaker#acquire()`, когда состояние `OPEN` либо `HALF_OPEN` без оставшихся пробных вызовов | `state()` возвращает `CircuitBreaker.State` (`OPEN` / `HALF_OPEN`)                        |
 | `RetryExhaustedException`    | `@Retryable` / `Retry#retry(...)`, когда все попытки завершились неуспешно                                        | `name()`; в сообщении указано число попыток, последний отказ доступен через `getCause()`, предыдущие — в `suppressed` |
 | `TimeoutExhaustedException`  | `@Timeout` / `Timeouter#execute(...)`, когда метод превысил `duration`                                            | `name()`                                                                                  |
-| `RateLimitExceededException` | `@RateLimited` / `RateLimiter#acquire()`, когда в текущем периоде не осталось разрешений                          | `name()`                                                                                  |
+| `RateLimitExceededException` | `@RateLimited` / `RateLimiter#acquire()`, когда нет доступного разрешения                                         | `name()`                                                                                  |
 
 Каждое исключение лежит в подпакете `exception` своего механизма, например `io.koraframework.resilient.circuitbreaker.exception.CallNotPermittedException`.
 
@@ -1526,7 +1792,7 @@ agent:
 - `CallNotPermittedException` — circuit breaker обрывает вызовы, потому что доля отказов достигла `failureRateThreshold`; вызов отклонён без обращения к методу.
 - `RetryExhaustedException` — метод продолжал бросать повторяемое исключение, пока не были исчерпаны `attempts`; исходная ошибка доступна через `getCause()`.
 - `TimeoutExhaustedException` — метод не завершился в пределах `duration`.
-- `RateLimitExceededException` — в текущем `limitRefreshPeriod` уже разрешено `limitForPeriod` вызовов.
+- `RateLimitExceededException` — уже разрешённые вызовы исчерпали `limitForPeriod` разрешений: token bucket ещё не восполнился либо текущее окно `FIXED_WINDOW` исчерпано.
 
 **Рекомендации**
 

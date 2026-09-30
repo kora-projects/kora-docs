@@ -258,12 +258,12 @@ junitVersion=6.1.3
         implementation "io.koraframework:http-server-undertow"
         implementation "io.koraframework:json-common"
         implementation "io.koraframework:logging-logback"
-        implementation "io.grpc:grpc-protobuf:1.83.1"
+        implementation "io.grpc:grpc-protobuf:1.84.0"
 
         testRuntimeOnly platform("org.junit:junit-bom:$junitVersion")
         testRuntimeOnly "org.junit.platform:junit-platform-launcher"
         testImplementation platform("org.junit:junit-bom:$junitVersion")
-        testImplementation "io.grpc:grpc-inprocess:1.83.1"
+        testImplementation "io.grpc:grpc-inprocess:1.84.0"
         testImplementation "org.junit.jupiter:junit-jupiter"
     }
     ```
@@ -293,12 +293,12 @@ junitVersion=6.1.3
         implementation("io.koraframework:http-server-undertow")
         implementation("io.koraframework:json-common")
         implementation("io.koraframework:logging-logback")
-        implementation("io.grpc:grpc-protobuf:1.83.1")
+        implementation("io.grpc:grpc-protobuf:1.84.0")
 
         testRuntimeOnly(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testRuntimeOnly("org.junit.platform:junit-platform-launcher")
         testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
-        testImplementation("io.grpc:grpc-inprocess:1.83.1")
+        testImplementation("io.grpc:grpc-inprocess:1.84.0")
         testImplementation("org.junit.jupiter:junit-jupiter")
     }
     ```
@@ -307,7 +307,7 @@ junitVersion=6.1.3
 
 !!! warning "Держите все артефакты `io.grpc` на одной версии"
 
-    Среда выполнения gRPC, поставляемая с `io.koraframework:grpc-client`, — это `1.83.1`. Любой другой объявленный вами артефакт `io.grpc` — `grpc-protobuf` и все, что в тестовой области, например
+    Среда выполнения gRPC, поставляемая с `io.koraframework:grpc-client`, — это `1.84.0`. Любой другой объявленный вами артефакт `io.grpc` — `grpc-protobuf` и все, что в тестовой области, например
     `grpc-inprocess`, — должен использовать ровно эту версию. Зафиксированная более старая версия прекрасно компилируется и падает только во время выполнения с
     `AbstractMethodError: ... does not define or inherit an implementation of the resolved method`.
 
@@ -321,9 +321,9 @@ junitVersion=6.1.3
 
     ```groovy title="build.gradle"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
+        protoc { artifact = "com.google.protobuf:protoc:4.36.2" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.84.0" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -346,9 +346,9 @@ junitVersion=6.1.3
 
     ```kotlin title="build.gradle.kts"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
+        protoc { artifact = "com.google.protobuf:protoc:4.36.2" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.84.0" }
         }
         generateProtoTasks {
             all().forEach { task ->

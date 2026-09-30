@@ -1,10 +1,10 @@
 ---
 seo_title: "Kora Kafka: @KafkaListener and @KafkaPublisher Reference"
 seo_description: "Reference for Kora Kafka: consumers and producers, listener and publisher annotations, configuration, serialization, errors, rebalancing and transactions."
-keywords: ["Kora Framework", "Kora Kafka", "@KafkaListener", "@KafkaPublisher", "Kafka consumer Java", "Kafka transactions"]
-description: "Explains Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry. Use when working with @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher."
+keywords: ["Kora Framework", "Kora Kafka", "@KafkaListener", "@KafkaPublisher", "Kafka consumer Java", "Kafka transactions", "Kafka log masking"]
+description: "Explains Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry with TRACE payload logging and masking. Use when working with @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher, telemetry.logging.maskHeaders, MaskingStrategy, DataMasker, JsonDataMasker, DefaultKafkaConsumerBodyConverter."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry; key triggers include @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher, KafkaSkipRecordException, KafkaPublishException, RecordValueDeserializationException, ConsumerAwareRebalanceListener."
+  use_when: "Use this file for Kora docs or implementation questions about Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry (TRACE key/value logging, header and payload masking); key triggers include @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher, KafkaSkipRecordException, KafkaPublishException, RecordValueDeserializationException, ConsumerAwareRebalanceListener, KafkaAssignConsumerContainer, maskHeaders, MaskingStrategy, DataMasker, JsonDataMasker, DefaultKafkaConsumerBodyConverter, KafkaConsumerTelemetry, KafkaPublisherTelemetry."
 ---
 
 The `Kafka` module provides declarative integration with [Apache Kafka](https://kafka.apache.org/): reading messages through
@@ -212,19 +212,20 @@ Basic configuration parameters:
                 telemetry {
                     logging {
                         enabled = false //(12)!
+                        maskHeaders = ["authorization", "cookie", "set-cookie"] //(13)!
                     }
                     metrics {
-                        enabled = false //(13)!
-                        driverMetrics = false //(14)!
-                        slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(15)!
-                        tags = { //(16)!
+                        enabled = false //(14)!
+                        driverMetrics = false //(15)!
+                        slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(16)!
+                        tags = { //(17)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
                     }
                     tracing {
-                        enabled = true //(17)!
-                        attributes = { //(18)!
+                        enabled = true //(18)!
+                        attributes = { //(19)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
@@ -256,12 +257,13 @@ Basic configuration parameters:
             If the timeout expires, application startup fails. When it is not set, the consumer connects in the background and an unavailable broker does not block startup.
         11. Official `Kafka Consumer` `Properties`; see [Apache Kafka Consumer Configs](https://kafka.apache.org/documentation/#consumerconfigs) (`required`, not set by default)
         12. Enables module logging (default: `false`)
-        13. Enables module metrics (default: `false`)
-        14. Registers `Apache Kafka` driver metrics of the underlying `KafkaConsumer` in the `MeterRegistry` (default: `false`)
-        15. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        16. Configures metric tags (default: `{}`)
-        17. Enables module tracing (default: `true`)
-        18. Configures tracing attributes (default: `{}`)
+        13. Header names whose values are replaced by the tagged `MaskingStrategy` in `TRACE` logs; matched case-insensitively (default: `["authorization", "cookie", "set-cookie"]`); see [Logging and masking](#telemetry-consumer-logging)
+        14. Enables module metrics (default: `false`)
+        15. Registers `Apache Kafka` driver metrics of the underlying `KafkaConsumer` in the `MeterRegistry` (default: `false`)
+        16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        17. Configures metric tags (default: `{}`)
+        18. Enables module tracing (default: `true`)
+        19. Configures tracing attributes (default: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -286,16 +288,17 @@ Basic configuration parameters:
             telemetry:
               logging:
                 enabled: false #(12)!
+                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(13)!
               metrics:
-                enabled: false #(13)!
-                driverMetrics: false #(14)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(15)!
-                tags: #(16)!
+                enabled: false #(14)!
+                driverMetrics: false #(15)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
+                tags: #(17)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(17)!
-                attributes: #(18)!
+                enabled: true #(18)!
+                attributes: #(19)!
                   key1: value1
                   key2: value2
         ```
@@ -322,12 +325,13 @@ Basic configuration parameters:
             If the timeout expires, application startup fails. When it is not set, the consumer connects in the background and an unavailable broker does not block startup.
         11. Official `Kafka Consumer` `Properties`; see [Apache Kafka Consumer Configs](https://kafka.apache.org/documentation/#consumerconfigs) (`required`, not set by default)
         12. Enables module logging (default: `false`)
-        13. Enables module metrics (default: `false`)
-        14. Registers `Apache Kafka` driver metrics of the underlying `KafkaConsumer` in the `MeterRegistry` (default: `false`)
-        15. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        16. Configures metric tags (default: `{}`)
-        17. Enables module tracing (default: `true`)
-        18. Configures tracing attributes (default: `{}`)
+        13. Header names whose values are replaced by the tagged `MaskingStrategy` in `TRACE` logs; matched case-insensitively (default: `["authorization", "cookie", "set-cookie"]`); see [Logging and masking](#telemetry-consumer-logging)
+        14. Enables module metrics (default: `false`)
+        15. Registers `Apache Kafka` driver metrics of the underlying `KafkaConsumer` in the `MeterRegistry` (default: `false`)
+        16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        17. Configures metric tags (default: `{}`)
+        18. Enables module tracing (default: `true`)
+        19. Configures tracing attributes (default: `{}`)
 
 Module metrics are described in the [Metrics Reference](metrics.md#kafka) section.
 
@@ -370,7 +374,8 @@ Each application instance then assigns partitions of the configured topics to it
 This strategy is useful, for example, when all application replicas must receive the same message at once: to reset a local cache,
 update local reference data, or handle a service event.
 
-The `assign` strategy requires an explicit `topics` list and does not support `topicsPattern`.
+The `assign` strategy requires an explicit `topics` list of one or more topics and does not support `topicsPattern`:
+the container fails at startup with `IllegalArgumentException` when `topicsPattern` is set or `topics` is empty.
 The partition list is refreshed every `partitionRefreshInterval` and split between `threads` consumers, and the initial read position
 is controlled by `offset`.
 
@@ -1204,10 +1209,69 @@ It disables itself entirely when logging, metrics, and tracing are all off, and 
 - `DefaultKafkaConsumerLoggerFactory` builds the logger that records the start and end of polling and message processing;
 - `DefaultKafkaConsumerMetricsFactory` builds the meters for batch duration, record duration, and lag.
 
-Both factories are injected into `KafkaModule` as optional dependencies, so providing your own `@Component` subclass of either one
-replaces just that part of the default telemetry. Providing your own `KafkaConsumerTelemetryFactory` component replaces telemetry entirely.
+`DefaultKafkaConsumerLoggerFactory` is registered by `KafkaModule` as a `@DefaultComponent` and `DefaultKafkaConsumerMetricsFactory` is an optional dependency,
+so providing your own `@Component` subclass of either one replaces just that part of the default telemetry.
+Providing your own `KafkaConsumerTelemetryFactory` component replaces telemetry entirely.
 
 Metrics and tracing are described in the [Metrics Reference](metrics.md#kafka) section.
+
+#### Logging and masking { #telemetry-consumer-logging }
+
+When `telemetry.logging.enabled = true`, the listener writes its events to the logger named after the listener method: the fully qualified class name and the method name.
+Record contents are logged only at the `TRACE` level: then the `KafkaListener starting handling record...` event carries, in addition to `topic`,
+`partition`, and `offset`, the record `headers`, `key`, and `value`. At `DEBUG` and higher levels no record contents are logged.
+
+Headers listed in `telemetry.logging.maskHeaders` are written with their value replaced by the `MaskingStrategy` component
+tagged `@Tag(KafkaConsumerTelemetry.class)`. The default strategy replaces the value with `***`; the strategy receives the raw header value (`byte[]`).
+Header names are compared case-insensitively.
+
+The key and value are converted to text by `DefaultKafkaConsumerBodyConverter` from the raw record bytes, read as `UTF-8`.
+When the key or value deserializer is `JsonKafkaDeserializer` (a `@Json` key or value), the bytes are passed through the
+`DataMasker` (`io.koraframework.logging.common.masking.raw`) of format `json` tagged `@Tag(KafkaConsumerTelemetry.class)`.
+No such masker is registered by default, so without it the payload is logged as is. Register a `JsonDataMasker` with masking rules:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends KafkaModule {
+
+        @Tag(KafkaConsumerTelemetry.class)
+        default DataMasker kafkaJsonDataMasker() {
+            return new JsonDataMasker(MaskingPathRules.builder()
+                .mask("password", new MaskingFull()) //(1)!
+                .mask("user.token", new MaskingKeepLast()) //(2)!
+                .build());
+        }
+    }
+    ```
+
+    1.  A single segment matches a field with this name at any depth; `MaskingFull` replaces the value with `***`
+    2.  A dotted path is matched from the payload root, `*` matches exactly one segment; `MaskingKeepLast` keeps the last 4 characters after `***`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : KafkaModule {
+
+        @Tag(KafkaConsumerTelemetry::class)
+        fun kafkaJsonDataMasker(): DataMasker = JsonDataMasker(
+            MaskingPathRules.builder()
+                .mask("password", MaskingFull()) //(1)!
+                .mask("user.token", MaskingKeepLast()) //(2)!
+                .build()
+        )
+    }
+    ```
+
+    1.  A single segment matches a field with this name at any depth; `MaskingFull` replaces the value with `***`
+    2.  A dotted path is matched from the payload root, `*` matches exactly one segment; `MaskingKeepLast` keeps the last 4 characters after `***`
+
+`DefaultKafkaConsumerBodyConverter` is registered as a `@DefaultComponent` and is the override point for payload masking:
+a `@Component` subclass can override `selectKeyDataMasker(ConsumerRecord)` and `selectValueDataMasker(ConsumerRecord)` to pick a masker
+of another format (for example `XmlDataMasker` or `FormUrlencodedDataMasker`) or `convertBody(byte[], DataMasker)` to change how the bytes become text.
+Header masking is changed by providing your own `MaskingStrategy` component tagged `@Tag(KafkaConsumerTelemetry.class)`.
 
 ## Producer { #producer }
 
@@ -1313,19 +1377,20 @@ Basic configuration parameters:
                 telemetry {
                   logging {
                     enabled = false //(2)!
+                    maskHeaders = ["authorization", "cookie", "set-cookie"] //(3)!
                   }
                   metrics {
-                    enabled = false //(3)!
-                    driverMetrics = false //(4)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
-                    tags = { //(6)!
+                    enabled = false //(4)!
+                    driverMetrics = false //(5)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(6)!
+                    tags = { //(7)!
                       "key1" = "value1"
                       "key2" = "value2"
                     }
                   }
                   tracing {
-                    enabled = true //(7)!
-                    attributes = { //(8)!
+                    enabled = true //(8)!
+                    attributes = { //(9)!
                       "key1" = "value1"
                       "key2" = "value2"
                     }
@@ -1337,12 +1402,13 @@ Basic configuration parameters:
 
         1.  Official `Kafka Producer` `Properties`; see [Apache Kafka Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) (`required`, not set by default)
         2.  Enables module logging (default: `false`)
-        3.  Enables module metrics (default: `false`)
-        4.  Registers `Apache Kafka` driver metrics of the underlying `KafkaProducer` in the `MeterRegistry` (default: `false`)
-        5.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        6.  Configures metric tags (default: `{}`)
-        7.  Enables module tracing (default: `true`)
-        8.  Configures tracing attributes (default: `{}`)
+        3.  Header names whose values are replaced by the tagged `MaskingStrategy` in `TRACE` logs; matched case-insensitively (default: `["authorization", "cookie", "set-cookie"]`); see [Logging and masking](#telemetry-producer-logging)
+        4.  Enables module metrics (default: `false`)
+        5.  Registers `Apache Kafka` driver metrics of the underlying `KafkaProducer` in the `MeterRegistry` (default: `false`)
+        6.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        7.  Configures metric tags (default: `{}`)
+        8.  Enables module tracing (default: `true`)
+        9.  Configures tracing attributes (default: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -1354,28 +1420,30 @@ Basic configuration parameters:
             telemetry:
               logging:
                 enabled: false #(2)!
+                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(3)!
               metrics:
-                enabled: false #(3)!
-                driverMetrics: false #(4)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
-                tags: #(6)!
+                enabled: false #(4)!
+                driverMetrics: false #(5)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(6)!
+                tags: #(7)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(7)!
-                attributes: #(8)!
+                enabled: true #(8)!
+                attributes: #(9)!
                   key1: value1
                   key2: value2
         ```
 
         1.  Official `Kafka Producer` `Properties`; see [Apache Kafka Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) (`required`, not set by default)
         2.  Enables module logging (default: `false`)
-        3.  Enables module metrics (default: `false`)
-        4.  Registers `Apache Kafka` driver metrics of the underlying `KafkaProducer` in the `MeterRegistry` (default: `false`)
-        5.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        6.  Configures metric tags (default: `{}`)
-        7.  Enables module tracing (default: `true`)
-        8.  Configures tracing attributes (default: `{}`)
+        3.  Header names whose values are replaced by the tagged `MaskingStrategy` in `TRACE` logs; matched case-insensitively (default: `["authorization", "cookie", "set-cookie"]`); see [Logging and masking](#telemetry-producer-logging)
+        4.  Enables module metrics (default: `false`)
+        5.  Registers `Apache Kafka` driver metrics of the underlying `KafkaProducer` in the `MeterRegistry` (default: `false`)
+        6.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        7.  Configures metric tags (default: `{}`)
+        8.  Enables module tracing (default: `true`)
+        9.  Configures tracing attributes (default: `{}`)
 
 `topic` configuration describes the settings of a particular `@KafkaPublisher.Topic`; below is an example for the `kafka.someProducer.someTopic` configuration path.
 
@@ -2155,8 +2223,17 @@ as soon as the broker acknowledges the record; the observation carries the topic
 `KafkaPublisherTransactionObservation` records the offsets sent into the transaction, commits, and rollbacks.
 
 The default implementation is `DefaultKafkaPublisherTelemetryFactory`, registered by `KafkaModule` as a `@DefaultComponent`.
-It combines `DefaultKafkaPublisherLoggerFactory` for logging and `DefaultKafkaPublisherMetricsFactory` for metrics,
+It combines `DefaultKafkaPublisherLoggerFactory` for logging (itself a `@DefaultComponent`) and `DefaultKafkaPublisherMetricsFactory` for metrics,
 both injected as optional dependencies so that either can be replaced by providing your own `@Component` subclass.
 Providing your own `KafkaPublisherTelemetryFactory` component replaces telemetry entirely.
 
 Metrics and tracing are described in the [Metrics Reference](metrics.md#kafka) section.
+
+#### Logging and masking { #telemetry-producer-logging }
+
+When `telemetry.logging.enabled = true`, the publisher writes its events to the logger named after the publisher interface.
+At the `TRACE` level the `KafkaPublisher starting record sending...` event additionally carries the record `headers`;
+headers listed in `telemetry.logging.maskHeaders` are written with their value replaced by the `MaskingStrategy` component
+tagged `@Tag(KafkaPublisherTelemetry.class)` (the default strategy writes `***`). Header names are compared case-insensitively.
+
+The publisher never logs the record key or value, at any level.

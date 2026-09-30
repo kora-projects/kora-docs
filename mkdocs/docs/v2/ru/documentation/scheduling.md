@@ -1,23 +1,25 @@
 ---
-seo_title: "Планировщик Kora: cron, фиксированный интервал и Quartz"
-seo_description: "Справочник по планировщику Kora: JDK и Quartz, задачи с фиксированной частотой и задержкой, одноразовые и cron-задачи, триггеры, корректное завершение."
-keywords: ["Kora Framework", "фреймворк Kora", "планировщик Kora", "cron-задачи", "Quartz", "задачи по расписанию"]
-description: "Explains Kora scheduling for the JDK and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, graceful shutdown, and concurrency controls. Use when working with @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, CronExpression, QuartzModule."
+seo_title: "Планировщик Kora: cron, фиксированный интервал, Quartz и db-scheduler"
+seo_description: "Справочник по планировщику Kora: JDK, Quartz и db-scheduler с хранением задач в базе, фиксированная частота и задержка, одноразовые и cron-задачи, корректное завершение."
+keywords: ["Kora Framework", "фреймворк Kora", "планировщик Kora", "cron-задачи", "Quartz", "db-scheduler", "задачи по расписанию", "виртуальные потоки"]
+description: "Explains Kora scheduling for the JDK, Quartz and db-scheduler schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, virtual-thread execution, persistent database jobs, graceful shutdown, and concurrency controls. Use when working with @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, VirtualThreadSchedulingJdkExecutor, CronExpression, QuartzModule, DbSchedulerModule, DbSchedulerConfig, DbSchedulerWrapper, DbSchedulerJob."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora scheduling for the JDK and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, graceful shutdown, and concurrency controls; key triggers include @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, CronExpression, QuartzModule."
+  use_when: "Use this file for Kora docs or implementation questions about Kora scheduling for the JDK, Quartz and db-scheduler schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, virtual-thread execution, persistent database jobs, graceful shutdown, and concurrency controls; key triggers include @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, VirtualThreadSchedulingJdkExecutor, maxConcurrentExecutions, CronExpression, QuartzModule, scheduling-db-scheduler, DbSchedulerModule, DbSchedulerConfig, DbSchedulerWrapper, DbSchedulerJob, Configurer<SchedulerBuilder>."
 ---
 
 Модуль планирования Kora позволяет запускать методы приложения по расписанию в декларативном стиле через аннотации.
 Во время компиляции Kora генерирует компоненты задач и связывает их с выбранным механизмом планирования.
 
-Доступны два варианта: планировщик `JDK` на основе `ScheduledExecutorService` и планировщик на основе `Quartz`.
-Оба поддерживают `cron`-выражения.
+Доступны три варианта: планировщик `JDK` на основе стандартной библиотеки, планировщик на основе `Quartz`
+и [DB Scheduler](#db-scheduler) на основе библиотеки `db-scheduler`. Все они поддерживают `cron`-выражения.
 Планировщик `JDK` закрывает периодические и `cron`-задачи внутри одного приложения без дополнительных зависимостей,
-а `Quartz` добавляет пользовательские экземпляры `Trigger`, подключаемый `JobStore`, правила выполнения задач и диалект `cron` от Quartz с модификаторами `L`, `W` и `#`.
+`Quartz` добавляет пользовательские экземпляры `Trigger`, подключаемый `JobStore`, правила выполнения задач и диалект `cron` от Quartz с модификаторами `L`, `W` и `#`,
+а `DB Scheduler` хранит состояние задач в таблице базы данных, поэтому задачи переживают перезапуски и согласуются между экземплярами приложения.
 
 ## JDK Scheduler { #native }
 
-Планировщик `JDK` использует стандартный [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html), который поставляется вместе с `JDK`.
+Планировщик `JDK` построен на стандартной библиотеке `JDK` и следует модели [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html):
+один поток-таймер отслеживает, когда задачи должны сработать, а каждое выполнение идёт в собственном [виртуальном потоке](https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html).
 
 Для создания задач используются специальные аннотации из пакета `io.koraframework.scheduling.jdk.annotation`:
 `@ScheduleAtFixedRate`, `@ScheduleWithFixedDelay`, `@ScheduleOnce` и `@ScheduleWithCron`.
@@ -83,22 +85,23 @@ agent:
     scheduling {
         jdk {
             shutdownWait = "30s" //(1)!
+            maxConcurrentExecutions = 10 //(2)!
         }
         telemetry {
             logging {
-                enabled = false //(2)!
+                enabled = false //(3)!
             }
             metrics {
-                enabled = false //(3)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
-                tags = { //(5)!
+                enabled = false //(4)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+                tags = { //(6)!
                     "key1" = "value1"
                     "key2" = "value2"
                 }
             }
             tracing {
-                enabled = true //(6)!
-                attributes = { //(7)!
+                enabled = true //(7)!
+                attributes = { //(8)!
                     "key1" = "value1"
                     "key2" = "value2"
                 }
@@ -107,13 +110,14 @@ agent:
     }
     ```
 
-    1. Время, которое даётся пулу потоков на завершение задач перед принудительной остановкой при [плавной остановке](container.md#component-lifecycle) (по умолчанию: `30s`)
-    2. Включает логирование модуля (по умолчанию: `false`)
-    3. Включает метрики модуля (по умолчанию: `false`)
-    4. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    5. Настройка тегов метрик (по умолчанию: `{}`)
-    6. Включает трассировку модуля (по умолчанию: `true`)
-    7. Настройка атрибутов трассировки (по умолчанию: `{}`)
+    1. Время, которое даётся исполнителю на завершение идущих выполнений перед их прерыванием при [плавной остановке](#graceful-shutdown) (по умолчанию: `30s`)
+    2. Максимальное число выполнений, идущих одновременно по всем задачам; выполнения сверх лимита ждут в очереди (по умолчанию: без ограничения, `Integer.MAX_VALUE`)
+    3. Включает логирование модуля (по умолчанию: `false`)
+    4. Включает метрики модуля (по умолчанию: `false`)
+    5. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    6. Настройка тегов метрик (по умолчанию: `{}`)
+    7. Включает трассировку модуля (по умолчанию: `true`)
+    8. Настройка атрибутов трассировки (по умолчанию: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -121,32 +125,37 @@ agent:
     scheduling:
       jdk:
         shutdownWait: "30s" #(1)!
+        maxConcurrentExecutions: 10 #(2)!
       telemetry:
         logging:
-          enabled: false #(2)!
-        metrics:
           enabled: false #(3)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
-          tags: #(5)!
+        metrics:
+          enabled: false #(4)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
+          tags: #(6)!
             key1: value1
             key2: value2
         tracing:
-          enabled: true #(6)!
-          attributes: #(7)!
+          enabled: true #(7)!
+          attributes: #(8)!
             key1: value1
             key2: value2
     ```
 
-    1. Время, которое даётся пулу потоков на завершение задач перед принудительной остановкой при [плавной остановке](container.md#component-lifecycle) (по умолчанию: `30s`)
-    2. Включает логирование модуля (по умолчанию: `false`)
-    3. Включает метрики модуля (по умолчанию: `false`)
-    4. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    5. Настройка тегов метрик (по умолчанию: `{}`)
-    6. Включает трассировку модуля (по умолчанию: `true`)
-    7. Настройка атрибутов трассировки (по умолчанию: `{}`)
+    1. Время, которое даётся исполнителю на завершение идущих выполнений перед их прерыванием при [плавной остановке](#graceful-shutdown) (по умолчанию: `30s`)
+    2. Максимальное число выполнений, идущих одновременно по всем задачам; выполнения сверх лимита ждут в очереди (по умолчанию: без ограничения, `Integer.MAX_VALUE`)
+    3. Включает логирование модуля (по умолчанию: `false`)
+    4. Включает метрики модуля (по умолчанию: `false`)
+    5. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    6. Настройка тегов метрик (по умолчанию: `{}`)
+    7. Включает трассировку модуля (по умолчанию: `true`)
+    8. Настройка атрибутов трассировки (по умолчанию: `{}`)
 
-Пул потоков не конфигурируется: Kora создаёт `ScheduledThreadPoolExecutor`, размер ядра которого равен количеству задач, зарегистрированных в графе.
-Его потоки называются `kora-scheduler-N`, не являются демонами, освобождаются после 30 секунд простоя, а отменённые задачи сразу удаляются из очереди.
+По умолчанию `SchedulingJdkExecutor` — это `VirtualThreadSchedulingJdkExecutor`.
+Он держит один платформенный поток `kora-jdk-scheduler-timer`, который не является демоном и только отслеживает время срабатывания,
+а каждое выполнение задачи запускает в новом виртуальном потоке `kora-jdk-scheduler-job-N`, поэтому задачи не занимают платформенные потоки, пока ждут ввода-вывода.
+Выполнения одной задачи никогда не пересекаются, а число выполнений, идущих одновременно по всем задачам, ограничено `scheduling.jdk.maxConcurrentExecutions`.
+Исполнитель зарегистрирован как `@DefaultComponent`, поэтому собственный компонент `SchedulingJdkExecutor` его заменяет.
 
 Метрики модуля описаны в разделе [Справочник метрик](metrics.md#scheduling).
 
@@ -482,6 +491,10 @@ agent:
 После каждого выполнения задача вычисляет следующее время запуска от текущего момента в часовом поясе `JVM` по умолчанию
 и планирует себя заново, поэтому долгое выполнение никогда не приводит к серии догоняющих запусков.
 
+Переходы на летнее и зимнее время обрабатываются в хронологическом порядке:
+локальное время, которого не существует из-за перевода часов вперёд, пропускается, а не сдвигается,
+а локальное время, которое повторяется из-за перевода часов назад, срабатывает при обоих вхождениях.
+
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
@@ -633,14 +646,15 @@ agent:
 
 ### Плавная остановка { #graceful-shutdown }
 
-При [плавной остановке](container.md#component-lifecycle) компоненты освобождаются в обратном порядке зависимостей,
-поэтому каждая задача освобождается раньше исполнителя, от которого она зависит.
+При [плавной остановке](container.md#component-lifecycle) компоненты освобождаются в обратном порядке зависимостей.
+Задачи зависят от исполнителя, а исполнитель от задач не зависит, поэтому каждая задача освобождается раньше исполнителя.
 
-Освобождение задачи дожидается выполнения, идущего в этот момент, и затем отменяет расписание, никого не прерывая,
-поэтому новое выполнение не начинается, а задача, которая никогда не возвращает управление, блокирует остановку.
-После этого исполнитель перестаёт принимать работу и ждёт завершения пула потоков не дольше `scheduling.jdk.shutdownWait`;
-по истечении ожидания пул останавливается принудительно, работающие потоки прерываются, а в лог пишется
-`SchedulingJdkExecutor failed completing graceful shutdown in ...`.
+Освобождение задачи отменяет её расписание, никого не прерывая и ничего не дожидаясь:
+новое выполнение этой задачи не начинается, а уже идущее выполнение продолжается.
+После этого исполнитель перестаёт принимать работу, отменяет оставшиеся периодические задачи и ждёт завершения идущих выполнений не дольше `scheduling.jdk.shutdownWait`;
+тот же срок распространяется на одноразовые задачи, которые ещё ожидают в таймере.
+По истечении ожидания оставшиеся задачи отменяются, идущие выполнения прерываются, а в лог пишется
+`SchedulingJdkExecutor failed completing graceful shutdown in ...`, поэтому задача, которая никогда не возвращает управление, задерживает остановку не более чем на `shutdownWait`.
 
 Поэтому долгие задачи следует писать так, чтобы они завершались сами,
 и дополнительно можно проверять [Thread.currentThread().isInterrupted()](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Thread.html#isInterrupted()), чтобы остановиться раньше.
@@ -648,7 +662,7 @@ agent:
 ### Программное планирование { #programmatic }
 
 Для планирования задач в императивном стиле можно внедрить компонент `SchedulingJdkExecutor`.
-Он оборачивает тот же пул потоков, что и аннотации, и предоставляет методы `scheduleAtFixedRate`, `scheduleWithFixedDelay` и `scheduleOnce`,
+Это тот же исполнитель, который выполняет задачи из аннотаций; он предоставляет методы `scheduleAtFixedRate`, `scheduleWithFixedDelay` и `scheduleOnce`,
 каждый из которых возвращает `ScheduledFuture`:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -685,8 +699,11 @@ agent:
     }
     ```
 
-Задачи, запланированные таким образом, являются обычными `Runnable`: они делят пул с задачами из аннотаций,
-но не оборачиваются в телеметрию планировщика и не отменяются по отдельности при остановке.
+Задачи, запланированные таким образом, являются обычными `Runnable`: они выполняются в виртуальных потоках и вместе с задачами из аннотаций учитываются в `scheduling.jdk.maxConcurrentExecutions`,
+но не оборачиваются в телеметрию планировщика.
+Выполнения одной периодической задачи никогда не пересекаются, неположительные `period` или `delay` приводят к `IllegalArgumentException`,
+а планирование после освобождения исполнителя — к `RejectedExecutionException`.
+Периодические задачи отменяются при освобождении исполнителя, а ожидающие одноразовые задачи подчиняются тому же `shutdownWait`, как описано в разделе [Плавная остановка](#graceful-shutdown).
 
 ## Quartz { #quartz }
 
@@ -1237,3 +1254,440 @@ agent:
 Каждая объявленная задача регистрируется как durable `JobDetail`, идентификатором которого является каноническое имя сгенерированного класса задачи.
 Регистрация повторяется при обновлении графа зависимостей: триггеры с изменившимся определением перепланируются,
 а триггеры, которых больше нет, удаляются.
+
+## DB Scheduler { #db-scheduler }
+
+Реализация на основе библиотеки [db-scheduler](https://github.com/kagkarlsson/db-scheduler) хранит состояние задач в таблице базы данных.
+Запланированные выполнения переживают перезапуск приложения, а экземпляры приложения, использующие общую таблицу, согласуются через неё,
+поэтому каждое выполнение забирает только один экземпляр. Задача определяется в таблице своим именем, поэтому имена задач должны оставаться стабильными между развёртываниями.
+
+Задачи создаются аннотациями из пакета `io.koraframework.scheduling.db.scheduler.annotation`:
+`@ScheduleWithCron`, `@ScheduleWithFixedDelay` и `@ScheduleOnce`.
+Их простые имена совпадают с аннотациями [планировщика JDK](#native), поэтому проверяйте импорт.
+Требования к методу те же, что и для планировщика `JDK`: метод принадлежит компоненту, не имеет аргументов, а в `Kotlin` является функцией-членом класса без `suspend`.
+
+У всех аннотаций есть параметры `name` и `config`:
+
+- `name` задаёт имя задачи, которое хранится в таблице; если оно пустое, используется имя `ClassName#methodName` из простого имени класса, например `SomeService#schedule`.
+- `config` задаёт путь конфигурации, значения которой имеют приоритет над значениями аннотации, как и у [планировщика JDK](#configuration-2).
+  Конфигурация также может содержать `name`, который имеет приоритет над `name` из аннотации, и секцию `telemetry`, которая переопределяет `scheduling.telemetry` для этой задачи.
+
+### Подключение { #dependency-3 }
+
+Модулю нужен компонент `javax.sql.DataSource` в графе, например предоставляемый модулем [JDBC](database-jdbc.md).
+
+===! ":fontawesome-brands-java: `Java`"
+
+    [Зависимость](general.md#dependencies) `build.gradle`:
+    ```groovy
+    implementation "io.koraframework:scheduling-db-scheduler"
+    implementation "io.koraframework:database-jdbc"
+    ```
+
+    Модуль:
+    ```java
+    @KoraApp
+    public interface Application extends DbSchedulerModule, JdbcDatabaseModule { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
+    ```kotlin
+    implementation("io.koraframework:scheduling-db-scheduler")
+    implementation("io.koraframework:database-jdbc")
+    ```
+
+    Модуль:
+    ```kotlin
+    @KoraApp
+    interface Application : DbSchedulerModule, JdbcDatabaseModule
+    ```
+
+Сам планировщик — это компонент `DbSchedulerWrapper`. `DbSchedulerModule` не помечает его как [корневой компонент](container.md#root-component),
+а сгенерированные компоненты задач от него не зависят, поэтому он создаётся, только если от него зависит какой-либо компонент графа.
+Убедитесь, что такая зависимость есть, например с помощью корневого компонента, который его получает:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Root
+    @Component
+    public final class DbSchedulerStarter {
+
+        public DbSchedulerStarter(DbSchedulerWrapper scheduler) { }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Root
+    @Component
+    class DbSchedulerStarter(scheduler: DbSchedulerWrapper)
+    ```
+
+### Конфигурация { #configuration-7 }
+
+Параметры планировщика описываются классом `DbSchedulerConfig` и находятся в секции `scheduling.dbScheduler`,
+телеметрия общая с остальными планировщиками и находится в секции `scheduling.telemetry`, описанной для [планировщика JDK](#configuration):
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    scheduling {
+        dbScheduler {
+            initializeTable = false //(1)!
+            tableName = "kora_scheduling_db_jobs" //(2)!
+            executionParallelism = 10 //(3)!
+            shutdownWait = "30s" //(4)!
+            polling {
+                strategy = "FETCH" //(5)!
+                prefetchMode = "DEFAULT" //(6)!
+                interval = "10s" //(7)!
+            }
+        }
+    }
+    ```
+
+    1. Создаёт таблицу при старте, если её нет, см. [Таблица в базе данных](#db-scheduler-table) (по умолчанию: `false`)
+    2. Имя таблицы, которую использует планировщик (по умолчанию: `kora_scheduling_db_jobs`)
+    3. Максимальное число выполнений задач, идущих одновременно; передаётся в `db-scheduler` как число потоков и ограничивает виртуальные потоки, в которых идут выполнения (по умолчанию: `10`)
+    4. Время, которое планировщик ждёт идущие выполнения при [плавной остановке](#graceful-shutdown-db-scheduler); передаётся в `db-scheduler` как `shutdownMaxWait` (по умолчанию: `30s`)
+    5. Стратегия опроса: `FETCH` или `LOCK_AND_FETCH` (по умолчанию: `FETCH`)
+    6. Сколько готовых к запуску выполнений забирается заранее относительно `executionParallelism`: `DEFAULT` сохраняет значения по умолчанию `db-scheduler`, `BOUNDED` держит локальную очередь близкой к `executionParallelism`, `BUFFERED` держит больший запас, чтобы сократить простои между опросами (по умолчанию: `DEFAULT`)
+    7. Интервал между опросами таблицы на готовые к запуску выполнения (по умолчанию: `10s`)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    scheduling:
+      dbScheduler:
+        initializeTable: false #(1)!
+        tableName: "kora_scheduling_db_jobs" #(2)!
+        executionParallelism: 10 #(3)!
+        shutdownWait: "30s" #(4)!
+        polling:
+          strategy: "FETCH" #(5)!
+          prefetchMode: "DEFAULT" #(6)!
+          interval: "10s" #(7)!
+    ```
+
+    1. Создаёт таблицу при старте, если её нет, см. [Таблица в базе данных](#db-scheduler-table) (по умолчанию: `false`)
+    2. Имя таблицы, которую использует планировщик (по умолчанию: `kora_scheduling_db_jobs`)
+    3. Максимальное число выполнений задач, идущих одновременно; передаётся в `db-scheduler` как число потоков и ограничивает виртуальные потоки, в которых идут выполнения (по умолчанию: `10`)
+    4. Время, которое планировщик ждёт идущие выполнения при [плавной остановке](#graceful-shutdown-db-scheduler); передаётся в `db-scheduler` как `shutdownMaxWait` (по умолчанию: `30s`)
+    5. Стратегия опроса: `FETCH` или `LOCK_AND_FETCH` (по умолчанию: `FETCH`)
+    6. Сколько готовых к запуску выполнений забирается заранее относительно `executionParallelism`: `DEFAULT` сохраняет значения по умолчанию `db-scheduler`, `BOUNDED` держит локальную очередь близкой к `executionParallelism`, `BUFFERED` держит больший запас, чтобы сократить простои между опросами (по умолчанию: `DEFAULT`)
+    7. Интервал между опросами таблицы на готовые к запуску выполнения (по умолчанию: `10s`)
+
+Выполнения задач идут в виртуальных потоках `kora-db-scheduler-N`.
+Метрики модуля те же, что и у остальных планировщиков, и описаны в разделе [Справочник метрик](metrics.md#scheduling).
+
+### Таблица в базе данных { #db-scheduler-table }
+
+Таблица `db-scheduler` должна существовать до старта планировщика.
+Артефакт `scheduling-db-scheduler` поставляет схему для `PostgreSQL`, `MySQL`, `MariaDB`, `Microsoft SQL Server`, `Oracle` и `HSQLDB`:
+
+- скрипты `Flyway`: `db/scheduling-db/flyway/<database>/V1__create_scheduled_tasks.sql`, где `<database>` — это `postgresql`, `mysql`, `mariadb`, `mssql`, `oracle` или `hsql`;
+- changelog `Liquibase`: `db/scheduling-db/liquibase/changelog.yaml`, в котором для каждой базы есть свой changeset с условием `dbms`.
+
+Поставляемые скрипты создают таблицу `scheduled_tasks`, тогда как `tableName` по умолчанию — `kora_scheduling_db_jobs`.
+Применяя их своим [инструментом миграций](database-migration.md), либо задайте `scheduling.dbScheduler.tableName = "scheduled_tasks"`,
+либо скопируйте скрипт в собственные миграции и переименуйте таблицу.
+Скрипты `Flyway` имеют версию `V1`, поэтому добавление их расположения в приложение, где уже есть своя миграция `V1`, приводит к конфликту версий; копирование скрипта этого избегает.
+
+При `initializeTable = true` модуль при старте проверяет, существует ли таблица `tableName`, и, если её нет,
+выполняет поставляемый скрипт для определённой базы данных, заменяя `scheduled_tasks` на `tableName`.
+Для неподдерживаемой базы данных запуск падает с ошибкой `Unsupported database for DbScheduler table initialization: ...`.
+Это удобно для разработки и тестов; в продакшене схемой обычно управляет инструмент миграций.
+
+### Cron { #db-scheduler-cron }
+
+Запускает задачу по `cron`-выражению.
+Выражение вычисляет класс `CronSchedule` из `db-scheduler`, а не [CronExpression](#jdk-cron-format) планировщика `JDK`:
+он использует формат `cron` Spring 5.3 из шести полей, начиная с секунд, и часовой пояс `JVM` по умолчанию,
+подробности описаны в [документации db-scheduler](https://github.com/kagkarlsson/db-scheduler).
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @ScheduleWithCron(value = "*/10 * * * * *", name = "some-cron") //(1)!
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+    1. `cron`-выражение, которое запускает задачу каждые десять секунд; задача хранится в таблице под именем `some-cron`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleWithCron(value = "*/10 * * * * *", name = "some-cron") //(1)!
+        fun schedule() {
+            // do something
+        }
+    }
+    ```
+
+    1. `cron`-выражение, которое запускает задачу каждые десять секунд; задача хранится в таблице под именем `some-cron`
+
+Если не заданы ни `value`, ни `config`, компиляция завершается ошибкой `Either value() or config() annotation parameter must be provided`.
+Путь `config` принимает либо объект с ключами `cron`, `name` и `telemetry`, либо просто строку с выражением.
+Если выражение указано и в аннотации, путь конфигурации может отсутствовать полностью.
+
+### Фиксированная задержка { #db-scheduler-fixed-delay }
+
+Запускает задачу многократно, выдерживая фиксированный интервал после завершения предыдущего выполнения.
+`initialDelay` откладывает первое выполнение (по умолчанию: `0`).
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @ScheduleWithFixedDelay(initialDelay = 5, delay = 30, unit = ChronoUnit.SECONDS)
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleWithFixedDelay(initialDelay = 5, delay = 30, unit = ChronoUnit.SECONDS)
+        fun schedule() {
+            // do something
+        }
+    }
+    ```
+
+Если не заданы ни `delay`, ни `config`, компиляция завершается ошибкой `Either delay() or config() annotation parameter must be provided`.
+
+### Однократный запуск { #db-scheduler-once }
+
+Запускает задачу один раз после заданной задержки.
+Выполнение создаётся при старте планировщика, если в таблице ещё нет выполнения с тем же именем,
+и удаляется из таблицы после завершения. Неудачное выполнение тоже удаляется: повторов нет.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @ScheduleOnce(delay = 30, unit = ChronoUnit.SECONDS)
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleOnce(delay = 30, unit = ChronoUnit.SECONDS)
+        fun schedule() {
+            // do something
+        }
+    }
+    ```
+
+Если не заданы ни `delay`, ни `config`, компиляция завершается ошибкой `Either delay() or config() annotation parameter must be provided`.
+
+### Конфигурация { #configuration-8 }
+
+Параметры любой аннотации можно передать через конфигурацию; она имеет приоритет над значениями из аннотации:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @ScheduleWithCron(config = "scheduling.jobs.db-cron")
+        void cron() {
+            // do something
+        }
+
+        @ScheduleWithFixedDelay(config = "scheduling.jobs.db-delay")
+        void fixedDelay() {
+            // do something
+        }
+
+        @ScheduleOnce(config = "scheduling.jobs.db-once")
+        void once() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleWithCron(config = "scheduling.jobs.db-cron")
+        fun cron() {
+            // do something
+        }
+
+        @ScheduleWithFixedDelay(config = "scheduling.jobs.db-delay")
+        fun fixedDelay() {
+            // do something
+        }
+
+        @ScheduleOnce(config = "scheduling.jobs.db-once")
+        fun once() {
+            // do something
+        }
+    }
+    ```
+
+Пример файла конфигурации:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    scheduling {
+        jobs {
+            db-cron {
+                cron = "*/10 * * * * *" //(1)!
+                name = "some-cron" //(2)!
+            }
+            db-delay {
+                initialDelay = "5s" //(3)!
+                delay = "30s" //(4)!
+            }
+            db-once {
+                delay = "30s" //(5)!
+            }
+        }
+    }
+    ```
+
+    1. `cron`-выражение (`обязательный`, нет значения по умолчанию)
+    2. Имя задачи, которое хранится в таблице; доступно для всех аннотаций (по умолчанию: `name` из аннотации, иначе `ClassName#methodName`)
+    3. Задержка перед первым выполнением (по умолчанию: `0ms`)
+    4. Задержка после завершения выполнения перед следующим (`обязательный`, нет значения по умолчанию)
+    5. Задержка перед единственным выполнением (`обязательный`, нет значения по умолчанию)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    scheduling:
+      jobs:
+        db-cron:
+          cron: "*/10 * * * * *" #(1)!
+          name: "some-cron" #(2)!
+        db-delay:
+          initialDelay: "5s" #(3)!
+          delay: "30s" #(4)!
+        db-once:
+          delay: "30s" #(5)!
+    ```
+
+    1. `cron`-выражение (`обязательный`, нет значения по умолчанию)
+    2. Имя задачи, которое хранится в таблице; доступно для всех аннотаций (по умолчанию: `name` из аннотации, иначе `ClassName#methodName`)
+    3. Задержка перед первым выполнением (по умолчанию: `0ms`)
+    4. Задержка после завершения выполнения перед следующим (`обязательный`, нет значения по умолчанию)
+    5. Задержка перед единственным выполнением (`обязательный`, нет значения по умолчанию)
+
+Если значение уже задано в аннотации, оно становится значением по умолчанию сгенерированной конфигурации, и в конфигурации достаточно переопределить только то, что должно отличаться.
+
+### Настройка { #db-scheduler-customization }
+
+Планировщик использует `DataSource` с тегом `@Tag(DbSchedulerWrapper.class)`; по умолчанию это `DataSource` приложения,
+поэтому регистрация компонента `DataSource` с этим тегом переносит планировщик в другую базу данных.
+
+`SchedulerBuilder` из `db-scheduler` можно донастроить перед созданием планировщика, зарегистрировав компонент `Configurer<SchedulerBuilder>`
+(`io.koraframework.common.Configurer`); он применяется после настроек из `DbSchedulerConfig`, поэтому может их и переопределить:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MySchedulerConfigurer implements Configurer<SchedulerBuilder> {
+
+        @Override
+        public SchedulerBuilder configure(SchedulerBuilder builder) {
+            return builder.pollingInterval(Duration.ofSeconds(1));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MySchedulerConfigurer : Configurer<SchedulerBuilder> {
+
+        override fun configure(builder: SchedulerBuilder): SchedulerBuilder {
+            return builder.pollingInterval(Duration.ofSeconds(1))
+        }
+    }
+    ```
+
+Любой компонент, реализующий `DbSchedulerJob`, регистрируется в планировщике вместе с задачами из аннотаций.
+Реализуйте его вручную, когда задаче нужны API `db-scheduler` напрямую, например собственные данные задачи или обработка завершения.
+Такая задача не оборачивается в телеметрию планировщика:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class ReportJob implements DbSchedulerJob {
+
+        private final RecurringTask<Void> task = Tasks.recurring("report", FixedDelay.of(Duration.ofMinutes(5)))
+            .execute((instance, context) -> {
+                // do something
+            });
+
+        @Override
+        public Task<?> task() {
+            return task;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ReportJob : DbSchedulerJob {
+
+        private val task: RecurringTask<Void> = Tasks.recurring("report", FixedDelay.of(Duration.ofMinutes(5)))
+            .execute { _, _ ->
+                // do something
+            }
+
+        override fun task(): Task<*> = task
+    }
+    ```
+
+`DbSchedulerWrapper` оборачивает `com.github.kagkarlsson.scheduler.Scheduler` из `db-scheduler`,
+поэтому можно внедрить и сам `Scheduler`, например чтобы планировать новые экземпляры задачи или просматривать запланированные выполнения.
+
+### Плавная остановка { #graceful-shutdown-db-scheduler }
+
+При [плавной остановке](container.md#component-lifecycle) `DbSchedulerWrapper` останавливает планировщик `db-scheduler`,
+который перестаёт брать новые выполнения и ждёт завершения идущих выполнений не дольше `scheduling.dbScheduler.shutdownWait`.
+По истечении ожидания идущие выполнения прерываются, и планировщик ждёт ещё не дольше `shutdownWait`.
+Как и в случае остальных планировщиков, долгие задачи должны завершаться сами
+или проверять [Thread.currentThread().isInterrupted()](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Thread.html#isInterrupted()).

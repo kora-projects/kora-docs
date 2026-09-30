@@ -179,14 +179,14 @@ junitVersion=6.1.3
         implementation "io.koraframework:config-hocon"
         implementation "io.koraframework:grpc-server"
         implementation "io.koraframework:logging-logback"
-        implementation "io.grpc:grpc-protobuf:1.83.1"
-        implementation "io.grpc:grpc-services:1.83.1"
+        implementation "io.grpc:grpc-protobuf:1.84.0"
+        implementation "io.grpc:grpc-services:1.84.0"
 
         testCompileOnly "javax.annotation:javax.annotation-api:1.3.2"
         testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
-        testImplementation "io.grpc:grpc-netty:1.83.1"
+        testImplementation "io.grpc:grpc-netty:1.84.0"
         testImplementation "org.junit.jupiter:junit-jupiter"
         testImplementation "io.koraframework:test-junit5"
     }
@@ -206,13 +206,13 @@ junitVersion=6.1.3
         implementation("io.koraframework:config-hocon")
         implementation("io.koraframework:grpc-server")
         implementation("io.koraframework:logging-logback")
-        implementation("io.grpc:grpc-protobuf:1.83.1")
-        implementation("io.grpc:grpc-services:1.83.1")
+        implementation("io.grpc:grpc-protobuf:1.84.0")
+        implementation("io.grpc:grpc-services:1.84.0")
 
         testCompileOnly("javax.annotation:javax.annotation-api:1.3.2")
 
         testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
-        testImplementation("io.grpc:grpc-netty:1.83.1")
+        testImplementation("io.grpc:grpc-netty:1.84.0")
         testImplementation("org.junit.jupiter:junit-jupiter")
         testImplementation("io.koraframework:test-junit5")
     }
@@ -227,7 +227,7 @@ The protobuf Gradle plugin block is unchanged from the [base guide](grpc-server.
 
 !!! warning "Keep every `io.grpc` artifact on one version"
 
-    The gRPC runtime shipped with `io.koraframework:grpc-server` is `1.83.1`. Every other `io.grpc` artifact you declare — `grpc-protobuf`, `grpc-services`, and anything in test scope such as
+    The gRPC runtime shipped with `io.koraframework:grpc-server` is `1.84.0`. Every other `io.grpc` artifact you declare — `grpc-protobuf`, `grpc-services`, and anything in test scope such as
     `grpc-netty` — must use exactly that version. A pinned older version compiles fine and fails only at runtime with
     `AbstractMethodError: ... does not define or inherit an implementation of the resolved method 'buildClientTransportServers(List, MetricRecorder)'`.
 
@@ -1085,7 +1085,7 @@ Verify `grpcServer.reflectionEnabled = true` and that `io.grpc:grpc-services` is
 
 **Tests fail with `AbstractMethodError` mentioning `buildClientTransportServers`:**
 
-A gRPC artifact in test scope is pinned to a different version than the runtime that ships with `io.koraframework:grpc-server`. Align every `io.grpc` dependency on `1.83.1`.
+A gRPC artifact in test scope is pinned to a different version than the runtime that ships with `io.koraframework:grpc-server`. Align every `io.grpc` dependency on `1.84.0`.
 
 ## What's Next? { #whats-next }
 

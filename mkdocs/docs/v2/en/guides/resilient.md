@@ -6,9 +6,9 @@ search:
   exclude: true
 title: Build Resilient CRUD Operations with Retry, Timeout, Circuit Breaker, and Fallback
 summary: Extend the HTTP Server guide by applying Kora resilience annotations directly to your existing UserService methods
-description: "Step-by-step resilience for a Kora 2.0 service: the io.koraframework:resilient-kora artifact and ResilientModule, typed spec interfaces declared with @RetrySpec, @TimeoutSpec, @CircuitBreakerSpec and @RateLimiterSpec, the @Retryable, @Timeout, @CircuitBreakable, @RateLimited and @Fallback aspects that reference them by class, the resilient configuration section with countBased.windowSize and the circuit breaker type, a CircuitBreakerPredicate bound with @Tag, @Fallback.Reason, and the generated AOP proxy sources."
+description: "Step-by-step resilience for a Kora 2.0 service: the io.koraframework:resilient-kora artifact and ResilientModule, typed spec interfaces declared with @RetrySpec, @TimeoutSpec, @CircuitBreakerSpec and @RateLimiterSpec (or @RateLimiterDistributedSpec for a Redis-backed limit), the @Retryable, @Timeout, @CircuitBreakable, @RateLimited and @Fallback aspects that reference them by class, the resilient configuration section with countBased.windowSize and the circuit breaker type, the rate limiter type (TOKEN_BUCKET by default or FIXED_WINDOW), a CircuitBreakerPredicate bound with @Tag, the NonRetryableException and NonCircuitableException markers, @Fallback.Reason, and the generated AOP proxy sources."
 agent:
-  use_when: "Use this file for questions about making a Kora 2.0 service fault tolerant: io.koraframework:resilient-kora, ResilientModule, @RetrySpec / @TimeoutSpec / @CircuitBreakerSpec / @RateLimiterSpec interfaces, @Retryable(Spec.class), @Timeout(Spec.class), @CircuitBreakable(Spec.class), @RateLimited(Spec.class), @Fallback(method) and @Fallback.Reason, CircuitBreakerPredicate and RetryPredicate bound with @Tag(Spec.class), the resilient.* config keys (attempts, delay, delayStep, backoff, jitter, retryBudget, duration, type, countBased.windowSize, minimumRequiredCalls, failureRateThreshold, waitDurationInOpenState, limitForPeriod, limitRefreshPeriod), aspect ordering, and reading the generated $UserService__AopProxy."
+  use_when: "Use this file for questions about making a Kora 2.0 service fault tolerant: io.koraframework:resilient-kora, ResilientModule, @RetrySpec / @TimeoutSpec / @CircuitBreakerSpec / @RateLimiterSpec interfaces, @Retryable(Spec.class), @Timeout(Spec.class), @CircuitBreakable(Spec.class), @RateLimited(Spec.class), @Fallback(method) and @Fallback.Reason, CircuitBreakerPredicate and RetryPredicate bound with @Tag(Spec.class), NonRetryableException / NonCircuitableException marker interfaces, @RateLimiterDistributedSpec, the resilient.* config keys (attempts, delay, delayStep, backoff, jitter, retryBudget, duration, type, countBased.windowSize, minimumRequiredCalls, failureRateThreshold, waitDurationInOpenState, limitForPeriod, limitRefreshPeriod, rate limiter type TOKEN_BUCKET / FIXED_WINDOW), aspect ordering, and reading the generated $UserService__AopProxy."
 tags: resilient, retry, timeout, circuitbreaker, ratelimiter, fallback, http-server, hocon
 ---
 
@@ -373,7 +373,7 @@ Retry does not have to react to every exception. Implement `RetryPredicate` and 
     }
     ```
 
-The predicate is optional. Without it every exception is retried, which is the behavior this guide keeps.
+The predicate is optional. Without it every exception is retried except those that implement the `NonRetryableException` marker interface, which is the behavior this guide keeps. The same kind of marker, `NonCircuitableException`, keeps an exception out of the circuit breaker statistics, see [Exception filtering](../documentation/resilient.md#exception-filtering).
 
 Beyond `delay`, `delayStep`, and `attempts`, the retry section also accepts a `backoff` block (`type = EXPONENTIAL`, `multiplier`, `delayMax`), a `jitter` block (`type = NONE` or `FULL`, `ratio`), and
 a `retryBudget` block that caps how much of your traffic may consist of retries. Those are worth reaching for once a service retries against a dependency that other callers share.
@@ -1053,7 +1053,7 @@ In Kora 2.0 the predicate is bound to a breaker by tagging it with the spec clas
 
 No configuration change is needed. The module generated for `DefaultCircuitBreaker` declares a `@Tag(DefaultCircuitBreaker.class) @Nullable CircuitBreakerPredicate` parameter, so your tagged component
 is picked up simply by existing in the graph. Remove the `@Tag` and the predicate is no longer connected to this breaker; remove the component entirely and the breaker falls back to counting every
-exception.
+exception except those that implement `NonCircuitableException`.
 
 The same mechanism binds a `RetryPredicate` to a `@RetrySpec` interface. `@TimeoutSpec` and `@RateLimiterSpec` have no predicate: a timeout is decided by elapsed time and a rate limiter by permits, so
 there is nothing to classify.
@@ -1071,7 +1071,7 @@ Rate limiter is useful when:
 
 Use it carefully when:
 
-- the limit is shared across instances, since each application instance has its own local limiter
+- the limit is shared across instances, since each application instance has its own local limiter; declare the spec with `@RateLimiterDistributedSpec` to enforce one limit through `Redis`, see [Distributed rate limiter](../documentation/resilient.md#ratelimiter-distributed)
 - callers have no sensible way to react to rejection
 - the operation is cheap enough that limiting it only adds latency
 
@@ -1091,7 +1091,7 @@ It follows exactly the same spec pattern. Add the configuration:
     ```
 
     1. Number of permits granted in each refresh period.
-    2. How often the permit budget is replenished.
+    2. Length of the refresh period over which `limitForPeriod` permits are replenished.
 
 === ":simple-yaml: `YAML`"
 
@@ -1104,7 +1104,10 @@ It follows exactly the same spec pattern. Add the configuration:
     ```
 
     1. Number of permits granted in each refresh period.
-    2. How often the permit budget is replenished.
+    2. Length of the refresh period over which `limitForPeriod` permits are replenished.
+
+The `type` key is omitted here, so the limiter uses the default `TOKEN_BUCKET` algorithm: permits refill continuously, one every `limitRefreshPeriod / limitForPeriod`, and an idle limiter
+allows a burst of up to `limitForPeriod` calls. Set `type = FIXED_WINDOW` for a strict quota per window, see [Algorithms](../documentation/resilient.md#ratelimiter-algorithms).
 
 Declare the spec and annotate a method:
 

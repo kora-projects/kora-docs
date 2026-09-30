@@ -141,7 +141,7 @@ tags: openapi, http-server, swagger, code-generation, contract-first
 
     plugins {
         id "application"
-        id "org.openapi.generator" version "7.24.0" //(3)!
+        id "org.openapi.generator" version "7.25.0" //(3)!
     }
 
     dependencies {
@@ -160,7 +160,7 @@ tags: openapi, http-server, swagger, code-generation, contract-first
 
     1.  `GenerateTask` — тип задачи плагина, через который объявляется задача генерации.
     2.  Реализация генератора Kora, загружаемая JVM `Gradle` через classpath `buildscript`.
-    3.  Gradle-плагин `OpenAPI Generator`. Kora 2.0 собрана под `OpenAPI Generator 7.24.0`, поэтому зафиксируйте ту же версию плагина — другие версии не гарантируют работоспособность, так как API генератора может быть несовместимым на уровне кода.
+    3.  Gradle-плагин `OpenAPI Generator`. Kora 2.0 собрана под `OpenAPI Generator 7.25.0`, поэтому зафиксируйте ту же версию плагина — другие версии не гарантируют работоспособность, так как API генератора может быть несовместимым на уровне кода.
     4.  Kora BOM: согласует версии всех модулей Kora и библиотек, от которых зависит Kora.
     5.  Аннотационный процессор Kora: во время компиляции создает граф приложения, модули контроллеров и читатели/писатели JSON.
     6.  Публикует файл контракта и страницы Swagger UI / Scalar из работающего приложения.
@@ -186,7 +186,7 @@ tags: openapi, http-server, swagger, code-generation, contract-first
         id("org.jetbrains.kotlin.jvm")
         id("com.google.devtools.ksp")
         id("application")
-        id("org.openapi.generator") version "7.24.0" //(3)!
+        id("org.openapi.generator") version "7.25.0" //(3)!
     }
 
     dependencies {
@@ -205,7 +205,7 @@ tags: openapi, http-server, swagger, code-generation, contract-first
 
     1.  `GenerateTask` — тип задачи плагина, через который объявляется задача генерации.
     2.  Реализация генератора Kora, загружаемая JVM `Gradle` через classpath `buildscript`.
-    3.  Gradle-плагин `OpenAPI Generator`. Kora 2.0 собрана под `OpenAPI Generator 7.24.0`, поэтому зафиксируйте ту же версию плагина — другие версии не гарантируют работоспособность, так как API генератора может быть несовместимым на уровне кода.
+    3.  Gradle-плагин `OpenAPI Generator`. Kora 2.0 собрана под `OpenAPI Generator 7.25.0`, поэтому зафиксируйте ту же версию плагина — другие версии не гарантируют работоспособность, так как API генератора может быть несовместимым на уровне кода.
     4.  Kora BOM: согласует версии всех модулей Kora и библиотек, от которых зависит Kora.
     5.  KSP-процессор Kora: во время компиляции создает граф приложения, модули контроллеров и читатели/писатели JSON.
     6.  Публикует файл контракта и страницы Swagger UI / Scalar из работающего приложения.

@@ -126,14 +126,14 @@ tasks.matching { it.name.startsWith("ksp") }.configureEach {
 
     Требуется версия не ниже [`JDK` `25`](https://openjdk.org/projects/jdk/25/), рекомендуется использовать последний доступный `GA`-релиз `JDK`.
 
-    Используйте те же версии, на которых собран сам фреймворк: [`Kotlin` `2.4.10`](https://github.com/JetBrains/kotlin/releases) и [`KSP` `2.3.11`](https://github.com/google/ksp/releases).
+    Используйте те же версии, на которых собран сам фреймворк: [`Kotlin` `2.4.20`](https://github.com/JetBrains/kotlin/releases) и [`KSP` `2.3.12`](https://github.com/google/ksp/releases).
     Расхождение между компилятором `Kotlin` и компилятором, встроенным в `KSP`, приводит к труднодиагностируемым падениям обработчиков символов, поэтому обе версии закрепляются вместе.
 
     Минимальная конфигурация в `build.gradle.kts`:
     ```kotlin
     plugins {
-        kotlin("jvm") version "2.4.10"
-        id("com.google.devtools.ksp") version "2.3.11"
+        kotlin("jvm") version "2.4.20"
+        id("com.google.devtools.ksp") version "2.3.12"
     }
 
     kotlin {
@@ -184,7 +184,7 @@ tasks.matching { it.name.startsWith("ksp") }.configureEach {
 ## Система сборки { #build-system }
 
 Kora рассчитана на сборку через [Gradle](https://gradle.org/guides/), потому что `Gradle` хорошо поддерживает обработчики аннотаций, `KSP`, инкрементальную сборку и управление зависимостями.
-Сам фреймворк и все примеры проектов Kora собираются на `Gradle` `9.5.1`, поэтому рекомендуемая версия - `Gradle` `9.5+`.
+Сам фреймворк собирается на `Gradle` `9.7.1`, а примеры проектов Kora - на `Gradle` `9.5.1`, поэтому рекомендуемая версия - `Gradle` `9.5+`.
 
 Чтобы не указывать версии для каждой зависимости Kora отдельно, используется [`BOM`](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import) `io.koraframework:kora-bom`.
 Версия `BOM` задается один раз, а остальные зависимости Kora подключаются без явного указания версии.
@@ -237,8 +237,8 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     ```kotlin
     plugins {
         id("application")
-        kotlin("jvm") version "2.4.10"
-        id("com.google.devtools.ksp") version "2.3.11"
+        kotlin("jvm") version "2.4.20"
+        id("com.google.devtools.ksp") version "2.3.12"
     }
 
     kotlin {
@@ -448,8 +448,8 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     ```kotlin
     plugins {
         id("application") //(1)!
-        kotlin("jvm") version "2.4.10"
-        id("com.google.devtools.ksp") version "2.3.11"
+        kotlin("jvm") version "2.4.20"
+        id("com.google.devtools.ksp") version "2.3.12"
     }
     ```
 

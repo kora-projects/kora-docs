@@ -8,7 +8,7 @@ title: Observability & Monitoring with Kora
 summary: Assemble metrics, tracing, structured logging, and health probes into one Kora application, and find the focused guide for each signal.
 description: "The Kora observability hub: how metrics, tracing, logging and probes fit together in one application, which telemetry is on by default and which is not, the complete module graph with MetricsModule and OpentelemetryHttpExporterModule, the full httpServer.system, tracing and logging configuration, traceId correlation in log lines, the system port that serves /metrics and the probes, and links to the focused metrics, tracing and probes guides."
 agent:
-  use_when: "Use this file for questions about Kora observability as a whole: which of metrics, tracing, logging or probes to use for a problem, how they combine in one application, the complete @KoraApp graph with MetricsModule and OpentelemetryHttpExporterModule, why telemetry.metrics.enabled and telemetry.logging.enabled default to false while tracing defaults to true, the system HTTP port 8085 serving /metrics, /system/liveness and /system/readiness, correlating logs with traceId and spanId, and where each signal is taught step by step."
+  use_when: "Use this file for questions about Kora observability as a whole: which of metrics, tracing, logging or probes to use for a problem, how they combine in one application, the complete @KoraApp graph with MetricsModule and OpentelemetryHttpExporterModule, why telemetry.metrics.enabled and telemetry.logging.enabled default to false while tracing defaults to true, the application-wide metrics.enabled switch, the system HTTP port 8085 serving /metrics, /system/liveness and /system/readiness, correlating logs with traceId and spanId, and where each signal is taught step by step."
 tags: observability, metrics, tracing, logging, health-checks, monitoring
 ---
 
@@ -308,7 +308,7 @@ logging {
 
 !!! warning "Tracing is on by default. Metrics and logging are not."
 
-    `TelemetryConfig.TracingConfig#enabled` returns `true`, while `MetricsConfig#enabled` and `LoggingConfig#enabled` both return `false`. Every Kora module inherits those defaults.
+    `TelemetryConfig.TracingConfig#enabled` returns `true`, while `TelemetryConfig.MetricsConfig#enabled` and `TelemetryConfig.LoggingConfig#enabled` both return `false`. Every Kora module inherits those defaults.
 
 This asymmetry catches people out, so it is worth stating plainly. An application that connects `MetricsModule` and nothing else starts fine and answers `/metrics` with `200` — but the body holds only
 JVM, process, and `kora.up` values. There is no `http_server_request_duration_seconds`, no `http_client_*`, no `db_*`, and nothing in the log explains why. The module's own
@@ -317,8 +317,8 @@ JVM, process, and `kora.up` values. There is no `http_server_request_duration_se
 Tracing works the other way. Connect an exporter module, set an endpoint, and spans flow without any further switch. The thing that silently disables tracing is a *missing* endpoint: with no
 `tracing.exporter.endpoint`, spans are still created and the trace context still propagates, they are simply never sent anywhere — and again, nothing is logged about it.
 
-Custom metrics you register yourself through `MeterRegistry` are not affected by any of this. They appear as soon as `MetricsModule` is connected and the code runs, because the registry is always live.
-The flag only gates the telemetry of Kora modules.
+Custom metrics you register yourself through `MeterRegistry` are not affected by any of this. They appear as soon as `MetricsModule` is connected and the code runs, because the registry is live
+unless the application-wide `metrics.enabled` switch (default: `true`) is set to `false`, which swaps in a no-op registry for everything. The per-module flag only gates the telemetry of Kora modules.
 
 The system server is the deliberate exception in the other direction: `SystemHttpServerConfig` overrides its tracing to `false`, so an orchestrator polling readiness every few seconds does not bury
 your real traces.
@@ -330,7 +330,7 @@ The Logback configuration from the HTTP server guide is what makes logs correlat
 ```xml title="src/main/resources/logback.xml"
 <configuration debug="false">
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="io.koraframework.logging.logback.ConsoleTextRecordEncoder"/>
+        <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
     </appender>
 
     <appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
@@ -575,6 +575,9 @@ Telemetry defaults:
 
 `/metrics` answers `200` but shows only JVM values:
 : Set `<module>.telemetry.metrics.enabled = true`. It defaults to `false` for every module.
+
+`/metrics` answers `200` with an empty body:
+: The application-wide `metrics.enabled` is `false`, so `MetricsModule` provides a no-op registry.
 
 `/metrics` answers `# Metric Scraper disabled`:
 : `MetricsModule` is not connected, so there is no `MetricsScraper` in the graph.

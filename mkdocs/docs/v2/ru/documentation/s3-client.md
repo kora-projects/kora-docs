@@ -4,7 +4,7 @@ seo_description: "Справочник по S3 в Kora: декларативны
 keywords: ["Kora Framework", "фреймворк Kora", "S3 в Kora", "S3-клиент Java", "AWS SDK S3", "объектное хранилище"]
 description: "Explains the two independent Kora S3 artifacts: the declarative s3-client-kora client built on Kora's own HTTP client and the s3-client-aws wrapper that publishes the AWS SDK S3Client. Covers @S3.Client, @S3.Bucket, @S3.Get, @S3.Head, @S3.List, @S3.Put, @S3.Delete, request arguments, response models, configuration, exceptions and testing."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about S3-compatible object storage: choosing between s3-client-kora and s3-client-aws, declarative clients, bucket and credentials resolution, key templates, multipart upload, byte ranges and exception handling; key triggers include @S3.Client, @S3.Bucket, @S3.Get, @S3.Head, @S3.List, @S3.Put, @S3.Delete, KoraS3ClientModule, AwsS3ClientModule, S3ClientConfig, AwsS3Config, S3ClientFactory, GetObjectResult, HeadObjectResult, ListBucketResult, S3ClientNoSuchKeyException."
+  use_when: "Use this file for Kora docs or implementation questions about S3-compatible object storage: choosing between s3-client-kora and s3-client-aws, declarative clients, bucket and credentials resolution, key templates and SigV4 key encoding, multipart upload, byte ranges, HeadObjectResult metadata headers, exception handling and testing against S3-compatible servers (RustFS, SeaweedFS, LocalStack, MinIO); key triggers include @S3.Client, @S3.Bucket, @S3.Get, @S3.Head, @S3.List, @S3.Put, @S3.Delete, KoraS3ClientModule, AwsS3ClientModule, S3ClientConfig, AwsS3Config, S3ClientFactory, GetObjectResult, HeadObjectResult, ListBucketResult, S3ClientNoSuchKeyException."
 ---
 
 Kora предоставляет **два независимых артефакта для S3**. Общего у них только протокол: разные
@@ -663,6 +663,10 @@ Kora предоставляет **два независимых артефакт
 | Шаблон без закрывающей фигурной скобки            | `has malformed key template ...: missing closing '}'`                         |
 | Коллекция или map в качестве параметра шаблона    | `uses '{x}' in the key template, but parameter 'x' is a collection or map`     |
 | Коллекция в качестве единственного ключа          | `expects one object key, but parameter 'x' is a collection`                   |
+
+Экранировать полученный ключ вручную не нужно: клиент кодирует ключи и параметры запроса списка
+(`prefix`, `delimiter`, `startAfter`, `continuationToken`) по правилам `SigV4`, поэтому ключи с пробелами, `+`, `%`, `*`
+или не-`ASCII` символами подписываются и отправляются корректно.
 
 #### Необязательный ответ { #optional-get }
 
@@ -2485,9 +2489,11 @@ RuntimeException
 ## Тестирование { #testing }
 
 Декларативные клиенты можно тестировать с помощью [@KoraAppTest](junit5.md) вместе с реальным
-`S3`-совместимым хранилищем, запущенным в контейнере [Testcontainers](https://java.testcontainers.org/) —
-удобный вариант `Minio`. Параметры подключения к хранилищу передаются в конфигурацию приложения
-через системные свойства:
+`S3`-совместимым хранилищем, запущенным в контейнере [Testcontainers](https://java.testcontainers.org/).
+В примере ниже используется расширение для `MinIO`, но любой `S3`-совместимый сервер работает так же.
+`MinIO` снисходителен к подписи запросов, поэтому более строгий сервер ловит ошибки клиента, которые
+`MinIO` пропускает: сама Kora проверяет клиент на `RustFS`, `SeaweedFS` и `LocalStack`. Параметры
+подключения к хранилищу передаются в конфигурацию приложения через системные свойства:
 
 ===! ":fontawesome-brands-java: `Java`"
 

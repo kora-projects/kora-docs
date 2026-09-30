@@ -1,10 +1,10 @@
 ---
 seo_title: "HTTP-клиент Kora: декларативные клиенты, OkHttp, JDK"
 seo_description: "Справочник по HTTP-клиентам Kora: транспорты OkHttp, Apache HttpClient и JDK, декларативный @HttpClient, маппинг, перехватчики, авторизация, телеметрия."
-keywords: ["Kora Framework", "фреймворк Kora", "HTTP-клиент Kora", "@HttpClient", "OkHttp", "декларативный REST-клиент"]
-description: "Explains Kora HTTP clients, the OkHttp, Apache HttpClient and JDK transports, declarative client annotations, request and response mapping, interceptors, authorization and telemetry. Use when working with @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith."
+keywords: ["Kora Framework", "фреймворк Kora", "HTTP-клиент Kora", "@HttpClient", "OkHttp", "декларативный REST-клиент", "маскирование телеметрии HTTP-клиента"]
+description: "Explains Kora HTTP clients, the OkHttp, Apache HttpClient and JDK transports, declarative client annotations, request and response mapping, interceptors, authorization, error mapping and telemetry with masking. Use when working with @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith, HttpClientConnectionException, MaskingStrategy, DataMasker."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, the OkHttp / Apache HttpClient / JDK transports, declarative client annotations, request and response mapping, interceptors, authorization and telemetry; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith, HttpClientResponseMapper, HttpClientRequestMapper, HttpClientParameterWriter, HttpClientInterceptor, HttpClientModule, OkHttpClientModule, ApacheHttpClientModule, JdkHttpClientModule."
+  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, the OkHttp / Apache HttpClient / JDK transports, declarative client annotations, request and response mapping, interceptors, authorization, exception mapping per transport and telemetry with header, query and body masking; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith, HttpClientResponseMapper, HttpClientRequestMapper, HttpClientParameterWriter, HttpClientInterceptor, HttpClientModule, OkHttpClientModule, ApacheHttpClientModule, JdkHttpClientModule, HttpClientException, HttpClientConnectionException, HttpClientTimeoutException, HttpClientTelemetry, HttpClientTelemetryFactory, DefaultHttpClientLoggerFactory, DefaultHttpClientBodyConverter, MaskingStrategy, DataMasker, JsonDataMasker, MaskingPathRules, maskHeaders, maskQueries, @Retryable, @CircuitBreakable."
 ---
 
 Модуль `HTTP-клиента` описывает исходящие HTTP-вызовы приложения: реализацию транспорта, преобразование запроса,
@@ -427,7 +427,7 @@ Kora запускает его на исполнителе виртуальны�
     ```
 
     1.  Максимальное время установки соединения (по умолчанию: `5s`)
-    2.  Максимальное время чтения ответа (по умолчанию: `2m`)
+    2.  Максимальное время чтения ответа; общий параметр транспортов, JDK-клиент его не применяет, для ограничения вызова используйте `requestTimeout` (по умолчанию: `2m`)
 
 === ":simple-yaml: `YAML`"
 
@@ -438,7 +438,7 @@ Kora запускает его на исполнителе виртуальны�
     ```
 
     1.  Максимальное время установки соединения (по умолчанию: `5s`)
-    2.  Максимальное время чтения ответа (по умолчанию: `2m`)
+    2.  Максимальное время чтения ответа; общий параметр транспортов, JDK-клиент его не применяет, для ограничения вызова используйте `requestTimeout` (по умолчанию: `2m`)
 
 ??? note "Полная конфигурация"
 
@@ -469,7 +469,7 @@ Kora запускает его на исполнителе виртуальны�
         1. Следовать ли [HTTP-перенаправлениям](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
         2. Какую версию протокола `HTTP` использовать, доступные значения: `HTTP_1_1` / `HTTP_2` (по умолчанию: `HTTP_1_1`)
         3. Максимальное время установки соединения (по умолчанию: `5s`)
-        4. Максимальное время чтения ответа (по умолчанию: `2m`)
+        4. Максимальное время чтения ответа; общий параметр транспортов, JDK-клиент его не применяет, для ограничения вызова используйте `requestTimeout` (по умолчанию: `2m`)
         5. Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
         6. Хост прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
         7. Порт прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
@@ -498,7 +498,7 @@ Kora запускает его на исполнителе виртуальны�
         1. Следовать ли [HTTP-перенаправлениям](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
         2. Какую версию протокола `HTTP` использовать, доступные значения: `HTTP_1_1` / `HTTP_2` (по умолчанию: `HTTP_1_1`)
         3. Максимальное время установки соединения (по умолчанию: `5s`)
-        4. Максимальное время чтения ответа (по умолчанию: `2m`)
+        4. Максимальное время чтения ответа; общий параметр транспортов, JDK-клиент его не применяет, для ограничения вызова используйте `requestTimeout` (по умолчанию: `2m`)
         5. Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
         6. Хост прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
         7. Порт прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
@@ -721,25 +721,24 @@ Kora запускает его на исполнителе виртуальны�
                 telemetry {
                     logging {
                         enabled = false //(3)!
-                        mask = "***" //(4)!
-                        maskQueries = [ ] //(5)!
-                        maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(6)!
-                        pathFull = false //(7)!
-                        maxRequestBodyLogSize = "2MiB" //(8)!
-                        maxResponseBodyLogSize = "2MiB" //(9)!
+                        maskQueries = [ ] //(4)!
+                        maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(5)!
+                        pathFull = false //(6)!
+                        maxRequestBodyLogSize = "2MiB" //(7)!
+                        maxResponseBodyLogSize = "2MiB" //(8)!
                     }
                     metrics {
-                        enabled = false //(10)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
-                        tags = { // (12)!
+                        enabled = false //(9)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
+                        tags = { // (11)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
                     }
                     tracing {
-                        enabled = true //(13)!
-                        pathFull = true //(14)!
-                        attributes = { // (15)!
+                        enabled = true //(12)!
+                        pathFull = true //(13)!
+                        attributes = { // (14)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
@@ -752,18 +751,17 @@ Kora запускает его на исполнителе виртуальны�
         1. Базовый `URL` сервиса, куда будут отправляться запросы (обязательный, без значения по умолчанию)
         2. Максимальное время запроса: может включать разрешение `DNS`, установку соединения, запись тела запроса, обработку на сервере и чтение тела ответа. Если вызову требуются перенаправления или повторы, все они должны уложиться в один такой период (опционально, без значения по умолчанию)
         3. Включает логирование модуля (по умолчанию: `false`)
-        4. Маска, которой скрываются указанные заголовки и параметры запроса или ответа (по умолчанию: `***`)
-        5. Список параметров запроса, которые требуется скрывать (по умолчанию: `[]`)
-        6. Список заголовков запроса или ответа, которые требуется скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        7. Писать ли в лог полный путь запроса вместо шаблона маршрута; если значение не указано, полный путь пишется только на уровне `TRACE`, а в остальных случаях используется шаблон (опционально, без значения по умолчанию)
-        8. Максимальный размер тела запроса, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
-        9. Максимальный размер тела ответа, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
-        10. Включает метрики модуля (по умолчанию: `false`)
-        11. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        12. Настраивает теги метрик (по умолчанию: `{}`)
-        13. Включает трассировку модуля (по умолчанию: `true`)
-        14. Записывать ли в span атрибут `url.full` вместо только `url.path` (по умолчанию: `true`)
-        15. Настраивает атрибуты трассировки (по умолчанию: `{}`)
+        4. Имена параметров запроса, значения которых заменяются [стратегией маскирования](#telemetry-masking) (по умолчанию: `[]`)
+        5. Имена заголовков запроса и ответа, значения которых заменяются [стратегией маскирования](#telemetry-masking) (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
+        6. Писать ли в лог полный путь запроса вместо шаблона маршрута; если значение не указано, полный путь пишется только на уровне `TRACE`, а в остальных случаях используется шаблон (опционально, без значения по умолчанию)
+        7. Максимальный размер тела запроса, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
+        8. Максимальный размер тела ответа, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
+        9. Включает метрики модуля (по умолчанию: `false`)
+        10. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Настраивает теги метрик (по умолчанию: `{}`)
+        12. Включает трассировку модуля (по умолчанию: `true`)
+        13. Записывать ли в span атрибут `url.full` вместо только `url.path` (по умолчанию: `true`)
+        14. Настраивает атрибуты трассировки (по умолчанию: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -775,22 +773,21 @@ Kora запускает его на исполнителе виртуальны�
             telemetry:
               logging:
                 enabled: false #(3)!
-                mask: "***" #(4)!
-                maskQueries: [ ] #(5)!
-                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(6)!
-                pathFull: false #(7)!
-                maxRequestBodyLogSize: "2MiB" #(8)!
-                maxResponseBodyLogSize: "2MiB" #(9)!
+                maskQueries: [ ] #(4)!
+                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(5)!
+                pathFull: false #(6)!
+                maxRequestBodyLogSize: "2MiB" #(7)!
+                maxResponseBodyLogSize: "2MiB" #(8)!
               metrics:
-                enabled: false #(10)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
-                tags: #(12)!
+                enabled: false #(9)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
+                tags: #(11)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(13)!
-                pathFull: true #(14)!
-                attributes: #(15)!
+                enabled: true #(12)!
+                pathFull: true #(13)!
+                attributes: #(14)!
                   key1: value1
                   key2: value2
         ```
@@ -798,18 +795,17 @@ Kora запускает его на исполнителе виртуальны�
         1. Базовый `URL` сервиса, куда будут отправляться запросы (обязательный, без значения по умолчанию)
         2. Максимальное время запроса: может включать разрешение `DNS`, установку соединения, запись тела запроса, обработку на сервере и чтение тела ответа. Если вызову требуются перенаправления или повторы, все они должны уложиться в один такой период (опционально, без значения по умолчанию)
         3. Включает логирование модуля (по умолчанию: `false`)
-        4. Маска, которой скрываются указанные заголовки и параметры запроса или ответа (по умолчанию: `***`)
-        5. Список параметров запроса, которые требуется скрывать (по умолчанию: `[]`)
-        6. Список заголовков запроса или ответа, которые требуется скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        7. Писать ли в лог полный путь запроса вместо шаблона маршрута; если значение не указано, полный путь пишется только на уровне `TRACE`, а в остальных случаях используется шаблон (опционально, без значения по умолчанию)
-        8. Максимальный размер тела запроса, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
-        9. Максимальный размер тела ответа, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
-        10. Включает метрики модуля (по умолчанию: `false`)
-        11. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        12. Настраивает теги метрик (по умолчанию: `{}`)
-        13. Включает трассировку модуля (по умолчанию: `true`)
-        14. Записывать ли в span атрибут `url.full` вместо только `url.path` (по умолчанию: `true`)
-        15. Настраивает атрибуты трассировки (по умолчанию: `{}`)
+        4. Имена параметров запроса, значения которых заменяются [стратегией маскирования](#telemetry-masking) (по умолчанию: `[]`)
+        5. Имена заголовков запроса и ответа, значения которых заменяются [стратегией маскирования](#telemetry-masking) (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
+        6. Писать ли в лог полный путь запроса вместо шаблона маршрута; если значение не указано, полный путь пишется только на уровне `TRACE`, а в остальных случаях используется шаблон (опционально, без значения по умолчанию)
+        7. Максимальный размер тела запроса, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
+        8. Максимальный размер тела ответа, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
+        9. Включает метрики модуля (по умолчанию: `false`)
+        10. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Настраивает теги метрик (по умолчанию: `{}`)
+        12. Включает трассировку модуля (по умолчанию: `true`)
+        13. Записывать ли в span атрибут `url.full` вместо только `url.path` (по умолчанию: `true`)
+        14. Настраивает атрибуты трассировки (по умолчанию: `{}`)
 
 ???+ warning "Метрики и логирование выключены по умолчанию"
 
@@ -867,25 +863,24 @@ Kora запускает его на исполнителе виртуальны�
                     telemetry {
                         logging {
                             enabled = false //(2)!
-                            mask = "***" //(3)!
-                            maskQueries = [ ] //(4)!
-                            maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(5)!
-                            pathFull = false //(6)!
-                            maxRequestBodyLogSize = "2MiB" //(7)!
-                            maxResponseBodyLogSize = "2MiB" //(8)!
+                            maskQueries = [ ] //(3)!
+                            maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(4)!
+                            pathFull = false //(5)!
+                            maxRequestBodyLogSize = "2MiB" //(6)!
+                            maxResponseBodyLogSize = "2MiB" //(7)!
                         }
                         metrics {
-                            enabled = false //(9)!
-                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
-                            tags = { // (11)!
+                            enabled = false //(8)!
+                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
+                            tags = { // (10)!
                                 "key1" = "value1"
                                 "key2" = "value2"
                             }
                         }
                         tracing {
-                            enabled = true //(12)!
-                            pathFull = true //(13)!
-                            attributes = { // (14)!
+                            enabled = true //(11)!
+                            pathFull = true //(12)!
+                            attributes = { // (13)!
                                 "key1" = "value1"
                                 "key2" = "value2"
                             }
@@ -898,18 +893,17 @@ Kora запускает его на исполнителе виртуальны�
 
         1. Максимальное время запроса: может включать разрешение `DNS`, установку соединения, запись тела запроса, обработку на сервере и чтение тела ответа. Если вызову требуются перенаправления или повторы, все они должны уложиться в один такой период (опционально, наследует значение клиента)
         2. Включает логирование модуля (опционально, наследует значение клиента)
-        3. Маска, которой скрываются указанные заголовки и параметры запроса или ответа (опционально, наследует значение клиента)
-        4. Список параметров запроса, которые требуется скрывать (опционально, наследует значение клиента)
-        5. Список заголовков запроса или ответа, которые требуется скрывать (опционально, наследует значение клиента)
-        6. Писать ли в лог полный путь запроса вместо шаблона маршрута (опционально, наследует значение клиента)
-        7. Максимальный размер тела запроса, которое еще записывается в лог (опционально, наследует значение клиента)
-        8. Максимальный размер тела ответа, которое еще записывается в лог (опционально, наследует значение клиента)
-        9. Включает метрики модуля (опционально, наследует значение клиента)
-        10. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (опционально, наследует значение клиента)
-        11. Настраивает теги метрик (опционально, наследует значение клиента)
-        12. Включает трассировку модуля (опционально, наследует значение клиента)
-        13. Записывать ли в span атрибут `url.full` вместо только `url.path` (опционально, наследует значение клиента)
-        14. Настраивает атрибуты трассировки (опционально, наследует значение клиента)
+        3. Имена параметров запроса, значения которых заменяются [стратегией маскирования](#telemetry-masking) (опционально, наследует значение клиента)
+        4. Имена заголовков запроса и ответа, значения которых заменяются [стратегией маскирования](#telemetry-masking) (опционально, наследует значение клиента)
+        5. Писать ли в лог полный путь запроса вместо шаблона маршрута (опционально, наследует значение клиента)
+        6. Максимальный размер тела запроса, которое еще записывается в лог (опционально, наследует значение клиента)
+        7. Максимальный размер тела ответа, которое еще записывается в лог (опционально, наследует значение клиента)
+        8. Включает метрики модуля (опционально, наследует значение клиента)
+        9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (опционально, наследует значение клиента)
+        10. Настраивает теги метрик (опционально, наследует значение клиента)
+        11. Включает трассировку модуля (опционально, наследует значение клиента)
+        12. Записывать ли в span атрибут `url.full` вместо только `url.path` (опционально, наследует значение клиента)
+        13. Настраивает атрибуты трассировки (опционально, наследует значение клиента)
 
     === ":simple-yaml: `YAML`"
 
@@ -921,40 +915,38 @@ Kora запускает его на исполнителе виртуальны�
               telemetry:
                 logging:
                   enabled: false #(2)!
-                  mask: "***" #(3)!
-                  maskQueries: [ ] #(4)!
-                  maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(5)!
-                  pathFull: false #(6)!
-                  maxRequestBodyLogSize: "2MiB" #(7)!
-                  maxResponseBodyLogSize: "2MiB" #(8)!
+                  maskQueries: [ ] #(3)!
+                  maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(4)!
+                  pathFull: false #(5)!
+                  maxRequestBodyLogSize: "2MiB" #(6)!
+                  maxResponseBodyLogSize: "2MiB" #(7)!
                 metrics:
-                  enabled: false #(9)!
-                  slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
-                  tags: #(11)!
+                  enabled: false #(8)!
+                  slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
+                  tags: #(10)!
                     key1: value1
                     key2: value2
                 tracing:
-                  enabled: true #(12)!
-                  pathFull: true #(13)!
-                  attributes: #(14)!
+                  enabled: true #(11)!
+                  pathFull: true #(12)!
+                  attributes: #(13)!
                     key1: value1
                     key2: value2
         ```
 
         1. Максимальное время запроса: может включать разрешение `DNS`, установку соединения, запись тела запроса, обработку на сервере и чтение тела ответа. Если вызову требуются перенаправления или повторы, все они должны уложиться в один такой период (опционально, наследует значение клиента)
         2. Включает логирование модуля (опционально, наследует значение клиента)
-        3. Маска, которой скрываются указанные заголовки и параметры запроса или ответа (опционально, наследует значение клиента)
-        4. Список параметров запроса, которые требуется скрывать (опционально, наследует значение клиента)
-        5. Список заголовков запроса или ответа, которые требуется скрывать (опционально, наследует значение клиента)
-        6. Писать ли в лог полный путь запроса вместо шаблона маршрута (опционально, наследует значение клиента)
-        7. Максимальный размер тела запроса, которое еще записывается в лог (опционально, наследует значение клиента)
-        8. Максимальный размер тела ответа, которое еще записывается в лог (опционально, наследует значение клиента)
-        9. Включает метрики модуля (опционально, наследует значение клиента)
-        10. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (опционально, наследует значение клиента)
-        11. Настраивает теги метрик (опционально, наследует значение клиента)
-        12. Включает трассировку модуля (опционально, наследует значение клиента)
-        13. Записывать ли в span атрибут `url.full` вместо только `url.path` (опционально, наследует значение клиента)
-        14. Настраивает атрибуты трассировки (опционально, наследует значение клиента)
+        3. Имена параметров запроса, значения которых заменяются [стратегией маскирования](#telemetry-masking) (опционально, наследует значение клиента)
+        4. Имена заголовков запроса и ответа, значения которых заменяются [стратегией маскирования](#telemetry-masking) (опционально, наследует значение клиента)
+        5. Писать ли в лог полный путь запроса вместо шаблона маршрута (опционально, наследует значение клиента)
+        6. Максимальный размер тела запроса, которое еще записывается в лог (опционально, наследует значение клиента)
+        7. Максимальный размер тела ответа, которое еще записывается в лог (опционально, наследует значение клиента)
+        8. Включает метрики модуля (опционально, наследует значение клиента)
+        9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (опционально, наследует значение клиента)
+        10. Настраивает теги метрик (опционально, наследует значение клиента)
+        11. Включает трассировку модуля (опционально, наследует значение клиента)
+        12. Записывать ли в span атрибут `url.full` вместо только `url.path` (опционально, наследует значение клиента)
+        13. Настраивает атрибуты трассировки (опционально, наследует значение клиента)
 
 ### Запрос { #request }
 
@@ -1719,7 +1711,7 @@ Kora поставляет реализации `HttpClientResponseMapper` для
 
     1. `@Json` здесь используется как аннотация над типом, поэтому успешную и ошибочную полезные нагрузки можно помечать независимо
 
-`Either` предоставляет `isLeft()` / `isRight()` и nullable-аксессоры `left()` / `right()`.
+`Either` предоставляет `isLeft()` / `isRight()`, nullable-аксессоры `left()` / `right()` и `fold(leftMapper, rightMapper)`, который сводит любую из сторон к одному результату (см. [Either](config.md#either)).
 Также поддерживается `HttpResponseEntity<Either<T, E>>`, когда дополнительно нужны код статуса и заголовки.
 
 #### Свой ответ { #custom-response }
@@ -1812,7 +1804,7 @@ Kora поставляет реализации `HttpClientResponseMapper` для
                 }
 
                 if (code >= 400) {
-                    // Обработка ошибки: логирование или выброс исключения
+                    // Handle error: log or throw exception
                     throw new HttpClientResponseException(code, response.headers(), body);
                 }
 
@@ -1846,7 +1838,7 @@ Kora поставляет реализации `HttpClientResponseMapper` для
                 val body = response.body().asInputStream().use { it.readAllBytes() }
 
                 if (code >= 400) {
-                    // Обработка ошибки: логирование или выброс исключения
+                    // Handle error: log or throw exception
                     throw HttpClientResponseException(code, response.headers(), body)
                 }
 
@@ -1892,8 +1884,8 @@ try {
 Основные типы исключений:
 
 * `HttpClientResponseException` — ответ получен, но его код не был обработан как успешный. Содержит `getCode()`, `getHeaders()` и `getBytes()`.
-* `HttpClientTimeoutException` — истекло время ожидания запроса, соединения или чтения.
-* `HttpClientConnectionException` — ошибка при установке или поддержании соединения с удаленным хостом.
+* `HttpClientTimeoutException` — истекло время ожидания запроса или чтения.
+* `HttpClientConnectionException` — ошибка при установке или поддержании соединения с удаленным хостом, в том числе истекшее время ожидания соединения.
 * `HttpClientEncoderException` — ошибка при преобразовании пользовательского значения в тело запроса.
 * `HttpClientDecoderException` — ошибка при преобразовании тела ответа в пользовательский тип.
 * `HttpClientUnknownException` — прочая ошибка транспортного клиента, не попавшая в более конкретную категорию.
@@ -2045,6 +2037,7 @@ try {
 
 Для изменения или расширения поведения можно создавать перехватчики через интерфейс `HttpClientInterceptor`.
 Перехватчики подключаются аннотацией `@InterceptWith` — либо к конкретному методу, либо ко всему интерфейсу `@HttpClient`.
+Kora предоставляет готовые перехватчики [авторизации](#authorization), а собственный перехватчик можно реализовать самостоятельно, см. [Свой перехватчик](#interceptor-custom).
 
 ```java
 public interface HttpClientInterceptor {
@@ -2061,85 +2054,9 @@ public interface HttpClientInterceptor {
 2. Передает запрос дальше по цепочке и возвращает ответ
 
 Запрос неизменяемый, поэтому измененный запрос создается через `request.toBuilder()`.
-
-Интерфейс получает текущий `Context`, исходящий `HttpClientRequest` и `InterceptChain`, продолжающий обработку:
-
-```java
-public interface HttpClientInterceptor {
-
-    CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception; //(1)!
-
-    interface InterceptChain {
-        CompletionStage<HttpClientResponse> process(Context ctx, HttpClientRequest request) throws Exception; //(2)!
-    }
-}
-```
-
-1. Вызывается для каждого запроса, к которому подключён перехватчик
-2. Продолжает цепочку (следующий перехватчик или фактический вызов транспорта)
-
-Перехватчик может:
-
-* **Изменить запрос перед отправкой** — пересоберите его через `request.toBuilder()` (добавить заголовок, изменить URI, заменить тело), затем передайте новый запрос в `chain.process(ctx, newRequest)`
-* **Продолжить цепочку** — вернуть `chain.process(ctx, request)` без изменений
-* **Замкнуть накоротко** — вернуть ответ, не вызывая `chain.process(...)` (например, кэшированный ответ)
-* **Просмотреть или преобразовать ответ** — вызвать `chain.process(...)` и добавить `thenApply` / `thenCompose` / `exceptionally` к возвращённому `CompletionStage`
-* **Завершить вызов ошибкой** — бросить исключение или вернуть неуспешный `CompletionStage`, прервав цепочку
-
-Пример, добавляющий заголовок к каждому запросу и проверяющий статус ответа:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public final class TracingInterceptor implements HttpClientInterceptor {
-
-        @Override
-        public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception {
-            HttpClientRequest modified = request.toBuilder()
-                .header("x-request-id", UUID.randomUUID().toString()) //(1)!
-                .build();
-
-            return chain.process(ctx, modified).thenApply(response -> {
-                if (response.code() >= 500) {
-                    // наблюдаем серверные ошибки
-                }
-                return response;
-            });
-        }
-    }
-    ```
-
-    1. `request.toBuilder()` возвращает `HttpClientRequestBuilder`, инициализированный текущим запросом
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class TracingInterceptor : HttpClientInterceptor {
-
-        override fun processRequest(
-            ctx: Context,
-            chain: HttpClientInterceptor.InterceptChain,
-            request: HttpClientRequest
-        ): CompletionStage<HttpClientResponse> {
-            val modified = request.toBuilder()
-                .header("x-request-id", UUID.randomUUID().toString()) //(1)!
-                .build()
-
-            return chain.process(ctx, modified).thenApply { response ->
-                if (response.code() >= 500) {
-                    // наблюдаем серверные ошибки
-                }
-                response
-            }
-        }
-    }
-    ```
-
-    1. `request.toBuilder()` возвращает `HttpClientRequestBuilder`, инициализированный текущим запросом
-
 Для императивного `HttpClient` перехватчик подключается через `httpClient.with(interceptor)` вместо `@InterceptWith`.
+
+### Свой перехватчик { #interceptor-custom }
 
 **Перехватчик на метод:**
 
@@ -2636,9 +2553,10 @@ HttpClientException
             } catch (HttpClientConnectionException e) {
                 // Connection error: check service availability
             } catch (HttpClientResponseException e) {
-                // Ошибка ответа: code, body, headers
+                // Response error: code, body, headers
                 int code = e.getCode();
                 byte[] body = e.getBytes();
+                var headers = e.getHeaders();
             } catch (HttpClientEncoderException e) {
                 // Serialization error: validate data
             } catch (HttpClientDecoderException e) {
@@ -2665,9 +2583,10 @@ HttpClientException
             } catch (e: HttpClientConnectionException) {
                 // Connection error: check service availability
             } catch (e: HttpClientResponseException) {
-                // Ошибка ответа: code, body, headers
+                // Response error: code, body, headers
                 val code = e.code
                 val body = e.bytes
+                val headers = e.headers
             } catch (e: HttpClientEncoderException) {
                 // Serialization error: validate data
             } catch (e: HttpClientDecoderException) {
@@ -2681,13 +2600,13 @@ HttpClientException
 
 #### Время ожидания { #timeout-exception }
 
-Бросается, когда запрос превысил настроенное время ожидания (`requestTimeout`, `connectTimeout` или `readTimeout`).
+Бросается, когда запрос превысил настроенное время ожидания (`requestTimeout` или `readTimeout`).
+Соединение, которое не удалось установить за `connectTimeout`, вместо этого сообщается как [HttpClientConnectionException](#connection-exception).
 
 **Причины:**
 
 - Сервер не ответил за `requestTimeout`
-- Превышено время установки соединения (`connectTimeout`)
-- Превышено время чтения ответа (`readTimeout`)
+- Превышено время чтения ответа (`readTimeout`; применяется транспортами OkHttp и Apache, JDK-транспорт его не использует)
 - Сетевые задержки
 
 **Рекомендации:**
@@ -2699,13 +2618,26 @@ HttpClientException
 #### Ошибка соединения { #connection-exception }
 
 Бросается, когда не удается установить соединение с сервером.
+Каждый транспорт сообщает о неудачном подключении, включая истекший `connectTimeout`, как о `HttpClientConnectionException`.
 
 **Причины:**
 
 - Ошибка разрешения DNS
 - Сервер недоступен (порт закрыт, firewall)
 - Соединение отклонено
-- Ошибка SSL/TLS handshake
+- Превышено время установки соединения (`connectTimeout`)
+- Ошибка SSL/TLS handshake (OkHttp и Apache HttpClient)
+
+Как каждый транспорт отображает ошибки ввода-вывода:
+
+| Транспорт | `HttpClientConnectionException` | `HttpClientTimeoutException` |
+|-----------|---------------------------------|------------------------------|
+| OkHttp | Любое другое `IOException`, включая таймаут подключения | `InterruptedIOException` с сообщением `timeout`, которое OkHttp бросает по таймауту вызова `requestTimeout` |
+| Apache HttpClient | `ConnectTimeoutException` и любое другое `IOException` | `SocketTimeoutException` (`requestTimeout` или `readTimeout`) |
+| JDK | `ConnectException`, `HttpConnectTimeoutException`, `ProtocolException` | `HttpTimeoutException` (`requestTimeout`) |
+
+В JDK-транспорте любое другое `IOException` (например, ошибка TLS handshake) приводит к одному повтору запроса, если его тело еще не было отправлено.
+Если тело уже отправлено или повтор завершился ошибкой, отличной от таймаута подключения, ошибки протокола или таймаута запроса, вызов завершается [HttpClientUnknownException](#unknown-exception).
 
 **Рекомендации:**
 
@@ -2782,42 +2714,54 @@ HttpClientException
 Приведённые выше рекомендации (повтор, circuit breaker, таймаут, fallback) предоставляются модулем [Resilient](resilient.md), а не самим HTTP-клиентом.
 Его аннотации применяются напрямую к методам декларативного `@HttpClient`, поэтому отказоустойчивость можно добавить, не меняя места вызова:
 
-* `@Retry` — повторить вызов при ошибке
-* `@CircuitBreaker` — перестать вызывать сбоящую зависимость и быстро завершать вызовы ошибкой до её восстановления
+* `@Retryable` — повторить вызов при ошибке
+* `@CircuitBreakable` — перестать вызывать сбоящую зависимость и быстро завершать вызовы ошибкой до её восстановления
 * `@Timeout` — ограничить общее время вызова
 * `@Fallback` — вернуть запасной результат при ошибке вызова
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @RetrySpec("resilient.retry.someClient") //(1)!
+    public interface SomeClientRetry extends Retry { }
+
+    @CircuitBreakerSpec("resilient.circuitbreaker.someClient")
+    public interface SomeClientCircuitBreaker extends CircuitBreaker { }
+
     @HttpClient
     public interface SomeClient {
 
-        @Retry("someClient.hello") //(1)!
-        @CircuitBreaker("someClient.hello") //(2)!
+        @Retryable(SomeClientRetry.class) //(2)!
+        @CircuitBreakable(SomeClientCircuitBreaker.class)
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         HttpResponseEntity<String> hello();
     }
     ```
 
-    1. Путь конфигурации повтора
-    2. Путь конфигурации circuit breaker
+    1. Интерфейс спецификации, привязанный к пути конфигурации повтора
+    2. Аспект ссылается на тип спецификации, см. [Спецификации](resilient.md#specifications)
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @RetrySpec("resilient.retry.someClient") //(1)!
+    interface SomeClientRetry : Retry
+
+    @CircuitBreakerSpec("resilient.circuitbreaker.someClient")
+    interface SomeClientCircuitBreaker : CircuitBreaker
+
     @HttpClient
     interface SomeClient {
 
-        @Retry("someClient.hello") //(1)!
-        @CircuitBreaker("someClient.hello") //(2)!
+        @Retryable(SomeClientRetry::class) //(2)!
+        @CircuitBreakable(SomeClientCircuitBreaker::class)
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         fun hello(): HttpResponseEntity<String>
     }
     ```
 
-    1. Путь конфигурации повтора
-    2. Путь конфигурации circuit breaker
+    1. Интерфейс спецификации, привязанный к пути конфигурации повтора
+    2. Аспект ссылается на тип спецификации, см. [Спецификации](resilient.md#specifications)
 
 Обратите внимание на отличие от транспортного `requestTimeout` ([Конфигурация клиента](#client-configuration)): `requestTimeout` ограничивает одну HTTP-попытку,
 тогда как `@Timeout` ограничивает весь вызов метода, включая повторы. Конфигурацию и семантику каждой аннотации см. в модуле [Resilient](resilient.md).
@@ -3139,12 +3083,12 @@ public interface HttpClient {
 - `DefaultHttpClientMetricsFactory` создает сборщик метрик;
 - `DefaultHttpClientBodyConverter` превращает захваченное тело в строку, которая пишется в лог.
 
-Если для клиента выключены и логирование, и метрики, и трассировка, фабрика возвращает пустую телеметрию и обертка вообще не устанавливается.
+Если для метода клиента выключены и логирование, и метрики, и трассировка, фабрика возвращает пустую телеметрию.
 
 **Логирование.** На каждый метод клиента создаются два логгера, названные по классу клиента, методу и направлению:
 `com.example.SomeClient.hello.request` и `com.example.SomeClient.hello.response`.
 Их уровень определяет объем записи: `INFO` пишет только операцию, `DEBUG` добавляет параметры запроса и заголовки,
-`TRACE` добавляет тело. Скрываемые параметры и заголовки заменяются настроенной маской `mask`,
+`TRACE` добавляет тело. Значения скрываемых параметров и заголовков заменяются [стратегией маскирования](#telemetry-masking),
 а тело больше `maxRequestBodyLogSize` / `maxResponseBodyLogSize` пропускается с предупреждением.
 Настройка самих логгеров описана в разделе [Логирование](logging-slf4j.md).
 
@@ -3158,61 +3102,162 @@ public interface HttpClient {
 
 ### Логирование { #telemetry-logging }
 
-Логирование клиента пишется через `SLF4J` под двумя логгерами, названными по имени клиента: `<clientName>.request` и `<clientName>.response`
-(где `<clientName>` выводится из интерфейса `@HttpClient`). Включение логирования в конфигурации (`telemetry.logging.enabled = true`) активирует
-телеметрию, но **что именно** пишется, определяется уровнем логирования этих логгеров, поэтому детализацией вы управляете из вашего фреймворка логирования (`logback` и т.д.):
+Логирование клиента пишется через `SLF4J` под двумя логгерами на каждый метод клиента, названными по каноническому имени интерфейса `@HttpClient`,
+имени метода и направлению: `<interface>.<method>.request` и `<interface>.<method>.response`.
+Включение логирования в конфигурации (`telemetry.logging.enabled = true`) активирует телеметрию, но **что именно** пишется, определяется уровнем логирования этих логгеров,
+поэтому детализацией вы управляете из вашего фреймворка логирования (`logback` и т.д.):
 
 | Уровень лога | Что логируется |
 |--------------|----------------|
-| `INFO`  | Строка начала запроса и конца ответа: метод, шаблон пути, статус ответа, код результата и длительность |
-| `DEBUG` | Дополнительно **заголовки** запроса и ответа |
+| `INFO`  | Строка начала запроса и конца ответа: метод и шаблон пути, статус ответа, код результата и длительность |
+| `DEBUG` | Дополнительно query-параметры запроса и **заголовки** запроса и ответа |
 | `TRACE` | Дополнительно **тела** запроса и ответа, а также полный (нешаблонизированный) путь |
+| `WARN`  | Запрос, завершившийся исключением: код результата `CONNECTION_ERROR`, длительность и тип исключения |
 
-Поля конфигурации формируют вывод (полный список см. в [Конфигурации](#configuration)):
+Поля конфигурации формируют вывод (полный список см. в [Конфигурации клиента](#client-configuration)):
 
-* `pathTemplate` — при `true` (по умолчанию) логируется шаблон маршрута с низкой кардинальностью (`/users/{id}`) и используется как метка метрик/трассировки вместо разрешённого пути (`/users/42`); на `TRACE` логируется разрешённый путь
-* `maskHeaders` — имена заголовков, значения которых заменяются на `mask` (по умолчанию маскируются `authorization`, `cookie`, `set-cookie`)
-* `maskQueries` — имена query-параметров, значения которых заменяются на `mask`
-* `mask` — строка замены (по умолчанию `***`)
+* `pathFull` — если задано, принудительно пишет в лог полный путь (`true`) или шаблон маршрута (`false`); если не задано, полный путь пишется только на `TRACE`
+* `maskHeaders` — имена заголовков, значения которых [маскируются](#telemetry-masking) (по умолчанию маскируются `authorization`, `cookie`, `set-cookie`)
+* `maskQueries` — имена query-параметров, значения которых [маскируются](#telemetry-masking)
+* `maxRequestBodyLogSize` / `maxResponseBodyLogSize` — тело большего размера не логируется, вместо него пишется предупреждение
 
-Для клиента, имя которого выводится как `someClient`, включить полное логирование тел можно так:
+Для метода `hello` интерфейса `com.example.SomeClient` включить полное логирование тел можно так:
 
 ```xml
-<logger name="someClient.request" level="TRACE"/>
-<logger name="someClient.response" level="TRACE"/>
+<logger name="com.example.SomeClient.hello.request" level="TRACE"/>
+<logger name="com.example.SomeClient.hello.response" level="TRACE"/>
 ```
+
+### Маскирование { #telemetry-masking }
+
+Значения заголовков из `telemetry.logging.maskHeaders` и query-параметров из `telemetry.logging.maskQueries`
+(имена сравниваются в нижнем регистре) заменяются результатом компонента `MaskingStrategy` с тегом `@Tag(HttpClientTelemetry.class)`.
+Стратегия получает каждое значение отдельно, а стратегия по умолчанию пишет `***`.
+Списки имен настраиваются для каждого клиента и метода, а стратегия — один компонент, общий для всех клиентов.
+Чтобы изменить способ маскирования, зарегистрируйте свою стратегию с тем же тегом — она заменит стратегию по умолчанию.
+Подходит любая `MaskingStrategy`, в том числе встроенные [стратегии](logging-aspect.md#masking-strategies) модуля логирования.
+
+Тела запроса и ответа, которые пишутся на `TRACE`, маскируются компонентом `DataMasker` (`io.koraframework.logging.common.masking.raw`)
+с тегом `@Tag(HttpClientTelemetry.class)`, выбранным по `Content-Type` тела: `json` для `*/json` и `*+json`,
+`xml` для `*/xml` и `*+xml`, `form-urlencoded` для `application/x-www-form-urlencoded`.
+По умолчанию ни один маскировщик не зарегистрирован, поэтому без него тело логируется как есть.
+Зарегистрируйте `JsonDataMasker`, `XmlDataMasker` или `FormUrlencodedDataMasker` с правилами маскирования, по одному на формат:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends OkHttpClientModule {
+
+        @Tag(HttpClientTelemetry.class)
+        default MaskingStrategy httpClientMaskingStrategy() {
+            return new MaskingKeepLast("***", 4); //(1)!
+        }
+
+        @Tag(HttpClientTelemetry.class)
+        default DataMasker httpClientJsonDataMasker() {
+            return new JsonDataMasker(MaskingPathRules.builder()
+                .mask("password", new MaskingFull()) //(2)!
+                .mask("user.token", new MaskingKeepLast()) //(3)!
+                .build());
+        }
+    }
+    ```
+
+    1.  Значения заголовков и query-параметров сохраняют последние 4 символа после `***`
+    2.  Одиночный сегмент совпадает с полем с таким именем на любой глубине; `MaskingFull` заменяет значение на `***`
+    3.  Путь через точку сопоставляется от корня нагрузки, `*` совпадает ровно с одним сегментом; `MaskingKeepLast` сохраняет последние 4 символа после `***`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : OkHttpClientModule {
+
+        @Tag(HttpClientTelemetry::class)
+        fun httpClientMaskingStrategy(): MaskingStrategy = MaskingKeepLast("***", 4) //(1)!
+
+        @Tag(HttpClientTelemetry::class)
+        fun httpClientJsonDataMasker(): DataMasker = JsonDataMasker(
+            MaskingPathRules.builder()
+                .mask("password", MaskingFull()) //(2)!
+                .mask("user.token", MaskingKeepLast()) //(3)!
+                .build()
+        )
+    }
+    ```
+
+    1.  Значения заголовков и query-параметров сохраняют последние 4 символа после `***`
+    2.  Одиночный сегмент совпадает с полем с таким именем на любой глубине; `MaskingFull` заменяет значение на `***`
+    3.  Путь через точку сопоставляется от корня нагрузки, `*` совпадает ровно с одним сегментом; `MaskingKeepLast` сохраняет последние 4 символа после `***`
+
+`DefaultHttpClientBodyConverter` зарегистрирован как `@DefaultComponent` и служит точкой переопределения маскирования тел:
+подкласс с `@Component` может переопределить `selectRequestDataMasker` / `selectResponseDataMasker`, чтобы выбирать маскировщик для клиента или сообщения,
+или `convertBody(ByteBuffer, String, DataMasker)`, чтобы изменить превращение байтов в текст.
 
 ### Свой логгер { #telemetry-custom-logger }
 
-Чтобы полностью управлять форматом или назначением лога, предоставьте свой компонент `HttpClientLoggerFactory` (или `HttpClientLogger`) — он заменит
-фабрику по умолчанию `Sl4fjHttpClientLoggerFactory`. То же касается метрик (`HttpClientMetricsFactory`) и трассировки (`HttpClientTracerFactory`):
-предоставление любого из этих компонентов переопределяет соответствующую реализацию по умолчанию, остальные сохраняют реализацию по умолчанию.
+Телеметрия по умолчанию собирается из заменяемых компонентов `HttpClientModule`:
+
+- `DefaultHttpClientLoggerFactory` — создает логгеры запроса и ответа, зарегистрирован как `@DefaultComponent`;
+- `DefaultHttpClientBodyConverter` — превращает захваченное тело в текст лога, зарегистрирован как `@DefaultComponent`;
+- `DefaultHttpClientMetricsFactory` — создает сборщик метрик; в графе не регистрируется, поэтому компонент этого типа заменяет встроенный экземпляр;
+- `HttpClientTelemetryFactory` — строит всю телеметрию метода клиента; фабрика с тегом выбирается через `@HttpClient(telemetryTag = ...)`.
+
+Компонент того же типа заменяет компонент по умолчанию. Например, фабрика логгеров, которая пишет все клиенты в одну пару логгеров:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class MyHttpClientLoggerFactory implements HttpClientLoggerFactory {
+    public final class SharedHttpClientLoggerFactory extends DefaultHttpClientLoggerFactory {
+
+        private final MaskingStrategy maskingStrategy;
+
+        public SharedHttpClientLoggerFactory(@Tag(HttpClientTelemetry.class) MaskingStrategy maskingStrategy) {
+            super(maskingStrategy);
+            this.maskingStrategy = maskingStrategy;
+        }
 
         @Override
-        public HttpClientLogger get(TelemetryConfig.LogConfig logging, String clientName) {
-            return new MyHttpClientLogger(clientName); //(1)!
+        public DefaultHttpClientLogger create(DefaultHttpClientTelemetry.TelemetryContext context) {
+            var logging = context.config().logging();
+            return new DefaultHttpClientLogger(
+                LoggerFactory.getLogger("http-client.request"), //(1)!
+                LoggerFactory.getLogger("http-client.response"),
+                logging.maskQueries(), //(2)!
+                logging.maskHeaders(),
+                maskingStrategy,
+                context
+            );
         }
     }
     ```
 
-    1. Ваша реализация `HttpClientLogger`, управляющая тем, что и как логировать
+    1.  Имена логгеров выбираете вы; запись лога по-прежнему содержит `clientConfigPath`
+    2.  Имена сравниваются в нижнем регистре: фабрика по умолчанию приводит их к нему, здесь они передаются как настроены
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class MyHttpClientLoggerFactory : HttpClientLoggerFactory {
+    class SharedHttpClientLoggerFactory(
+        @Tag(HttpClientTelemetry::class) private val maskingStrategy: MaskingStrategy
+    ) : DefaultHttpClientLoggerFactory(maskingStrategy) {
 
-        override fun get(logging: TelemetryConfig.LogConfig, clientName: String): HttpClientLogger {
-            return MyHttpClientLogger(clientName) //(1)!
+        override fun create(context: DefaultHttpClientTelemetry.TelemetryContext): DefaultHttpClientLoggerFactory.DefaultHttpClientLogger {
+            val logging = context.config().logging()
+            return DefaultHttpClientLoggerFactory.DefaultHttpClientLogger(
+                LoggerFactory.getLogger("http-client.request"), //(1)!
+                LoggerFactory.getLogger("http-client.response"),
+                logging.maskQueries(), //(2)!
+                logging.maskHeaders(),
+                maskingStrategy,
+                context
+            )
         }
     }
     ```
 
-    1. Ваша реализация `HttpClientLogger`, управляющая тем, что и как логировать
+    1.  Имена логгеров выбираете вы; запись лога по-прежнему содержит `clientConfigPath`
+    2.  Имена сравниваются в нижнем регистре: фабрика по умолчанию приводит их к нему, здесь они передаются как настроены

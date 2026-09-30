@@ -1,10 +1,10 @@
 ---
 seo_title: "gRPC-сервер Kora: обработчики, перехватчики и TLS"
 seo_description: "Справочник по gRPC-серверу Kora: настройка protobuf, конфигурация, унарные и стриминговые обработчики, виртуальные потоки, перехватчики, TLS, reflection."
-keywords: ["Kora Framework", "фреймворк Kora", "gRPC-сервер Kora", "grpc-java", "protobuf", "перехватчики gRPC"]
-description: "Explains the Kora gRPC server: protobuf Gradle plugin setup, GrpcServerConfig options, unary and streaming StreamObserver handlers, io.grpc.Status error handling, the virtual-thread execution model, ServerInterceptor interceptors and their order, TLS through ServerCredentials, builder tuning through Configurer, lifecycle and readiness, telemetry and reflection. Use when working with GrpcServerModule, GrpcServerConfig, Configurer, ServerCredentials, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection."
+keywords: ["Kora Framework", "фреймворк Kora", "gRPC-сервер Kora", "grpc-java", "protobuf", "перехватчики gRPC", "маскирование телеметрии gRPC"]
+description: "Explains the Kora gRPC server: protobuf Gradle plugin setup, GrpcServerConfig options, unary and streaming StreamObserver handlers, io.grpc.Status error handling, the virtual-thread execution model, ServerInterceptor interceptors and their order, TLS through ServerCredentials, builder tuning through Configurer, lifecycle and readiness, telemetry and reflection. Use when working with GrpcServerModule, GrpcServerConfig, Configurer, ServerCredentials, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection, MaskingStrategy, maskHeaders."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about the Kora gRPC server: protobuf Gradle plugin setup, server configuration, unary and streaming handlers, io.grpc.Status error handling, the per-connection virtual-thread execution model, ServerInterceptor interceptors and their execution order, scoping and metadata authorization, TLS, lifecycle and readiness, telemetry and reflection; key triggers include GrpcServerModule, GrpcServerConfig, Configurer, ForwardingServerBuilder, ServerCredentials, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection. Note: the server runs on the gRPC OkHttp transport, handlers are synchronous StreamObserver-based generated stubs, and interceptors are global io.grpc.ServerInterceptor components only — there is no @GrpcService or @InterceptWith annotation in this module."
+  use_when: "Use this file for Kora docs or implementation questions about the Kora gRPC server: protobuf Gradle plugin setup, server configuration, unary and streaming handlers, io.grpc.Status error handling, the per-connection virtual-thread execution model, ServerInterceptor interceptors and their execution order, scoping and metadata authorization, TLS, lifecycle and readiness, telemetry and reflection; key triggers include GrpcServerModule, GrpcServerConfig, Configurer, ForwardingServerBuilder, ServerCredentials, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection, MaskingStrategy, maskHeaders. Note: the server runs on the gRPC OkHttp transport, handlers are synchronous StreamObserver-based generated stubs, and interceptors are global io.grpc.ServerInterceptor components only — there is no @GrpcService or @InterceptWith annotation in this module."
 ---
 
 Модуль запускает `gRPC-сервер` на основе [`grpc-java`](https://grpc.io/docs/languages/java/basics/) и подключает к нему обработчики из графа приложения.
@@ -23,7 +23,7 @@ Kora строит сервер на транспорте `gRPC OkHttp`, доба
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "io.koraframework:grpc-server"
-    implementation "io.grpc:grpc-protobuf:1.83.1"
+    implementation "io.grpc:grpc-protobuf:1.84.0"
     implementation "javax.annotation:javax.annotation-api:1.3.2"
     ```
 
@@ -38,7 +38,7 @@ Kora строит сервер на транспорте `gRPC OkHttp`, доба
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("io.koraframework:grpc-server")
-    implementation("io.grpc:grpc-protobuf:1.83.1")
+    implementation("io.grpc:grpc-protobuf:1.84.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     ```
 
@@ -48,7 +48,7 @@ Kora строит сервер на транспорте `gRPC OkHttp`, доба
     interface Application : GrpcServerModule
     ```
 
-Вместе с `io.koraframework:grpc-server` приходит рантайм `gRPC` версии `1.83.1`.
+Вместе с `io.koraframework:grpc-server` приходит рантайм `gRPC` версии `1.84.0`.
 Все остальные артефакты `io.grpc` — `grpc-protobuf`, `grpc-services` и всё, что подключается в тестовой области, — должны быть той же версии, смотрите [Тестирование](#testing).
 
 ### Плагин { #plugin }
@@ -64,9 +64,9 @@ Kora строит сервер на транспорте `gRPC OkHttp`, доба
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
+        protoc { artifact = "com.google.protobuf:protoc:4.36.2" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.84.0" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -94,9 +94,9 @@ Kora строит сервер на транспорте `gRPC OkHttp`, доба
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
+        protoc { artifact = "com.google.protobuf:protoc:4.36.2" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.84.0" }
         }
         generateProtoTasks {
             all().forEach { task -> task.plugins { id("grpc") } }
@@ -183,18 +183,19 @@ Kora строит сервер на транспорте `gRPC OkHttp`, доба
             telemetry {
                 logging {
                     enabled = false //(9)!
+                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(10)!
                 }
                 metrics {
-                    enabled = false //(10)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
-                    tags = { // (12)!
+                    enabled = false //(11)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(12)!
+                    tags = { // (13)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
                 }
                 tracing {
-                    enabled = true //(13)!
-                    attributes = { // (14)!
+                    enabled = true //(14)!
+                    attributes = { // (15)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
@@ -212,11 +213,12 @@ Kora строит сервер на транспорте `gRPC OkHttp`, доба
         7. Интервал между кадрами `PING` (опционально, без значения по умолчанию).
         8. Тайм-аут подтверждения кадра `PING` (опционально, без значения по умолчанию). Если подтверждение не получено за это время, соединение закрывается.
         9. Включает логирование модуля (по умолчанию: `false`).
-        10. Включает метрики модуля (по умолчанию: `false`). Метрики пишутся только если модуль [метрик](metrics.md) также предоставляет `MeterRegistry`.
-        11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
-        12. Теги метрик (по умолчанию: `{}`).
-        13. Включает трассировку модуля (по умолчанию: `true`). Спаны экспортируются только если модуль [трассировки](tracing.md) также предоставляет `Tracer`.
-        14. Атрибуты трассировки (по умолчанию: `{}`).
+        10. Ключи `Metadata`, значения которых в залогированных заголовках заменяются через `MaskingStrategy` с тегом `@Tag(GrpcServerTelemetry.class)` (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`). Подробнее в разделе [Маскирование](#telemetry-masking).
+        11. Включает метрики модуля (по умолчанию: `false`). Метрики пишутся только если модуль [метрик](metrics.md) также предоставляет `MeterRegistry`.
+        12. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+        13. Теги метрик (по умолчанию: `{}`).
+        14. Включает трассировку модуля (по умолчанию: `true`). Спаны экспортируются только если модуль [трассировки](tracing.md) также предоставляет `Tracer`.
+        15. Атрибуты трассировки (по умолчанию: `{}`).
 
     === ":simple-yaml: `YAML`"
 
@@ -233,15 +235,16 @@ Kora строит сервер на транспорте `gRPC OkHttp`, доба
           telemetry:
             logging:
               enabled: false #(9)!
+              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(10)!
             metrics:
-              enabled: false #(10)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
-              tags: #(12)!
+              enabled: false #(11)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
+              tags: #(13)!
                 key1: value1
                 key2: value2
             tracing:
-              enabled: true #(13)!
-              attributes: #(14)!
+              enabled: true #(14)!
+              attributes: #(15)!
                 key1: value1
                 key2: value2
         ```
@@ -255,11 +258,12 @@ Kora строит сервер на транспорте `gRPC OkHttp`, доба
         7. Интервал между кадрами `PING` (опционально, без значения по умолчанию).
         8. Тайм-аут подтверждения кадра `PING` (опционально, без значения по умолчанию). Если подтверждение не получено за это время, соединение закрывается.
         9. Включает логирование модуля (по умолчанию: `false`).
-        10. Включает метрики модуля (по умолчанию: `false`). Метрики пишутся только если модуль [метрик](metrics.md) также предоставляет `MeterRegistry`.
-        11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
-        12. Теги метрик (по умолчанию: `{}`).
-        13. Включает трассировку модуля (по умолчанию: `true`). Спаны экспортируются только если модуль [трассировки](tracing.md) также предоставляет `Tracer`.
-        14. Атрибуты трассировки (по умолчанию: `{}`).
+        10. Ключи `Metadata`, значения которых в залогированных заголовках заменяются через `MaskingStrategy` с тегом `@Tag(GrpcServerTelemetry.class)` (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`). Подробнее в разделе [Маскирование](#telemetry-masking).
+        11. Включает метрики модуля (по умолчанию: `false`). Метрики пишутся только если модуль [метрик](metrics.md) также предоставляет `MeterRegistry`.
+        12. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+        13. Теги метрик (по умолчанию: `{}`).
+        14. Включает трассировку модуля (по умолчанию: `true`). Спаны экспортируются только если модуль [трассировки](tracing.md) также предоставляет `Tracer`.
+        15. Атрибуты трассировки (по умолчанию: `{}`).
 
 Всё, что не покрыто конфигурацией, доступно через [настройку в коде](#builder-configurer).
 
@@ -918,14 +922,14 @@ TelemetryInterceptor -> user interceptors -> handler
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "io.grpc:grpc-services:1.83.1"
+    implementation "io.grpc:grpc-services:1.84.0"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("io.grpc:grpc-services:1.83.1")
+    implementation("io.grpc:grpc-services:1.84.0")
     ```
 
 ### Конфигурация { #configuration-2 }
@@ -1012,6 +1016,44 @@ grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
         "io.koraframework.grpc.server.GrpcServer.request": "DEBUG"
         "io.koraframework.grpc.server.GrpcServer.response": "TRACE"
     ```
+
+#### Маскирование { #telemetry-masking }
+
+На уровне `DEBUG` `Metadata` запроса записывается в поле `headers` строками вида `key: value`, по одной строке на каждое значение.
+Значения ключей из `grpcServer.telemetry.logging.maskHeaders` (по умолчанию: `authorization`, `cookie`, `set-cookie`; ключи сравниваются в нижнем регистре)
+заменяются результатом `MaskingStrategy` с тегом `@Tag(GrpcServerTelemetry.class)`, которая по умолчанию пишет `***`.
+Незамаскированные значения бинарных ключей (с суффиксом `-bin`) записываются в `Base64`; для замаскированного бинарного ключа стратегия получает исходный `byte[]`.
+
+Чтобы изменить способ маскирования, зарегистрируйте собственную стратегию с тем же тегом — она заменит стратегию по умолчанию.
+Подходит любая `MaskingStrategy`, в том числе встроенные [стратегии](logging-aspect.md#masking-strategies) модуля логирования:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends GrpcServerModule {
+
+        @Tag(GrpcServerTelemetry.class)
+        default MaskingStrategy grpcServerMaskingStrategy() {
+            return new MaskingKeepLast("***", 4);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : GrpcServerModule {
+
+        @Tag(GrpcServerTelemetry::class)
+        fun grpcServerMaskingStrategy(): MaskingStrategy = MaskingKeepLast("***", 4)
+    }
+    ```
+
+Стратегия применяется только к заголовкам. Тело сообщения, которое логируется на уровне `TRACE`, рендерится `DefaultGrpcServerBodyConverter` как есть;
+чтобы скрыть в нём поля, переопределите `convertRequestMessage(service, method, requestHeaders, requestMessage)` или `convertResponseMessage(message)`
+в наследнике `DefaultGrpcServerBodyConverter`, зарегистрированном компонентом.
 
 ### Метрики { #telemetry-metrics }
 
@@ -1100,7 +1142,7 @@ grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
     2. Блокирующая заглушка, сгенерированная из контракта `proto`
 
 **Согласование версий**: клиентской стороне теста нужен транспорт `gRPC` в тестовом classpath, и его версия должна совпадать с рантаймом `gRPC`,
-который приходит с `io.koraframework:grpc-server`, — `1.83.1`.
+который приходит с `io.koraframework:grpc-server`, — `1.84.0`.
 Закрепленная более старая версия компилируется без замечаний и падает только в рантайме с
 `AbstractMethodError: ... does not define or inherit an implementation of the resolved method 'buildClientTransportServers(List, MetricRecorder)'`.
 
@@ -1109,7 +1151,7 @@ grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     testImplementation "io.koraframework:test-junit5"
-    testImplementation "io.grpc:grpc-netty:1.83.1"
+    testImplementation "io.grpc:grpc-netty:1.84.0"
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -1117,5 +1159,5 @@ grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     testImplementation("io.koraframework:test-junit5")
-    testImplementation("io.grpc:grpc-netty:1.83.1")
+    testImplementation("io.grpc:grpc-netty:1.84.0")
     ```

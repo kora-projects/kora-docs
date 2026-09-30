@@ -12,6 +12,26 @@ hide:
 
 Требуется миграция:
 
+- `ThreadPoolSchedulingJdkExecutor` JDK планировщика заменён на `VirtualThreadSchedulingJdkExecutor`: задачи выполняются на виртуальных потоках `kora-jdk-scheduler-job` с одним платформенным потоком `kora-jdk-scheduler-timer`, параллелизм ограничивается `scheduling.jdk.maxConcurrentExecutions` (по умолчанию без ограничений), а выполняющиеся задачи при остановке прерываются после `scheduling.jdk.shutdownWait`
+- Алгоритм `RateLimiter` в Resilient по умолчанию изменён с фиксированного окна на token bucket (`RateLimiterConfig.type` равен `TOKEN_BUCKET`), укажите `type = FIXED_WINDOW`, чтобы сохранить прежнее поведение
+- `KoraRetry` в Resilient принимает интерфейс `RetryBudget` вместо `KoraRetryBudget`
+- `Retry` и `CircuitBreaker` в Resilient больше не считают ошибками исключения, реализующие `NonRetryableException` / `NonCircuitableException`, собственные `RetryPredicate` / `CircuitBreakerPredicate` заменяют эту проверку
+- HTTP сервер по умолчанию больше не отправляет заголовок ответа `Server: Kora`, укажите `httpServer.headerServerNameEnabled = true`, чтобы вернуть его
+- Undertow HTTP сервер больше не применяет `Configurer<HttpHandler>`, остались только `Configurer<Undertow.Builder>` и `Configurer<XnioWorker.Builder>`
+- Удалён ключ конфигурации `telemetry.logging.mask` HTTP клиента и сервера, зарегистрируйте `MaskingStrategy` с тегом `@Tag(HttpServerTelemetry.class)` / `@Tag(HttpClientTelemetry.class)`, чтобы изменить замену маскируемых значений
+- Ошибки подключения HTTP клиентов Apache и JDK выбрасываются как `HttpClientConnectionException` вместо `HttpClientUnknownException` / `HttpClientTimeoutException`
+- Конструктор `KafkaAssignConsumerContainer` в Kafka лишился параметра `String topic`: топики читаются из `KafkaListenerConfig.topics()`, а `topicsPattern` отклоняется стратегией `assign`
+- `KafkaDeserializersModule` в Kafka перенесён в `io.koraframework.kafka.common.consumer.deserializer`, а `KafkaSerializersModule` в `io.koraframework.kafka.common.producer.serializer`
+- `DefaultGrpcServerBodyConverter#convertRequestMessage` gRPC сервера теперь принимает сервис, метод и `Metadata` запроса, а gRPC заголовки `authorization`, `cookie`, `set-cookie` по умолчанию маскируются в логах
+- Секция конфигурации телеметрии `metrics` отображается в `MetricsConfig` (`enabled`, `tags`), `metrics.enabled = false` заменяет `MeterRegistry` на no-op реализацию
+- В телеметрии `OpentelemetryTracingModule#opentelemetryResourceConfig` переименован в `opentelemetryTracingConfig`, `opentelemetryTracingResource` принимает `All<OpentelemetryTracingAttributesProvider>`, а фабрики трассировки стали `@DefaultComponent`
+- `ConsoleTextRecordEncoder` Logback перенесён в пакет `io.koraframework.logging.logback.text`, обновите класс энкодера в `logback.xml`
+- Logback без `logback.xml` настраивается через `KoraLogbackConfigurator`: энкодер выбирается по `kora.logging.encoder` / `KORA_LOGGING_ENCODER` (`text`, `pretty`, `json`, `none`), а `java.util.logging` по умолчанию перенаправляется в Logback (`kora.logging.config.jul-bridge`)
+- Клиентские интерсепторы безопасности генератора OpenAPI сами добавляют префикс `Basic ` / `Bearer `, `HttpClientTokenProvider` должен возвращать токен без префикса
+- Серверная безопасность генератора OpenAPI отвечает `403` вместо `401`, когда аутентифицированному принципалу не хватает требуемых scope
+- Массив или map inline enum в генераторе OpenAPI генерируется как коллекция enum вместо одиночного значения
+- `typeMappings` для `date-time` в генераторе OpenAPI применяются, поэтому сгенерированные типы меняются в проектах, где объявлен такой маппинг
+- `lettuce-core` для Redis обновлён до мажорной версии `7.8.0`
 
 Добавлено:
 
