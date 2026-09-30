@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <sitemap><loc>https://koraframework.io/sitemap-landing.xml</loc></sitemap>
-    <sitemap><loc>https://koraframework.io/v2/en/sitemap.xml</loc></sitemap>
-    <sitemap><loc>https://koraframework.io/v2/ru/sitemap.xml</loc></sitemap>
-    <sitemap><loc>https://koraframework.io/v1/en/sitemap.xml</loc></sitemap>
-    <sitemap><loc>https://koraframework.io/v1/ru/sitemap.xml</loc></sitemap>
+    <sitemap><loc>https://kora-projects.github.io/kora-docs/sitemap-landing.xml</loc></sitemap>
+    <sitemap><loc>https://kora-projects.github.io/kora-docs/v2/en/sitemap.xml</loc></sitemap>
+    <sitemap><loc>https://kora-projects.github.io/kora-docs/v2/ru/sitemap.xml</loc></sitemap>
+    <sitemap><loc>https://kora-projects.github.io/kora-docs/v1/en/sitemap.xml</loc></sitemap>
+    <sitemap><loc>https://kora-projects.github.io/kora-docs/v1/ru/sitemap.xml</loc></sitemap>
 </sitemapindex>

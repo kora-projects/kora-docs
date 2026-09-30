@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
     <url>
-        <loc>https://koraframework.io/</loc>
-        <xhtml:link rel="alternate" hreflang="en" href="https://koraframework.io/"/>
-        <xhtml:link rel="alternate" hreflang="ru" href="https://koraframework.io/ru/"/>
-        <xhtml:link rel="alternate" hreflang="x-default" href="https://koraframework.io/"/>
+        <loc>https://kora-projects.github.io/kora-docs/</loc>
+        <xhtml:link rel="alternate" hreflang="en" href="https://kora-projects.github.io/kora-docs/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://kora-projects.github.io/kora-docs/ru/"/>
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://kora-projects.github.io/kora-docs/"/>
     </url>
     <url>
-        <loc>https://koraframework.io/ru/</loc>
-        <xhtml:link rel="alternate" hreflang="en" href="https://koraframework.io/"/>
-        <xhtml:link rel="alternate" hreflang="ru" href="https://koraframework.io/ru/"/>
-        <xhtml:link rel="alternate" hreflang="x-default" href="https://koraframework.io/"/>
+        <loc>https://kora-projects.github.io/kora-docs/ru/</loc>
+        <xhtml:link rel="alternate" hreflang="en" href="https://kora-projects.github.io/kora-docs/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://kora-projects.github.io/kora-docs/ru/"/>
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://kora-projects.github.io/kora-docs/"/>
     </url>
 </urlset>

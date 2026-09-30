@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://koraframework.io/sitemap.xml
+Sitemap: https://kora-projects.github.io/kora-docs/sitemap.xml

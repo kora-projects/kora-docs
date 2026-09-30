@@ -1,20 +1,14 @@
 """Post-build step for the published site (run by the Pages workflow).
 
-The docs moved twice, and old addresses are still indexed and linked:
+The site is published at kora-projects.github.io/kora-docs/. Addresses from
+before the v1/v2 split are still indexed and linked, so this script writes a
+redirect stub for each of them:
 
-1. kora-projects.github.io/kora-docs/<lang>/<path>/  (before the v1/v2 split)
-2. kora-projects.github.io/kora-docs/v<N>/<lang>/<path>/  (before koraframework.io)
-
-With the custom domain set, GitHub forwards every kora-projects.github.io/
-kora-docs/* request to koraframework.io/kora-docs/*, so this script writes a
-redirect stub for each page under /kora-docs/ on the new domain:
-
-  /kora-docs/<rel>/          -> /<rel>/            (every published page)
-  /kora-docs/<lang>/<path>/  -> /v1/<lang>/<path>/ (pre-split docs, same content)
+  /kora-docs/<lang>/<path>/  -> /kora-docs/v1/<lang>/<path>/ (pre-split docs, same content)
 
 A zero-delay meta refresh plus a canonical link is what search engines treat
 as a permanent redirect on static hosting. The refresh target is a root path,
-so the stubs also work when the site is served locally.
+so the stubs also work when the site is served locally under /kora-docs/.
 
 It also drops blog URLs from the v1 sitemaps: v1 blog pages declare their v2
 copy as canonical, and a sitemap should list canonical URLs only.
@@ -25,8 +19,8 @@ import re
 import sys
 from pathlib import Path
 
-SITE = "https://koraframework.io/"
-LEGACY = "kora-docs"
+SITE = "https://kora-projects.github.io/kora-docs/"
+PREFIX = "/kora-docs/"
 
 STUB = """<!DOCTYPE html>
 <html lang="{lang}">
@@ -48,26 +42,17 @@ def _title(page):
 
 
 def _stub(public, rel, target, lang, title):
-    path = public / LEGACY / rel / "index.html" if rel else public / LEGACY / "index.html"
+    path = public / rel / "index.html"
     if path.exists():
         return
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(STUB.format(lang=lang, url=SITE + target, path="/" + target, title=title), encoding="utf-8")
+    path.write_text(STUB.format(lang=lang, url=SITE + target, path=PREFIX + target, title=title), encoding="utf-8")
 
 
 def main(public):
     public = Path(public)
 
-    # 1. Every published page keeps working at its old /kora-docs/ address.
-    for page in public.rglob("index.html"):
-        rel = page.parent.relative_to(public).as_posix()
-        rel = "" if rel == "." else rel
-        if rel.split("/")[0] == LEGACY or "/assets/" in f"/{rel}/" or rel.endswith("search"):
-            continue
-        lang = "ru" if "/ru/" in f"/{rel}/" else "en"
-        _stub(public, rel, f"{rel}/" if rel else "", lang, _title(page))
-
-    # 2. Pre-split /kora-docs/<lang>/<path>/ -> /v1/<lang>/<path>/.
+    # Pre-split /kora-docs/<lang>/<path>/ -> /kora-docs/v1/<lang>/<path>/.
     for lang in ("ru", "en"):
         v1 = public / "v1" / lang
         for page in v1.rglob("index.html"):

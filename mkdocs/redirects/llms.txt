@@ -4,12 +4,12 @@
 
 ## Documentation indexes
 
-- [English documentation and blog](https://koraframework.io/v2/en/llms.txt): every page of the current (v2) English documentation, guides and blog with a one-line summary
-- [Русская документация и блог](https://koraframework.io/v2/ru/llms.txt): every page of the current (v2) Russian documentation, guides and blog with a one-line summary
+- [English documentation and blog](https://kora-projects.github.io/kora-docs/v2/en/llms.txt): every page of the current (v2) English documentation, guides and blog with a one-line summary
+- [Русская документация и блог](https://kora-projects.github.io/kora-docs/v2/ru/llms.txt): every page of the current (v2) Russian documentation, guides and blog with a one-line summary
 
 ## Entry points
 
-- [Kora Framework (EN)](https://koraframework.io/): landing page
-- [Kora Framework (RU)](https://koraframework.io/ru/): landing page
-- [Kora Blog](https://koraframework.io/v2/en/blog/): articles on Kora's design, compile-time approach, performance and production operation
+- [Kora Framework (EN)](https://kora-projects.github.io/kora-docs/): landing page
+- [Kora Framework (RU)](https://kora-projects.github.io/kora-docs/ru/): landing page
+- [Kora Blog](https://kora-projects.github.io/kora-docs/v2/en/blog/): articles on Kora's design, compile-time approach, performance and production operation
 - [Source code](https://github.com/kora-projects/kora)

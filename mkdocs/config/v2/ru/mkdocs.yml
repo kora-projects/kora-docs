@@ -4,7 +4,7 @@ site_dir: "../../../generated/v2/ru"
 
 # Project information
 site_name: Kora фреймворк 2.0.0.RC2
-site_url: https://koraframework.io/v2/ru/
+site_url: https://kora-projects.github.io/kora-docs/v2/ru/
 hooks:
   - ../../../hooks/translations.py
   - ../../../hooks/seo.py
@@ -224,7 +224,7 @@ extra_css:
 
 # Structure - https://github.com/squidfunk/mkdocs-material/discussions/2346
 extra:
-  homepage: /ru/   # header logo -> landing, published at /ru/ by the Pages workflow
+  homepage: /kora-docs/ru/   # header logo -> landing, published at /ru/ by the Pages workflow
   analytics:
     provider: counter
     property: counter
@@ -233,17 +233,17 @@ extra:
     json: [ .s2 ]   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/?h=annotations#custom-selectors
   alternate:
     - name: Русский
-      link: /v2/ru/
+      link: /kora-docs/v2/ru/
       lang: ru
     - name: English
-      link: /v2/en/
+      link: /kora-docs/v2/en/
       lang: en
   docs_version: v2
   versions:
     - name: V1
-      link: /v1/ru/
+      link: /kora-docs/v1/ru/
     - name: V2
-      link: /v2/ru/
+      link: /kora-docs/v2/ru/
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/kora-projects/kora

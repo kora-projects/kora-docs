@@ -1,16 +1,16 @@
 {% set current_lang = config.theme.language | default('en') %}
-{# The landing is published at the site root: / (en) and /ru/ (ru). The Pages
+{# The landing is published at the site root: /kora-docs/ (en) and /kora-docs/ru/ (ru). The Pages
    workflow moves the v2 build's index.html there and leaves a redirect stub at
    /v2/<lang>/. Docs and assets stay in the versioned build, so every link below
    is root-relative to it and works from both places (also locally). #}
-{% set site_root = config.site_url.split('/', 3)[:3] | join('/') ~ '/' %}
+{% set site_root = config.site_url.rsplit('/', 3)[0] ~ '/' %}
 {% set docs_url = config.site_url | replace('/v1/', '/v2/') %}
 {% set docs_path = '/' ~ config.site_url.split('/', 3)[3] %}
 {% set en_url = site_root %}
 {% set ru_url = site_root ~ 'ru/' %}
 {% set canonical_url = ru_url if current_lang == 'ru' else en_url %}
-{% set en_path = '/' %}
-{% set ru_path = '/ru/' %}
+{% set en_path = '/' ~ site_root.split('/', 3)[3] %}
+{% set ru_path = en_path ~ 'ru/' %}
 {% set landing_path = ru_path if current_lang == 'ru' else en_path %}
 {% set social_image_name = 'kora-social-card-ru.jpg' if current_lang == 'ru' else 'kora-social-card-en.jpg' %}
 {% set social_square_name = 'kora-social-card-square-ru.jpg' if current_lang == 'ru' else 'kora-social-card-square-en.jpg' %}
@@ -40,7 +40,7 @@
            EN/RU toggle), otherwise the browser language. The i18n script below
            applies it; the page stays hidden until then so English never flashes. */
         (function () {
-            if (location.pathname !== "/") return;
+            if (location.pathname !== "{{ en_path }}") return;
             var lang = "en";
             try {
                 var match = document.cookie.match(/(?:^|;\s*)kora_lang=(ru|en)/);
@@ -100,8 +100,8 @@
       "@graph": [
         {
           "@type": "WebSite",
-          "@id": "https://koraframework.io/#website",
-          "url": "https://koraframework.io/",
+          "@id": "https://kora-projects.github.io/kora-docs/#website",
+          "url": "https://kora-projects.github.io/kora-docs/",
           "name": "Kora Framework",
           "alternateName": "Kora",
           "inLanguage": ["en", "ru"],
@@ -137,7 +137,7 @@
           "name": "{{ seo_title }}",
           "description": "{{ seo_description }}",
           "inLanguage": "{{ current_lang }}",
-          "isPartOf": { "@id": "https://koraframework.io/#website" },
+          "isPartOf": { "@id": "https://kora-projects.github.io/kora-docs/#website" },
           "about": { "@id": "https://github.com/kora-projects/kora#software" },
           "primaryImageOfPage": { "@id": "{{ canonical_url }}#primaryimage" },
           "significantLink": [
@@ -4707,7 +4707,7 @@
         // At the site root the EN/RU toggle switches language in place. On /ru/
         // (and /v2/<lang>/) it navigates, so remember the choice first, otherwise
         // the root would reopen in the language from the old kora_lang cookie.
-        const isRoot = window.location.pathname === "/";
+        const isRoot = window.location.pathname === "{{ en_path }}";
         document.querySelectorAll("a[data-lang]").forEach((link) => {
             link.addEventListener("click", (event) => {
                 if (isRoot) {

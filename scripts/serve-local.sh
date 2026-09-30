@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# Serve the docs locally the same way GitHub Pages does (https://koraframework.io/),
-# so the site root serves the landing page just like production.
+# Serve the docs locally the same way GitHub Pages does (https://kora-projects.github.io/kora-docs/),
+# so /kora-docs/ serves the landing page just like production.
 #
 # CI (.github/workflows/publish-pages.yml) assembles a `public/` tree where the
-# v2 landings are moved to / and /ru/, and the shortcuts from mkdocs/redirects
-# (incl. /v2/<lang>/ -> landing) and the legacy /kora-docs/... redirect stubs
+# v2 landings are moved to /kora-docs/ and /kora-docs/ru/, and the shortcuts from
+# mkdocs/redirects (incl. /v2/<lang>/ -> landing) and the legacy redirect stubs
 # live next to the versioned builds.
 # `mkdocs build` alone only produces mkdocs/generated/v1 and mkdocs/generated/v2,
 # so this script reproduces the CI assembly.
@@ -19,7 +19,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PORT="${PORT:-8000}"
-OUT=".local-serve"
+ROOT=".local-serve"
+OUT="$ROOT/kora-docs"   # GitHub Pages publishes the project site under /kora-docs/
 
 # Debian/Ubuntu (incl. WSL) ship only `python3`; `python` exists only with python-is-python3.
 PYTHON="$(command -v python3 || command -v python || true)"
@@ -49,17 +50,17 @@ if [[ ! -d mkdocs/generated/v2 ]]; then
   exit 1
 fi
 
-# Assemble the same layout CI ships, served from the site root.
-rm -rf "$OUT"
+# Assemble the same layout CI ships, served under /kora-docs/.
+rm -rf "$ROOT"
 mkdir -p "$OUT"
 cp -r mkdocs/generated/v1 "$OUT/v1"
 cp -r mkdocs/generated/v2 "$OUT/v2"
 mkdir -p "$OUT/ru"
-mv "$OUT/v2/en/index.html" "$OUT/index.html"      # landing at the site root
-mv "$OUT/v2/ru/index.html" "$OUT/ru/index.html"   # Russian landing at /ru/
+mv "$OUT/v2/en/index.html" "$OUT/index.html"      # landing at /kora-docs/
+mv "$OUT/v2/ru/index.html" "$OUT/ru/index.html"   # Russian landing at /kora-docs/ru/
 cp -r mkdocs/redirects/. "$OUT"          # CNAME, robots.txt, sitemap index, llms.txt, 404, /v2/<lang>/ -> landing, shortcuts
-"$PYTHON" mkdocs/hooks/legacy_redirects.py "$OUT"   # old /kora-docs/... URLs
+"$PYTHON" mkdocs/hooks/legacy_redirects.py "$OUT"   # pre-split /kora-docs/<lang>/... URLs
 
-echo "Serving http://127.0.0.1:${PORT}/"
-cd "$OUT"
+echo "Serving http://127.0.0.1:${PORT}/kora-docs/"
+cd "$ROOT"
 exec "$PYTHON" -m http.server "$PORT" --bind 127.0.0.1

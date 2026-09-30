@@ -126,7 +126,7 @@ def on_post_build(config):
             "компиляции, генерируется прозрачный исходный код без runtime-рефлексии, код выполняется на виртуальных "
             "потоках, модули для HTTP, баз данных, Kafka, gRPC, OpenTelemetry и тестирования готовы к продакшену. "
             "Лицензия Apache 2.0, исходный код: https://github.com/kora-projects/kora\n\n"
-            "English version: https://koraframework.io/v2/en/llms.txt\n"
+            f"English version: {config.site_url.replace('/ru/', '/en/')}llms.txt\n"
         )
         sections = ("## Документация", "## Блог")
     else:
@@ -136,7 +136,7 @@ def on_post_build(config):
             "injection at compile time, generates transparent source code with no runtime reflection, runs "
             "application code on virtual threads, and ships production-ready modules for HTTP, databases, Kafka, "
             "gRPC, OpenTelemetry and testing. Apache 2.0 licensed, source: https://github.com/kora-projects/kora\n\n"
-            "Russian version: https://koraframework.io/v2/ru/llms.txt\n"
+            f"Russian version: {config.site_url.replace('/en/', '/ru/')}llms.txt\n"
         )
         sections = ("## Documentation", "## Blog")
 
