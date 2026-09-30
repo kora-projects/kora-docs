@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - 'master'
+      - 'feature/kora-2.0'
     paths:
       - 'mkdocs/**'
       - '.github/workflows/**'
