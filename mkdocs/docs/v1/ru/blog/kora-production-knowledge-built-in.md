@@ -1,0 +1,1 @@
+--8<-- "ru/kora-production-knowledge-built-in.md"

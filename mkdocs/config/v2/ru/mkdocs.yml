@@ -1,0 +1,300 @@
+docs_dir: "../../../docs/v2/ru"
+site_dir: "../../../generated/v2/ru"
+
+
+# Project information
+site_name: Kora фреймворк 2.0.0.RC2
+site_url: https://kora-projects.github.io/kora-docs/v2/ru/
+hooks:
+  - ../../../hooks/translations.py
+  - ../../../hooks/seo.py
+nav:
+  - Руководства:
+      - Вступление: guides/home.md
+      - Основы:
+          - Ознакомительные приложение: guides/getting-started.md
+          - Введение в Kora: guides/dependency-injection-introduction.md
+          - Внедрение зависимостей: guides/dependency-injection.md
+          - Конфигурация HOCON: guides/config-hocon.md
+          - Конфигурация YAML: guides/config-yaml.md
+          - JSON: guides/json.md
+      - HTTP и API:
+          - HTTP сервер: guides/http-server.md
+          - HTTP сервер продвинутый: guides/http-server-advanced.md
+          - HTTP клиент: guides/http-client.md
+          - HTTP клиент продвинутый: guides/http-client-advanced.md
+          - OpenAPI HTTP сервер: guides/openapi-http-server.md
+          - OpenAPI HTTP сервер продвинутый: guides/openapi-http-server-advanced.md
+          - OpenAPI HTTP клиент: guides/openapi-http-client.md
+      - База данных:
+          - База данных JDBC: guides/database-jdbc.md
+          - База данных JDBC продвинутая: guides/database-jdbc-advanced.md
+          - База данных Cassandra: guides/database-cassandra.md
+      - Расширенные возможности:
+          - Кеширование: guides/cache.md
+          - Многоуровневое кеширование: guides/cache-multi-level.md
+          - Отказоустойчивость: guides/resilient.md
+          - Валидация: guides/validation.md
+      - Наблюдаемость:
+          - Обзор: guides/observability.md
+          - Метрики: guides/observability-metrics.md
+          - Трассировка: guides/observability-tracing.md
+          - Пробы: guides/observability-probes.md
+      - Интеграции:
+          - Kafka: guides/messaging-kafka.md
+          - gRPC сервер: guides/grpc-server.md
+          - gRPC сервер продвинутый: guides/grpc-server-advanced.md
+          - gRPC клиент: guides/grpc-client.md
+          - gRPC клиент продвинутый: guides/grpc-client-advanced.md
+          - S3: guides/s3.md
+      - Тестирование:
+          - Компонентное тестирование: guides/testing-junit.md
+          - Интеграционное тестирование: guides/testing-integration.md
+          - Тестирование черным ящиком: guides/testing-black-box.md
+  - Документация:
+      - Основы:
+        - Проект и сборка: documentation/general.md
+        - Контейнер: documentation/container.md
+        - Конфигурация: documentation/config.md
+      - Конвертация:
+        - Json: documentation/json.md
+        - MapStruct: documentation/mapstruct.md
+      - Мониторинг:
+        - Пробы: documentation/probes.md
+        - Логирование: documentation/logging-slf4j.md
+        - Метрики: documentation/metrics.md
+        - Трассировка: documentation/tracing.md
+      - HTTP:
+        - HTTP сервер: documentation/http-server.md
+        - HTTP клиент: documentation/http-client.md
+        - SOAP клиент: documentation/soap-client.md
+        - OpenAPI кодогенерация: documentation/openapi-codegen.md
+        - OpenAPI отображение: documentation/openapi-management.md
+      - Базы данных:
+        - Общее: documentation/database-common.md
+        - JDBC: documentation/database-jdbc.md
+        - Cassandra: documentation/database-cassandra.md
+        - Миграции: documentation/database-migration.md
+      - Интеграции:
+        - Kafka: documentation/kafka.md
+        - gRPC сервер: documentation/grpc-server.md
+        - gRPC клиент: documentation/grpc-client.md
+      - Аспекты:
+        - Отказоустойчивость: documentation/resilient.md
+        - Кэширование: documentation/cache.md
+        - Валидация: documentation/validation.md
+        - Планировщик: documentation/scheduling.md
+        - Логирование: documentation/logging-aspect.md
+      - Тестирование:
+        - JUnit5: documentation/junit5.md
+      - Дополнительное:
+        - GraalVM Native: documentation/graalvm-native.md
+        - Netty: documentation/netty.md
+      - Экспериментальное:
+        - S3 клиент: documentation/s3-client.md
+        - Camunda BPMN: documentation/camunda7-bpmn.md
+        - Camunda REST: documentation/camunda7-rest.md
+        - Camunda Zeebe: documentation/camunda8-worker.md
+  - Тех-журнал:
+      - Все статьи: blog/index.md
+      - Вам нужны хорошие JVM-инженеры: blog/you-need-good-jvm-engineers.md
+      - Навыки фреймворка против привязки к вендору: blog/you-dont-need-kora-developers.md
+      - Почему Kora вместо Jakarta EE: blog/kora-instead-of-jakarta-ee.md
+      - Почему Kora вместо Spring: blog/kora-over-spring-for-backend.md
+      - Почему Kora компилируемая: blog/why-kora-compile-time-framework.md
+      - Kora пересматривает модель фреймворка: blog/kora-rethinks-framework-model-itself.md
+      - Почему Kora — правильный выбор по умолчанию: blog/kora-right-default-for-backend.md
+      - Почему Kora не нуждается в ORM: blog/kora-dont-need-orm.md
+      - Фреймворки на этапе компиляции и нейро-агенты: blog/neuro-agent-and-kora.md
+      - Диагностика на этапе компиляции: blog/compile-time-diagnostics.md
+      - Откуда берётся производительность Kora: blog/kora-performance.md
+      - Виртуальные потоки против реактивного подхода: blog/virtual-thread-vs-reactive.md
+      - Виртуальные потоки в продакшене: blog/virtual-thread-in-production.md
+      - Виртуальные потоки в первую очередь: blog/virtual-thread-first.md
+      - Тонкие абстракции: blog/kora-abstractions.md
+      - Миф о большой экосистеме: blog/myth-of-large-community.md
+      - Легче выучить: blog/kora-easier-to-learn.md
+      - Расширение экосистемы: blog/kora-extending-framework-ecosystem.md
+      - Стоимость отсутствующей интеграции: blog/cost-of-missing-integration.md
+      - Минимум магии для нейро-агентов: blog/neuro-agent-best-native-kora-framework.md
+      - Граф приложения как архитектура: blog/application-graph-as-architecture.md
+      - Тестирование продакшн-графа: blog/kora-test-graph.md
+      - Структурированная конкурентность: blog/structured-concurrency-in-kora.md
+      - Kora против Spring через призму STEP: blog/kora-vs-spring-through-step-lens.md
+      - STEP в Kora: blog/kora-step.md
+      - Запуск против времени сборки: blog/kora-startup-vs-build-time.md
+      - Встроенные продакшн-знания: blog/kora-production-knowledge-built-in.md
+      - Политико-управляемая инфраструктура: blog/kora-infra-and-funcs.md
+      - Производительность экономит деньги: blog/kora-save-money-and-time.md
+      - OpenAPI-first разработка: blog/kora-openapi-development.md
+      - Один STEP за раз: blog/neuro-agents-kora-step.md
+      - Одна проблема — одно решение: blog/one-problem-one-solution.md
+      - Наблюдаемость по дизайну: blog/kora-observability.md
+      - Никакой магии во время выполнения: blog/no-runtime-magic.md
+      - Изучение фреймворка в нейро-эпоху: blog/neuro-era-learning-framework.md
+      - Kora Skill: blog/kora-skill-between-docs-and-agent.md
+      - Kora в нейро-эпоху: blog/neuro-native-framework-kora-became.md
+      - Экспертиза фреймворка > сообщество: blog/neuro-era-framework-matters-more-community.md
+      - Миллион ответов — тревожный знак: blog/million-answers-a-warning-sign.md
+      - Создайте свой модуль: blog/kora-build-your-module.md
+      - HTTP-запрос на виртуальных потоках: blog/http-request-throught-kora.md
+      - Отладка сгенерированного кода: blog/generated-code-transparent-debugging.md
+      - Сфокусированная инженерия — это не NIH: blog/kora-focused-engineering-is-not-nih.md
+      - Быстрый запуск: blog/fast-startup-not-convenience.md
+      - Корпоративная готовность без вселенной: blog/kora-enterprise-ready-without-universe.md
+      - Компиляция против скорости разработки: blog/kora-compile-time-and-development-speed.md
+      - Зрелость документации: blog/kora-documentation-maturity.md
+      - Документация в нейро-эпоху: blog/kora-documentation-in-the-ai-era.md
+      - Динамическое обновление во время выполнения: blog/kora-dynamic-runtime-refresh.md
+      - Подходы к тестированию: blog/kora-testing-different-approaches.md
+      - DI на этапе компиляции в масштабе: blog/compile-time-di-at-scale-kora.md
+      - DI на этапе компиляции: blog/compile-time-dependency-injection.md
+      - AOP на этапе компиляции: blog/kora-aop.md
+      - Сильные значения по умолчанию — не привязка: blog/kora-strong-default-not-lock-in.md
+      - Почему Kora для Kotlin: blog/kora-may-be-best-for-kotlin.md
+      - Компиляция ≠ только компиляция: blog/compile-time-not-libraries.md
+      - Цена докторской по Spring: blog/talk-joker-phd-in-spring-talk.md
+      - Kora на практике: blog/talk-benchmark-others-and-kora.md
+      - За пределами магии Spring: blog/talk-jvm-day-cognitive-load.md
+      - Почему была создана Kora: blog/talk-kora-why-build-pre-1.0-origin.md
+  - Сообщество:
+      - Разработки: community/development.md
+  - Журнал изменений: changelog/changelog.md
+
+
+# Repository
+repo_name: Kora
+repo_url: https://github.com/kora-projects/kora
+edit_uri: /kora-projects/kora-docs/tree/master/mkdocs/docs/v2/ru
+
+
+# Configuration
+theme:
+  name: material
+  custom_dir: ../../../overrides/
+  favicon: assets/img/kora.ico
+  logo: assets/img/kora-big.png
+  language: ru
+  icon:
+    # https://squidfunk.github.io/mkdocs-material/reference/icons-emojis/
+    repo: fontawesome/brands/git
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/lightbulb-auto
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: amber
+      accent: orange
+      toggle:
+        icon: material/lightbulb
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: amber
+      accent: orange
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to system preference
+  font:
+    text: JetBrains Mono
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - navigation.footer
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - header.autohide
+    - toc.follow
+    - content.code.copy
+    - content.action.edit
+    - content.code.annotate   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/?h=annotations#adding-annotations
+    - content.tabs.link
+
+
+extra_css:
+  - assets/css/extra.css         # https://squidfunk.github.io/mkdocs-material/setup/setting-up-navigation/#content-area-width
+
+
+# Structure - https://github.com/squidfunk/mkdocs-material/discussions/2346
+extra:
+  homepage: /kora-docs/ru/   # header logo -> landing, published at /ru/ by the Pages workflow
+  analytics:
+    provider: counter
+    property: counter
+  generator: false
+  annotate:
+    json: [ .s2 ]   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/?h=annotations#custom-selectors
+  alternate:
+    - name: Русский
+      link: /kora-docs/v2/ru/
+      lang: ru
+    - name: English
+      link: /kora-docs/v2/en/
+      lang: en
+  docs_version: v2
+  versions:
+    - name: V1
+      link: /kora-docs/v1/ru/
+    - name: V2
+      link: /kora-docs/v2/ru/
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/kora-projects/kora
+      name: "GitHub проекта"
+    - icon: fontawesome/brands/telegram
+      link: https://t.me/kora_users
+      name: "Чат проекта в Telegram"
+
+
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
+      lang:
+        - ru
+        - en
+  - glightbox               # https://squidfunk.github.io/mkdocs-material/reference/images/#lightbox
+
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - md_in_html              # https://squidfunk.github.io/mkdocs-material/reference/annotations/#tab-1
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path:
+        - !relative $docs_dir
+        - !relative $config_dir/../../../blog
+      check_paths: true
+  - pymdownx.betterem
+  - pymdownx.tabbed:        # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=tabbed#tabbed
+      alternate_style: true
+      separator: "-"
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      use_pygments: true
+      pygments_lang_class: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      options:
+        custom_icons:
+          - overrides/.icons
+  - toc:
+      permalink: true
+  - meta

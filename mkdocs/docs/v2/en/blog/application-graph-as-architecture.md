@@ -1,0 +1,1 @@
+--8<-- "en/application-graph-as-architecture.md"

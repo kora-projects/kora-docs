@@ -1,0 +1,1 @@
+--8<-- "ru/generated-code-transparent-debugging.md"

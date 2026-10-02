@@ -1,0 +1,1 @@
+--8<-- "ru/kora-enterprise-ready-without-universe.md"

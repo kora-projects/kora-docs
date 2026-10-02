@@ -1,0 +1,1 @@
+--8<-- "ru/talk-joker-phd-in-spring-talk.md"

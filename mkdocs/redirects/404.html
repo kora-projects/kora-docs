@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Page not found | Kora Framework</title>
+    <meta name="robots" content="noindex">
+    <style>
+        body {margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #090a09; color: #f7f3ea; font-family: ui-sans-serif, system-ui, sans-serif; text-align: center; padding: 16px;}
+        a {color: #ffb02e;}
+    </style>
+    <script>
+        (function () {
+            // Fallback for pre-v1/v2 addresses that have no generated stub:
+            //   /kora-docs/<lang>/<path> -> /kora-docs/v1/<lang>/<path>
+            var legacy = location.pathname.match(/^\/kora-docs\/(ru|en)\/(.+)$/);
+            if (legacy) location.replace("/kora-docs/v1/" + legacy[1] + "/" + legacy[2] + location.search + location.hash);
+        })();
+    </script>
+</head>
+<body>
+<div>
+    <h1>Page not found</h1>
+    <p>This page moved or no longer exists.</p>
+    <p><a href="/kora-docs/">Kora Framework</a> · <a href="/kora-docs/ru/" lang="ru">Kora на русском</a></p>
+</div>
+</body>
+</html>

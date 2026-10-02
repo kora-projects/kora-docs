@@ -1,0 +1,1 @@
+--8<-- "ru/you-dont-need-kora-developers.md"

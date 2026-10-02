@@ -1,0 +1,1 @@
+--8<-- "ru/kora-dont-need-orm.md"

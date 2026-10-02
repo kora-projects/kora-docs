@@ -1,0 +1,1 @@
+--8<-- "ru/compile-time-di-at-scale-kora.md"

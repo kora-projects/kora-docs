@@ -1,0 +1,1 @@
+--8<-- "ru/one-problem-one-solution.md"

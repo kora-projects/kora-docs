@@ -1,0 +1,1 @@
+--8<-- "ru/fast-startup-not-convenience.md"

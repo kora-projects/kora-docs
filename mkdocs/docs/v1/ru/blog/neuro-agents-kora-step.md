@@ -1,0 +1,1 @@
+--8<-- "ru/neuro-agents-kora-step.md"

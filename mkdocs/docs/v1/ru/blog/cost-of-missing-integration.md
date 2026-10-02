@@ -1,0 +1,1 @@
+--8<-- "ru/cost-of-missing-integration.md"

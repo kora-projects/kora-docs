@@ -1,0 +1,1 @@
+--8<-- "ru/neuro-era-learning-framework.md"
