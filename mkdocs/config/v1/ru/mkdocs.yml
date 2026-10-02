@@ -3,7 +3,7 @@ site_dir: "../../../generated/v1/ru"
 
 
 # Project information
-site_name: Kora фреймворк 1.2.21
+site_name: Kora фреймворк 1.2.22
 site_url: https://kora-projects.github.io/kora-docs/v1/ru/
 hooks:
   - ../../../hooks/translations.py

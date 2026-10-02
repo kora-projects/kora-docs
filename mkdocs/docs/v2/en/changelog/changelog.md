@@ -10,31 +10,32 @@ hide:
 
 ## 2.0.0.RC2
 
-Migration required:
+Refactorings:
 
-- JDK scheduling `ThreadPoolSchedulingJdkExecutor` replaced by `VirtualThreadSchedulingJdkExecutor`: jobs run on `kora-jdk-scheduler-job` virtual threads with a single `kora-jdk-scheduler-timer` platform thread, concurrency is limited by `scheduling.jdk.maxConcurrentExecutions` (unlimited by default) and running executions are interrupted after `scheduling.jdk.shutdownWait` on shutdown
+- Quartz scheduling `scheduling.quartz.waitForJobComplete` replaced by `shutdownWait` (`30s` by default), Kora jobs are registered in the `kora` group (jobs of the `DEFAULT` group are moved automatically) and a persisted trigger is rescheduled only when its schedule, end time or CRON time zone changes
 - Resilient `RateLimiter` default algorithm changed from fixed window to token bucket (`RateLimiterConfig.type` is `TOKEN_BUCKET`), set `type = FIXED_WINDOW` to keep the previous behavior
-- Resilient `KoraRetry` accepts the `RetryBudget` interface instead of `KoraRetryBudget`
-- Resilient `Retry` and `CircuitBreaker` no longer treat exceptions implementing `NonRetryableException` / `NonCircuitableException` as failures, custom `RetryPredicate` / `CircuitBreakerPredicate` replace this check
-- HTTP server no longer sends the `Server: Kora` response header by default, set `httpServer.headerServerNameEnabled = true` to restore it
 - HTTP server Undertow no longer applies `Configurer<HttpHandler>`, only `Configurer<Undertow.Builder>` and `Configurer<XnioWorker.Builder>` remain
 - HTTP client and server `telemetry.logging.mask` config key removed, register a `MaskingStrategy` tagged `@Tag(HttpServerTelemetry.class)` / `@Tag(HttpClientTelemetry.class)` to change the replacement of masked values
 - HTTP client Apache and JDK connect failures are thrown as `HttpClientConnectionException` instead of `HttpClientUnknownException` / `HttpClientTimeoutException`
-- Kafka `KafkaAssignConsumerContainer` constructor lost its `String topic` parameter: topics are read from `KafkaListenerConfig.topics()` and `topicsPattern` is rejected by the `assign` strategy
-- Kafka `KafkaDeserializersModule` moved to `io.koraframework.kafka.common.consumer.deserializer` and `KafkaSerializersModule` to `io.koraframework.kafka.common.producer.serializer`
-- gRPC server `DefaultGrpcServerBodyConverter#convertRequestMessage` now takes the service, method and request `Metadata`, and gRPC headers `authorization`, `cookie`, `set-cookie` are masked in logs by default
-- Telemetry `metrics` config section is mapped to `MetricsConfig` (`enabled`, `tags`), `metrics.enabled = false` replaces the `MeterRegistry` with a no-op one
-- Telemetry `OpentelemetryTracingModule#opentelemetryResourceConfig` renamed to `opentelemetryTracingConfig`, `opentelemetryTracingResource` takes `All<OpentelemetryTracingAttributesProvider>` and tracing factories are `@DefaultComponent`
+- Telemetry metric names, tag keys, span names and span event names aligned with OpenTelemetry semantic conventions `1.44.0` across RPC, messaging, HTTP client, Redis, cache, Resilient, Camunda and database modules, existing dashboards and alerts must be updated
+- Telemetry RPC `rpc.system` renamed to `rpc.system.name`, metrics `rpc.client.duration` / `rpc.server.duration` to `rpc.client.call.duration` / `rpc.server.call.duration`, gRPC `rpc.grpc.status_code` replaced with `rpc.response.status_code` holding the status name
+- Telemetry Redis Lettuce metric `lettuce.command.completion.duration` renamed to `db.client.operation.duration`, cache counter `cache.ratio` to `cache.requests` with `cache.result` tag, HTTP client `http.route` replaced with `url.template`
+- Telemetry tags and attributes are namespaced: `resilient.*`, `cache.operation` / `cache.origin`, `camunda.delegate`, `soap.fault.*`, Zeebe `job.*`, database span events `db.connection` / `db.statement` / `db.result`
 - Logback `ConsoleTextRecordEncoder` moved to the `io.koraframework.logging.logback.text` package, update the encoder class in `logback.xml`
-- Logback without `logback.xml` is configured by `KoraLogbackConfigurator`: the encoder is selected by `kora.logging.encoder` / `KORA_LOGGING_ENCODER` (`text`, `pretty`, `json`, `none`) and `java.util.logging` is bridged by default (`kora.logging.config.jul-bridge`)
 - OpenAPI generator client security interceptors add the `Basic ` / `Bearer ` prefix themselves, `HttpClientTokenProvider` must return the bare token
+
+Refactorings (minor, usually no changes required):
+
+- JDK scheduling jobs run on virtual threads, concurrency is limited by `scheduling.jdk.maxConcurrentExecutions` (unlimited by default) and running executions are interrupted after `scheduling.jdk.shutdownWait` on shutdown
+- Scheduling JDK, Quartz and DB CRON expressions are validated at compile time, jobs declared with `config` got the `enabled` key and CRON jobs are evaluated in the time zone of an optional `ZoneId` component tagged with `SchedulingModule`
+- HTTP server no longer sends the `Server: Kora` response header by default, set `httpServer.headerServerNameEnabled = true` to restore it
+- Logback without `logback.xml` is configured by `KoraLogbackConfigurator`: the encoder is selected by `kora.logging.encoder` / `KORA_LOGGING_ENCODER` (`text`, `pretty`, `json`, `none`) and `java.util.logging` is bridged by default (`kora.logging.config.jul-bridge`)
 - OpenAPI generator server security answers `403` instead of `401` when an authenticated principal lacks required scopes
-- OpenAPI generator array or map of inline enum is generated as a collection of the enum instead of a single enum value
-- OpenAPI generator `typeMappings` for `date-time` are applied, so generated types change for projects that declare such mapping
 - Redis `lettuce-core` updated to major version `7.8.0`
 
 Added:
 
+- Added OpenAPI generator `typeMappings` for `date-time` are applied, so generated types change for projects that declare such mapping
 - Added OpenAPI status-code range responses (`4XX`, `5XX`) for Java and Kotlin clients and servers
 - Added OpenAPI client successful response mode with typed error exceptions
 - Added Resilient `Retry` and `CircuitBreaker` non-registered exceptions
@@ -47,15 +48,16 @@ Added:
 - Added PostgreSQL JDBC database module
 - Added `keepAlive` parameter for `KoraApplication#run`
 - Added `Either#fold` to map either side into a single result
+- Added KSP symbol processors console logging like in Java annotation processors, level is set by the `koraLogLevel` option
+- Added Camunda REST optional API authentication with pluggable `CamundaRestAuthenticationProvider`
 
 Improved:
 
 - Optimized Undertow request processing with fewer allocations and NIO response body writes
 - Improved JSON reader parse-error messages
 - Improved JDK scheduling to use virtual threads for jobs
-- Refactored Logback JSON encoder with SPI selector and masking of raw payloads
-- Refactored Kafka consumer `assign` strategy to accept multiple topics via config
-- Refactored HTTP server `Server` name header as optional option and disabled by default
+- Improved dependency graph errors in AP and KSP with readable signatures, exact source of the problem and concrete fixes
+- Improved server startup log message to report the listening port
 - Updated dependencies versions
 
 Fixed:
@@ -64,24 +66,38 @@ Fixed:
 - Fixed OpenAPI generator free-form map schemas should resolve to `Object`
 - Fixed OpenAPI generator `date-time` should honour `typeMappings`
 - Fixed OpenAPI generator spec text with `%` or `$` breaking code generation
-- Fixed OpenAPI generator array of inline enum should keep its collection type
+- Fixed OpenAPI generator array or map of inline enum should be generated as a collection of the enum instead of a single enum value
 - Fixed OpenAPI generator client `Authorization` header should carry its auth scheme
-- Fixed OpenAPI generator `SUCCESSFUL` client response mapper should be a graph component
+- Fixed OpenAPI generator client and server security should support `openIdConnect` schemes
+- Fixed OpenAPI generator server validation annotations should match the contract
 - Fixed HTTP client response body decoding failures should be wrapped
 - Fixed HTTP client transport integration for JDK and Apache clients
 - Fixed HTTP client connect failures should map to `HttpClientConnectionException` for Apache and JDK clients
+- Fixed HTTP client connection error log should be written to and controlled by the response logger
+- Fixed HTTP client JDK `httpClient.readTimeout` should be applied to requests
 - Fixed HTTP server Undertow should serve requests with the handler replaced by a refresh
 - Fixed HTTP server request duration metric should carry `http.response.status_code`
 - Fixed HTTP cookie parser should keep trailing `=` in cookie values
 - Fixed Kafka KSP listener with `Headers` and deserialization exception argument
+- Fixed telemetry Kafka and JMS spans should be named `<operation> <destination>`, JMS consumer metric `messaging.receive.duration` renamed to `messaging.process.duration`
 - Fixed database mapping of empty embedded
 - Fixed database `snake_case` column names in Kotlin symbol processor
+- Fixed database JDBC result set mapper of an array type crashing the Java annotation processor
+- Fixed database JDBC post-commit and post-rollback actions should run once and for their own transaction
 - Removed unreachable coroutine code paths from the Kotlin repository generators
 - Fixed validation constraint factory argument order in Kotlin symbol processor
 - Fixed KSP graph interceptor tagged with `Tag.Any` should intercept components of any tag
+- Fixed KSP graph interceptor should apply only to components of exactly its intercepted type as in the Java processor
+- Fixed KSP generated Kotlin sources producing compiler warnings
+- Fixed MapStruct `@Tag` on a `@Mapper` should be honored when injecting the mapper in Java and Kotlin
 - Fixed `GraphCondition.and` should return `Matched` when all conditions matched
 - Fixed `@KoraApp` condition components should be ordered after their last dependency
 - Fixed `@KoraApp` circular dependency going through `All<T>` should be reported as a cycle
+- Fixed `@KoraApp` component factory returning type check reinforced
+- Fixed `@KoraApp` generated submodule should declare AOP proxy method declarations
+- Fixed `@Nullable` dependency on a `@Conditional` component should receive `null` when the condition fails
+- Fixed `@Conditional` nodes should work in a subgraph and a copy of the graph draw
+- Fixed condition-failed `@Conditional` nodes breaking `@KoraAppTest`
 - Fixed application init and release time should be logged in milliseconds
 - Fixed graph refresh should not recreate independent nodes
 - Fixed graph node read from a factory may not be initialized yet
@@ -89,10 +105,17 @@ Fixed:
 - Fixed graph refresh should survive an `equals` that throws
 - Fixed config watcher refreshing the graph on every check after the first config change
 - Fixed JDK scheduling executor should not depend on jobs
+- Fixed scheduling job should keep its class and method in logs when its telemetry is disabled
+- Fixed scheduling job of a `@Conditional` component should exist under the same condition
 - Fixed `Caffeine` cache metrics registered twice
 - Fixed S3 client issues on strict S3-compatible servers
+- Fixed S3 client `@S3.Head` and `S3Client.headObject` should pass `HeadObjectArgs` to the request, `@S3.Head` accepts `HeadObjectResult?` in KSP
 - Fixed Logback `KoraMdcConverter` should render nothing instead of failing outside an MDC scope
+- Fixed Logback `KoraAsyncAppender` discarding threshold should be based on log level
+- Fixed logging `@Mask` should generate masking rules in Java projects
 - Fixed JSON deprecated `JsonParser.getText()` replaced with `getString()`
+- Fixed GraalVM native-image `reflect-config.json` and `resource-config.json` across modules
+- Fixed deprecated usages, Javadoc and annotation processors isolation usage
 
 ### 2.0.0.RC1
 

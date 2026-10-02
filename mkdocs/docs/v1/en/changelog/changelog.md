@@ -5,7 +5,14 @@ hide:
   - navigation
 ---
 
-## 1.2.21
+## 1.2.22
+
+Added:
+
+- Ported improvement from Kora 2.0 and dependency graph resolution speed up dramatically, KSP build time for Kotlin is reduced by about 2x+
+- Updated dependencies to patch versions and HikariCP from `5.1.0` to `7.1.0`
+
+### 1.2.21
 
 Added:
 

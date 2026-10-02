@@ -10,31 +10,32 @@ hide:
 
 ## 2.0.0.RC2
 
-Требуется миграция:
+Рефакторинг:
 
-- `ThreadPoolSchedulingJdkExecutor` JDK планировщика заменён на `VirtualThreadSchedulingJdkExecutor`: задачи выполняются на виртуальных потоках `kora-jdk-scheduler-job` с одним платформенным потоком `kora-jdk-scheduler-timer`, параллелизм ограничивается `scheduling.jdk.maxConcurrentExecutions` (по умолчанию без ограничений), а выполняющиеся задачи при остановке прерываются после `scheduling.jdk.shutdownWait`
+- `scheduling.quartz.waitForJobComplete` Quartz планировщика заменён на `shutdownWait` (по умолчанию `30s`), задачи Kora регистрируются в группе `kora` (задачи группы `DEFAULT` переносятся автоматически), а сохранённый триггер перепланируется только при изменении расписания, времени окончания или часового пояса CRON
 - Алгоритм `RateLimiter` в Resilient по умолчанию изменён с фиксированного окна на token bucket (`RateLimiterConfig.type` равен `TOKEN_BUCKET`), укажите `type = FIXED_WINDOW`, чтобы сохранить прежнее поведение
-- `KoraRetry` в Resilient принимает интерфейс `RetryBudget` вместо `KoraRetryBudget`
-- `Retry` и `CircuitBreaker` в Resilient больше не считают ошибками исключения, реализующие `NonRetryableException` / `NonCircuitableException`, собственные `RetryPredicate` / `CircuitBreakerPredicate` заменяют эту проверку
-- HTTP сервер по умолчанию больше не отправляет заголовок ответа `Server: Kora`, укажите `httpServer.headerServerNameEnabled = true`, чтобы вернуть его
 - Undertow HTTP сервер больше не применяет `Configurer<HttpHandler>`, остались только `Configurer<Undertow.Builder>` и `Configurer<XnioWorker.Builder>`
 - Удалён ключ конфигурации `telemetry.logging.mask` HTTP клиента и сервера, зарегистрируйте `MaskingStrategy` с тегом `@Tag(HttpServerTelemetry.class)` / `@Tag(HttpClientTelemetry.class)`, чтобы изменить замену маскируемых значений
 - Ошибки подключения HTTP клиентов Apache и JDK выбрасываются как `HttpClientConnectionException` вместо `HttpClientUnknownException` / `HttpClientTimeoutException`
-- Конструктор `KafkaAssignConsumerContainer` в Kafka лишился параметра `String topic`: топики читаются из `KafkaListenerConfig.topics()`, а `topicsPattern` отклоняется стратегией `assign`
-- `KafkaDeserializersModule` в Kafka перенесён в `io.koraframework.kafka.common.consumer.deserializer`, а `KafkaSerializersModule` в `io.koraframework.kafka.common.producer.serializer`
-- `DefaultGrpcServerBodyConverter#convertRequestMessage` gRPC сервера теперь принимает сервис, метод и `Metadata` запроса, а gRPC заголовки `authorization`, `cookie`, `set-cookie` по умолчанию маскируются в логах
-- Секция конфигурации телеметрии `metrics` отображается в `MetricsConfig` (`enabled`, `tags`), `metrics.enabled = false` заменяет `MeterRegistry` на no-op реализацию
-- В телеметрии `OpentelemetryTracingModule#opentelemetryResourceConfig` переименован в `opentelemetryTracingConfig`, `opentelemetryTracingResource` принимает `All<OpentelemetryTracingAttributesProvider>`, а фабрики трассировки стали `@DefaultComponent`
+- Имена метрик, ключи тегов, имена спанов и событий спанов телеметрии приведены к семантическим соглашениям OpenTelemetry `1.44.0` в модулях RPC, обмена сообщениями, HTTP клиента, Redis, кэша, Resilient, Camunda и базы данных, существующие дашборды и алерты нужно обновить
+- В RPC телеметрии `rpc.system` переименован в `rpc.system.name`, метрики `rpc.client.duration` / `rpc.server.duration` в `rpc.client.call.duration` / `rpc.server.call.duration`, а `rpc.grpc.status_code` gRPC заменён на `rpc.response.status_code` с именем статуса
+- Метрика Redis Lettuce `lettuce.command.completion.duration` переименована в `db.client.operation.duration`, счётчик кэша `cache.ratio` в `cache.requests` с тегом `cache.result`, а `http.route` HTTP клиента заменён на `url.template`
+- Теги и атрибуты телеметрии получили пространства имён: `resilient.*`, `cache.operation` / `cache.origin`, `camunda.delegate`, `soap.fault.*`, `job.*` для Zeebe, события спанов базы данных `db.connection` / `db.statement` / `db.result`
 - `ConsoleTextRecordEncoder` Logback перенесён в пакет `io.koraframework.logging.logback.text`, обновите класс энкодера в `logback.xml`
-- Logback без `logback.xml` настраивается через `KoraLogbackConfigurator`: энкодер выбирается по `kora.logging.encoder` / `KORA_LOGGING_ENCODER` (`text`, `pretty`, `json`, `none`), а `java.util.logging` по умолчанию перенаправляется в Logback (`kora.logging.config.jul-bridge`)
 - Клиентские интерсепторы безопасности генератора OpenAPI сами добавляют префикс `Basic ` / `Bearer `, `HttpClientTokenProvider` должен возвращать токен без префикса
+
+Рефакторинг (незначительное, обычно не требует изменений):
+
+- Задачи JDK планировщика выполняются на виртуальных потоках, параллелизм ограничивается `scheduling.jdk.maxConcurrentExecutions` (по умолчанию без ограничений), а выполняющиеся задачи при остановке прерываются после `scheduling.jdk.shutdownWait`
+- CRON-выражения планировщиков JDK, Quartz и DB проверяются при компиляции, у задач, объявленных через `config`, появился ключ `enabled`, а CRON задачи вычисляются в часовом поясе опционального компонента `ZoneId` с тегом `SchedulingModule`
+- HTTP сервер по умолчанию больше не отправляет заголовок ответа `Server: Kora`, укажите `httpServer.headerServerNameEnabled = true`, чтобы вернуть его
+- Logback без `logback.xml` настраивается через `KoraLogbackConfigurator`: энкодер выбирается по `kora.logging.encoder` / `KORA_LOGGING_ENCODER` (`text`, `pretty`, `json`, `none`), а `java.util.logging` по умолчанию перенаправляется в Logback (`kora.logging.config.jul-bridge`)
 - Серверная безопасность генератора OpenAPI отвечает `403` вместо `401`, когда аутентифицированному принципалу не хватает требуемых scope
-- Массив или map inline enum в генераторе OpenAPI генерируется как коллекция enum вместо одиночного значения
-- `typeMappings` для `date-time` в генераторе OpenAPI применяются, поэтому сгенерированные типы меняются в проектах, где объявлен такой маппинг
 - `lettuce-core` для Redis обновлён до мажорной версии `7.8.0`
 
 Добавлено:
 
+- Добавлены `typeMappings` для `date-time` в генераторе OpenAPI применяются, поэтому сгенерированные типы меняются в проектах, где объявлен такой маппинг
 - Добавлены ответы OpenAPI по диапазонам статус-кодов (`4XX`, `5XX`) для Java и Kotlin клиентов и серверов
 - Добавлен режим успешного ответа OpenAPI клиента с типизированными исключениями ошибок
 - Добавлены незарегистрированные исключения для `Retry` и `CircuitBreaker` в Resilient
@@ -47,15 +48,16 @@ hide:
 - Добавлен модуль базы данных PostgreSQL JDBC
 - Добавлен параметр `keepAlive` для `KoraApplication#run`
 - Добавлен `Either#fold` для отображения любой из сторон в единый результат
+- Добавлено логирование KSP symbol processors в консоль как в Java annotation processors, уровень задаётся опцией `koraLogLevel`
+- Добавлена опциональная аутентификация Camunda REST API с подключаемым `CamundaRestAuthenticationProvider`
 
 Улучшено:
 
 - Оптимизирована обработка запросов Undertow: меньше аллокаций и NIO запись тела ответа
 - Улучшены сообщения об ошибках разбора в JSON reader
 - JDK планировщик теперь использует виртуальные потоки для задач
-- Переработан JSON энкодер Logback: добавлен SPI селектор и маскирование сырых данных
-- Стратегия `assign` Kafka консьюмера теперь принимает несколько топиков через конфигурацию
-- Заголовок `Server` HTTP сервера теперь опциональный и по умолчанию отключён
+- Улучшены ошибки графа зависимостей в AP и KSP: читаемые сигнатуры, точный источник проблемы и конкретные способы исправления
+- Сообщение лога о запуске сервера теперь содержит прослушиваемый порт
 - Обновлены версии зависимостей
 
 Исправлено:
@@ -64,24 +66,38 @@ hide:
 - Исправлено разрешение free-form map схем в `Object` в генераторе OpenAPI
 - Исправлен учёт `typeMappings` для `date-time` в генераторе OpenAPI
 - Исправлена поломка генерации кода генератором OpenAPI при `%` или `$` в тексте спецификации
-- Исправлено сохранение типа коллекции для массива inline enum в генераторе OpenAPI
+- Исправлена генерация массива или map inline enum в генераторе OpenAPI: коллекция enum вместо одиночного значения
 - Исправлена передача схемы авторизации в заголовке `Authorization` клиента в генераторе OpenAPI
-- Исправлена регистрация маппера ответа клиента `SUCCESSFUL` как компонента графа в генераторе OpenAPI
+- Исправлена поддержка схем `openIdConnect` в безопасности клиента и сервера в генераторе OpenAPI
+- Исправлено соответствие серверных аннотаций валидации контракту в генераторе OpenAPI
 - Исправлено оборачивание ошибок декодирования тела ответа HTTP клиента
 - Исправлена транспортная интеграция HTTP клиентов JDK и Apache
 - Исправлено сопоставление ошибок подключения с `HttpClientConnectionException` для HTTP клиентов Apache и JDK
+- Исправлена запись лога ошибки подключения HTTP клиента: он пишется в логгер ответа и управляется им
+- Исправлено применение `httpClient.readTimeout` к запросам JDK HTTP клиента
 - Исправлена обработка запросов Undertow HTTP сервером после замены обработчика при refresh
 - Исправлено наличие `http.response.status_code` в метрике длительности запроса HTTP сервера
 - Исправлено сохранение завершающего `=` в значениях cookie парсером HTTP
 - Исправлен KSP слушатель Kafka с `Headers` и аргументом исключения десериализации
+- Исправлено именование спанов телеметрии Kafka и JMS как `<operation> <destination>`, метрика JMS консьюмера `messaging.receive.duration` переименована в `messaging.process.duration`
 - Исправлен маппинг пустого embedded в базе данных
 - Исправлены имена колонок `snake_case` базы данных в Kotlin symbol processor
+- Исправлено падение Java annotation processor на JDBC result set маппере типа массива в базе данных
+- Исправлено выполнение JDBC действий post-commit и post-rollback: один раз и для своей транзакции
 - Удалены недостижимые пути корутин из генераторов Kotlin репозиториев
 - Исправлен порядок аргументов фабрики ограничений валидации в Kotlin symbol processor
 - Исправлен перехват компонентов с любым тегом интерсептором графа с тегом `Tag.Any` в KSP
+- Исправлено применение интерсептора графа в KSP только к компонентам в точности перехватываемого типа, как в Java процессоре
+- Исправлены предупреждения компилятора в сгенерированных KSP исходниках Kotlin
+- Исправлен учёт `@Tag` на `@Mapper` MapStruct при внедрении маппера в Java и Kotlin
 - Исправлен возврат `Matched` из `GraphCondition.and`, когда все условия выполнены
 - Исправлен порядок условных компонентов `@KoraApp` после их последней зависимости
 - Исправлено определение циклической зависимости через `All<T>` в `@KoraApp` как цикла
+- Усилена проверка возвращаемого типа фабрики компонента в `@KoraApp`
+- Исправлено объявление методов AOP прокси в сгенерированном подмодуле `@KoraApp`
+- Исправлено получение `null` зависимостью `@Nullable` от компонента `@Conditional`, когда условие не выполнено
+- Исправлена работа узлов `@Conditional` в подграфе и копии graph draw
+- Исправлена поломка `@KoraAppTest` узлами `@Conditional` с невыполненным условием
 - Исправлено логирование времени инициализации и освобождения приложения в миллисекундах
 - Исправлено пересоздание независимых узлов при refresh графа
 - Исправлено чтение из фабрики узла графа, который ещё может быть не инициализирован
@@ -89,10 +105,17 @@ hide:
 - Исправлена устойчивость refresh графа к `equals`, выбрасывающему исключение
 - Исправлен refresh графа config watcher при каждой проверке после первого изменения конфигурации
 - Исправлена зависимость executor JDK планировщика от задач
+- Исправлено сохранение класса и метода задачи планировщика в логах при отключённой телеметрии
+- Исправлено существование задачи планировщика компонента `@Conditional` при том же условии
 - Исправлена двойная регистрация метрик кэша `Caffeine`
 - Исправлены проблемы S3 клиента на строгих S3-совместимых серверах
+- Исправлена передача `HeadObjectArgs` в запрос для `@S3.Head` и `S3Client.headObject` S3 клиента, `@S3.Head` принимает `HeadObjectResult?` в KSP
 - Исправлен `KoraMdcConverter` Logback: вне MDC скоупа ничего не выводит вместо ошибки
+- Исправлен порог отбрасывания `KoraAsyncAppender` Logback: теперь зависит от уровня лога
+- Исправлена генерация правил маскирования `@Mask` в Java проектах
 - Исправлена замена устаревшего `JsonParser.getText()` на `getString()` в JSON
+- Исправлены `reflect-config.json` и `resource-config.json` GraalVM native-image по модулям
+- Исправлены устаревшие вызовы, Javadoc и использование изоляции annotation processors
 
 ### 2.0.0.RC1
 
