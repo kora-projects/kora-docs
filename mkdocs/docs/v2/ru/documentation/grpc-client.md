@@ -1067,8 +1067,8 @@ gRPC Client использует контракт телеметрии для л
 
 Фабрика по умолчанию `DefaultGrpcClientTelemetryFactory` объединяет:
 
-- `Tracer` из OpenTelemetry — span вида `CLIENT` на каждый вызов с именем полного gRPC-метода и атрибутами `rpc.system`, `rpc.service`, `rpc.method`, `server.address`, `server.port`;
-- `MeterRegistry` из Micrometer — таймер `rpc.client.duration` с настроенными корзинами `slo`;
+- `Tracer` из OpenTelemetry — span вида `CLIENT` на каждый вызов с именем полного gRPC-метода и атрибутами `rpc.system.name`, `rpc.service`, `rpc.method`, `server.address`, `server.port`;
+- `MeterRegistry` из Micrometer — таймер `rpc.client.call.duration` с настроенными корзинами `slo`;
 - `DefaultGrpcClientLoggerFactory` — логи начала и конца вызова в логгеры `<serviceName>.request` и `<serviceName>.response`, где `serviceName` — полное имя службы `protobuf`. Заголовки запроса добавляются на уровне `DEBUG` с [маскированием](#telemetry-masking);
 - `DefaultGrpcClientMetricsFactory` — саму реализацию метрик.
 

@@ -572,6 +572,8 @@ Kora использует такой же подход для своих вну�
 Каждая перечисленная ниже метрика дополнительно несет теги, заданные в [`telemetry.metrics.tags`](#module-metrics) соответствующего модуля,
 и общие теги приложения из [`metrics.tags`](#application-config) и [`MetricsTagsProvider`](#tags-provider).
 
+Для тегов исключений `error.type` использует бинарное имя класса, если у локального или анонимного класса нет канонического имени. После переименования метрик и тегов обновите запросы дашбордов и оповещений.
+
 ### HTTP-сервер { #http-server }
 
 | Метрика | Prometheus | Тип | Описание | Теги |
@@ -588,9 +590,10 @@ Kora использует такой же подход для своих вну�
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `http.client.request.duration` | `http_client_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность запроса `HTTP`-клиента | `http.request.method`, `http.response.status_code`, `server.address`, `url.scheme`, `http.route`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `http.client.request.duration` | `http_client_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность запроса `HTTP`-клиента | `http.request.method`, `http.response.status_code`, `server.address`, `server.port`, `url.scheme`, `url.template`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
 `system.config` — путь конфигурации клиента, `system.name.simple` и `system.name.canonical` — простое и каноническое имена интерфейса декларативного клиента.
+Если порт отсутствует в URI, `server.port` принимает значение `80` для HTTP и `443` для HTTPS; для других схем без явно заданного порта тег не добавляется.
 
 Подробнее смотрите в документации модуля [HTTP-клиент](http-client.md).
 
@@ -612,11 +615,11 @@ Kora использует такой же подход для своих вну�
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `messaging.process.duration` | `messaging_process_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность обработки одного сообщения | `messaging.system`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
-| `messaging.process.batch.duration` | `messaging_process_batch_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность обработки пакета сообщений | `messaging.system`, `messaging.client.id`, `messaging.consumer.group.name`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.process.duration` | `messaging_process_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность обработки одного сообщения | `messaging.system`, `messaging.operation.name`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.process.batch.duration` | `messaging_process_batch_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность обработки пакета сообщений | `messaging.system`, `messaging.operation.name`, `messaging.client.id`, `messaging.consumer.group.name`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
 | `messaging.kafka.consumer.lag` | `messaging_kafka_consumer_lag` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Отставание потребителя по разделу | `messaging.system`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `system.config`, `system.name.simple`, `system.name.canonical` |
-| `messaging.client.operation.duration` | `messaging_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность отправки сообщения | `messaging.system`, `messaging.client.id`, `messaging.operation.type`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
-| `messaging.client.sent.messages` | `messaging_client_sent_messages_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество отправленных сообщений | `messaging.system`, `messaging.client.id`, `messaging.operation.type`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.client.operation.duration` | `messaging_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность отправки сообщения | `messaging.system`, `messaging.client.id`, `messaging.operation.type`, `messaging.operation.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.client.sent.messages` | `messaging_client_sent_messages_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество отправленных сообщений | `messaging.system`, `messaging.client.id`, `messaging.operation.type`, `messaging.operation.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
 Тег `messaging.system` всегда равен `kafka`; `messaging.operation.type` на стороне продюсера равен `send`.
 
@@ -626,7 +629,7 @@ Kora использует такой же подход для своих вну�
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `rpc.server.duration` | `rpc_server_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность обработки вызова gRPC-сервером | `server.name`, `server.port`, `rpc.system`, `rpc.service`, `rpc.method`, `rpc.grpc.status_code` |
+| `rpc.server.call.duration` | `rpc_server_call_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность обработки вызова gRPC-сервером | `server.name`, `server.port`, `rpc.system.name`, `rpc.service`, `rpc.method`, `rpc.response.status_code`, `error.type` |
 
 Подробнее смотрите в документации модуля [gRPC-сервер](grpc-server.md).
 
@@ -634,9 +637,10 @@ Kora использует такой же подход для своих вну�
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность вызова gRPC-клиента | `rpc.system`, `rpc.service`, `rpc.method`, `rpc.grpc.status_code`, `server.address`, `server.port`, `error.type` |
+| `rpc.client.call.duration` | `rpc_client_call_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность вызова gRPC-клиента | `rpc.system.name`, `rpc.service`, `rpc.method`, `rpc.response.status_code`, `server.address`, `server.port`, `error.type` |
 
-Тег `rpc.system` равен `grpc` и для gRPC-сервера, и для gRPC-клиента.
+Тег `rpc.system.name` равен `grpc` и для gRPC-сервера, и для gRPC-клиента.
+`rpc.response.status_code` содержит имя статуса gRPC (например, `OK` или `UNAVAILABLE`).
 
 Подробнее смотрите в документации модуля [gRPC-клиент](grpc-client.md).
 
@@ -644,9 +648,9 @@ Kora использует такой же подход для своих вну�
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность вызова SOAP-клиента | `rpc.system`, `rpc.service`, `rpc.method`, `server.address`, `server.port`, `http.response.status_code`, `error.type`, `fault.code`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `rpc.client.call.duration` | `rpc_client_call_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность вызова SOAP-клиента | `rpc.system.name`, `rpc.service`, `rpc.method`, `server.address`, `server.port`, `http.response.status_code`, `error.type`, `soap.fault.code`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
-Тег `rpc.system` равен `soap`; в `fault.code` попадает код ошибки `SOAP`, и он пуст, если вызов не вернул fault.
+Тег `rpc.system.name` равен `soap`; в `soap.fault.code` попадает код ошибки `SOAP`, и он пуст, если вызов не вернул fault.
 
 Подробнее смотрите в документации модуля [SOAP-клиент](soap-client.md).
 
@@ -664,12 +668,12 @@ Kora использует такой же подход для своих вну�
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `cache.operation.duration` | `cache_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность операции с кэшем (`GET`, `PUT`, `INVALIDATE` и другие) | `origin`, `operation`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
-| `cache.ratio` | `cache_ratio_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Счетчик попаданий/промахов кэша | `origin`, `operation`, `type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `cache.operation.duration` | `cache_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность операции с кэшем (`GET`, `PUT`, `INVALIDATE` и другие) | `cache.origin`, `cache.operation`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `cache.requests` | `cache_requests_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Счетчик попаданий/промахов кэша | `cache.origin`, `cache.operation`, `cache.result`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
-Тег `origin` равен `redis`, `operation` — имя операции контракта `Cache`, а `type` у `cache.ratio` принимает значения `hit` или `miss`.
+Тег `cache.origin` равен `redis`, `cache.operation` — имя операции контракта `Cache`, а `cache.result` у `cache.requests` принимает значения `hit` или `miss`.
 
-Кэши `Caffeine` не сообщают `cache.operation.duration` и `cache.ratio` — их телеметрия делегирует стандартным биндерам кэша `Micrometer`,
+Кэши `Caffeine` не сообщают `cache.operation.duration` и `cache.requests` — их телеметрия делегирует стандартным биндерам кэша `Micrometer`,
 которые привязываются к нижележащему кэшу при `telemetry.metrics.enabled = true`:
 
 | Метрика | Prometheus | Тип | Описание | Теги |
@@ -689,28 +693,27 @@ Kora строит обычный (не загружающий) кэш `Caffeine`
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `lettuce.command.completion.duration` | `lettuce_command_completion_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность завершения команды Redis | `type`, `remote`, `command`, `error.type` |
-| `lettuce.command.firstresponse.duration` | `lettuce_command_firstresponse_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность первого ответа на команду Redis | `type`, `remote`, `command`, `error.type` |
+| `db.client.operation.duration` | `db_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность завершения команды Redis | `db.system.name`, `db.operation.name`, `server.address`, `server.port`, `lettuce.type`, `error.type` |
+| `lettuce.command.firstresponse.duration` | `lettuce_command_firstresponse_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность первого ответа на команду Redis | `db.system.name`, `db.operation.name`, `server.address`, `server.port`, `lettuce.type`, `error.type` |
 
-Тег `type` различает вид клиента, `remote` — адрес узла `Redis`, `command` — имя команды `Redis`.
-У этих двух метрик `error.type` содержит текст ошибки `Redis`, а не имя класса исключения.
+Тег `db.system.name` равен `redis`; `db.operation.name` содержит команду, а `lettuce.type` различает тип клиента. `server.address` и `server.port` определяют узел Redis. В `error.type` записывается только префикс ошибки Redis (например, `ERR` или `MOVED`), чтобы ограничить число значений тега. Таймер завершения использует `db.client.operation.duration` вместе с другими клиентами БД; фильтруйте его по `db.system.name=redis`.
 
 ### Отказоустойчивость { #resilience }
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `resilient.circuitbreaker.state` | `resilient_circuitbreaker_state` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Состояние предохранителя (0=CLOSED, 1=HALF_OPEN, 2=OPEN) | `name` |
-| `resilient.circuitbreaker.transition` | `resilient_circuitbreaker_transition_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Переходы в состояния `OPEN` и `HALF_OPEN` | `name`, `state` |
-| `resilient.circuitbreaker.call.acquire` | `resilient_circuitbreaker_call_acquire_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Вызовы, пропущенные в `HALF_OPEN`, и вызовы, отклоненные в `OPEN` | `name`, `state`, `status` |
-| `resilient.circuitbreaker.call.result` | `resilient_circuitbreaker_call_result_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Результаты вызовов, зарегистрированные предохранителем | `name`, `state`, `status` |
-| `resilient.retry.attempts` | `resilient_retry_attempts_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество повторных попыток | `name` |
-| `resilient.retry.exhausted` | `resilient_retry_exhausted_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество исчерпанных повторов | `name`, `reason` |
-| `resilient.timeout.exhausted` | `resilient_timeout_exhausted_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество таймаутов | `name` |
-| `resilient.fallback.attempts` | `resilient_fallback_attempts_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество вызовов резервного варианта | `name`, `type` |
-| `resilient.ratelimiter.acquire` | `resilient_ratelimiter_acquire_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Захваты разрешений ограничителем частоты | `name`, `status` |
+| `resilient.circuitbreaker.state` | `resilient_circuitbreaker_state` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Состояние предохранителя (0=CLOSED, 1=HALF_OPEN, 2=OPEN) | `resilient.name` |
+| `resilient.circuitbreaker.transition` | `resilient_circuitbreaker_transition_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Переходы в состояния `OPEN` и `HALF_OPEN` | `resilient.name`, `resilient.state` |
+| `resilient.circuitbreaker.call.acquire` | `resilient_circuitbreaker_call_acquire_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Вызовы, пропущенные в `HALF_OPEN`, и вызовы, отклоненные в `OPEN` | `resilient.name`, `resilient.state`, `resilient.status` |
+| `resilient.circuitbreaker.call.result` | `resilient_circuitbreaker_call_result_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Результаты вызовов, зарегистрированные предохранителем | `resilient.name`, `resilient.state`, `resilient.status` |
+| `resilient.retry.attempts` | `resilient_retry_attempts_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество повторных попыток | `resilient.name` |
+| `resilient.retry.exhausted` | `resilient_retry_exhausted_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество исчерпанных повторов | `resilient.name`, `resilient.reason` |
+| `resilient.timeout.exhausted` | `resilient_timeout_exhausted_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество таймаутов | `resilient.name` |
+| `resilient.fallback.attempts` | `resilient_fallback_attempts_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество вызовов резервного варианта | `resilient.name`, `resilient.type` |
+| `resilient.ratelimiter.acquire` | `resilient_ratelimiter_acquire_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Захваты разрешений ограничителем частоты | `resilient.name`, `resilient.status` |
 
-Значения тегов: `status` равен `PERMITTED` / `REJECTED` / `DISABLED` у `call.acquire` и `SUCCESS` / `FAILURE` / `IGNORED_FAILURE` / `FALLBACK` у `call.result`;
-`reason` равен `EXHAUSTED_ATTEMPTS` или `EXHAUSTED_BUDGET`; `status` ограничителя частоты — `acquired` или `rejected`; `type` резервного варианта — `executed`.
+Значения тегов: `resilient.status` равен `PERMITTED` / `REJECTED` / `DISABLED` у `call.acquire` и `SUCCESS` / `FAILURE` / `IGNORED_FAILURE` / `FALLBACK` у `call.result`;
+`resilient.reason` равен `EXHAUSTED_ATTEMPTS` или `EXHAUSTED_BUDGET`; `resilient.status` ограничителя частоты — `acquired` или `rejected`; `resilient.type` резервного варианта — `executed`.
 
 Подробнее смотрите в документации модуля [Отказоустойчивость](resilient.md).
 
@@ -718,7 +721,7 @@ Kora строит обычный (не загружающий) кэш `Caffeine`
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `messaging.receive.duration` | `messaging_receive_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность получения сообщения JMS | `messaging.system`, `messaging.destination.name`, `error.type` |
+| `messaging.process.duration` | `messaging_process_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность обработки сообщения JMS | `messaging.system`, `messaging.operation.name`, `messaging.destination.name`, `error.type` |
 
 Тег `messaging.system` всегда равен `jms`.
 
@@ -726,9 +729,9 @@ Kora строит обычный (не загружающий) кэш `Caffeine`
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность операции S3-клиента | `rpc.system`, `rpc.method`, `aws.s3.bucket`, `error.type`, `system.path`, `system.name.simple`, `system.name.canonical` |
+| `rpc.client.call.duration` | `rpc_client_call_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность операции S3-клиента | `rpc.system.name`, `rpc.method`, `aws.s3.bucket`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
-Тег `rpc.system` равен `s3-aws` для клиента на базе `AWS`. `rpc.method` — имя операции S3, а `system.path` — путь конфигурации клиента.
+Тег `rpc.system.name` равен `s3` для клиента на базе `AWS`. `rpc.method` — имя операции S3, а `system.config` — путь конфигурации клиента.
 
 Подробнее смотрите в документации модуля [S3-клиент](s3-client.md).
 
@@ -736,7 +739,7 @@ Kora строит обычный (не загружающий) кэш `Caffeine`
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `camunda.engine.delegate.duration` | `camunda_engine_delegate_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность выполнения Java-делегата Camunda BPMN | `delegate`, `error.type` |
+| `camunda.engine.delegate.duration` | `camunda_engine_delegate_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность выполнения Java-делегата Camunda BPMN | `camunda.delegate`, `error.type` |
 
 Собственные метрики движка публикуются отдельно и требуют `camunda.engine.bpmn.telemetry.metrics.engineMetrics = true`.
 
@@ -757,7 +760,7 @@ Kora строит обычный (не загружающий) кэш `Caffeine`
 |--------|------------|------|-------------|------|
 | `zeebe.worker.handler.duration` | `zeebe_worker_handler_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность обработчика задачи `Zeebe Worker` | `job.name`, `job.type`, `error.type` |
 
-Клиент `Camunda` дополнительно публикует в тот же реестр собственные метрики задач воркера с тегом `type` задачи.
+Клиент `Camunda` дополнительно публикует в тот же реестр собственные метрики задач воркера с тегом `job.type`.
 
 Подробнее смотрите в документации модуля [Camunda 8 Worker](camunda8-worker.md).
 

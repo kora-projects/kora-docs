@@ -326,28 +326,27 @@ logging {
 
 ## Логирование { #logging }
 
-Именно конфигурация Logback из руководства по HTTP-серверу связывает логи с трассировками:
+Если в classpath есть `logging-logback`, а `logback.xml` отсутствует, `KoraLogbackConfigurator` автоматически создает асинхронную цепочку вывода в консоль. `KoraAsyncAppender` захватывает текущий контекст спана при постановке события в очередь. Энкодер по умолчанию `ConsoleTextRecordEncoder` выводит `traceId=` и `spanId=` в текстовом логе при наличии контекста. Если в classpath также есть `logging-logback-json`, по умолчанию выбирается структурированный JSON с идентификаторами трассировки.
 
-```xml title="src/main/resources/logback.xml"
-<configuration debug="false">
+Для обоих вариантов XML-файл не требуется. Значение [`kora.logging.encoder`](../documentation/logging-slf4j.md#encoder-selection) явно выбирает `text`, `pretty` или `json`; `logback.xml` добавляют для собственных аппендеров или маршрутизации Logback. Уровни логирования во время работы берутся из `logging.levels`.
+
+Если нужны собственный аппендер Logback или маршрутизация логов, добавьте `src/main/resources/logback.xml`. Он заменяет автоматическую настройку аппендеров Kora, поэтому энкодер и `KoraAsyncAppender` нужно объявить явно:
+
+```xml title="src/main/resources/logback.xml (необязательно)"
+<configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
     </appender>
-
     <appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
         <appender-ref ref="STDOUT"/>
     </appender>
-
-    <root level="WARN">
+    <root level="INFO">
         <appender-ref ref="ASYNC"/>
     </root>
 </configuration>
 ```
 
-`KoraAsyncAppender` захватывает текущий контекст спана в момент постановки события лога в очередь, а `ConsoleTextRecordEncoder` пишет `traceId=` и `spanId=` в строку всякий раз, когда этот захваченный
-контекст валиден. Нужны оба аппендера: без асинхронного не будет захваченного контекста спана, а без энкодера он никогда не попадет в вывод.
-
-Уровни берутся из секции конфигурации `logging.levels`, а не из этого файла, — именно это позволяет поднять уровень логгера в рантайме, не пересобирая образ.
+Для структурированного JSON в таком XML добавьте `logging-logback-json` и используйте `io.koraframework.logging.logback.json.JsonRecordEncoder` вместо текстового энкодера. Для собственного формата без XML [зарегистрируйте свою фабрику энкодера](../documentation/logging-slf4j.md#custom-encoders).
 
 ## Сигналы вместе { #signals-together }
 
@@ -588,7 +587,7 @@ curl -i http://localhost:8085/system/readiness
 : Проверьте `tracing.exporter.endpoint`. Без него спаны создаются и передаются, но никогда не экспортируются, и молча.
 
 В логах нет `traceId`:
-: Строка была залогирована вне трассируемой операции, либо в `logback.xml` не используется `KoraAsyncAppender` с `ConsoleTextRecordEncoder`.
+: Строка залогирована вне трассируемой операции. Если используется собственный `logback.xml`, проверьте наличие `KoraAsyncAppender` и энкодера, выводящего идентификаторы трассировки.
 
 Любая эксплуатационная конечная точка отвечает `404`:
 : Вы на публичном порту. Все они живут на `httpServer.system.port` (по умолчанию: `8085`).

@@ -1058,8 +1058,8 @@ grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
 ### Метрики { #telemetry-metrics }
 
 Метрикам нужен `grpcServer.telemetry.metrics.enabled` **и** `MeterRegistry`, который предоставляет модуль [метрик](metrics.md).
-Модуль пишет единственный таймер `rpc.server.duration` с корзинами из `grpcServer.telemetry.metrics.slo` и тегами
-`server.name`, `server.port`, `rpc.system` (всегда `grpc`), `rpc.service`, `rpc.method` и `rpc.grpc.status_code`,
+Модуль пишет единственный таймер `rpc.server.call.duration` с корзинами из `grpcServer.telemetry.metrics.slo` и тегами
+`server.name`, `server.port`, `rpc.system.name` (всегда `grpc`), `rpc.service`, `rpc.method`, `rpc.response.status_code` и `error.type`,
 плюс всё, что объявлено в `grpcServer.telemetry.metrics.tags`.
 
 Метрики описаны в разделе [Справочник метрик](metrics.md#grpc-server).
@@ -1070,8 +1070,8 @@ grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
 На каждый вызов создается спан вида `SERVER` с именем `<service>/<method>`; его родитель извлекается из `Metadata` запроса
 пропагатором `W3C Trace Context`, поэтому трасса, начатая вызывающей стороной, продолжается на сервере.
 
-Спан несет атрибуты `server.port`, `server.name`, `rpc.system`, `rpc.service`, `rpc.method` и `network.peer.address`,
-плюс всё, что объявлено в `grpcServer.telemetry.tracing.attributes`; при закрытии добавляется `rpc.grpc.status_code`.
+Спан несет атрибуты `server.port`, `server.name`, `rpc.system.name`, `rpc.service`, `rpc.method` и `network.peer.address`,
+плюс всё, что объявлено в `grpcServer.telemetry.tracing.attributes`; при закрытии добавляется `rpc.response.status_code`, а при ошибке — `error.type`.
 Каждое отправленное и полученное сообщение добавляет событие `rpc.message` с атрибутом `rpc.message.type`.
 Статус `Status`, отличный от OK, или исключение переводят статус спана в `ERROR`.
 

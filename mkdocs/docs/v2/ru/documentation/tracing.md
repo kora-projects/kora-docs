@@ -1,17 +1,18 @@
 ---
 seo_title: "Трассировка Kora: справочник по OpenTelemetry OTLP"
 seo_description: "Справочник по трассировке Kora: экспортеры OpenTelemetry OTLP gRPC и HTTP, конфигурация, атрибуты Resource, передача контекста, семплирование, ручные спаны."
-keywords: ["Kora Framework", "фреймворк Kora", "трассировка Kora", "OpenTelemetry", "OTLP", "передача контекста", "семплирование", "атрибуты Resource", "OpentelemetryTracingAttributesProvider"]
+keywords: [ "Kora Framework", "фреймворк Kora", "трассировка Kora", "OpenTelemetry", "OTLP", "передача контекста", "семплирование", "атрибуты Resource", "OpentelemetryTracingAttributesProvider" ]
 description: "Explains Kora OpenTelemetry tracing with the OTLP/gRPC and OTLP/HTTP exporters, tracing configuration, Resource attributes from configuration and OpentelemetryTracingAttributesProvider components, trace context propagation, sampling, manual spans and carrying the trace context across threads. Use when working with OpentelemetryTracingModule, OpentelemetryTracingAttributesProvider, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, KoraTracer, OpentelemetryContext, Tracer, Span, OTLP."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about OpenTelemetry tracing: choosing the OTLP/gRPC or OTLP/HTTP exporter, the tracing and tracing.exporter config sections, service-wide Resource attributes from tracing.attributes and OpentelemetryTracingAttributesProvider components, per-module telemetry.tracing options, W3C trace context propagation, sampling, creating spans manually and carrying the trace context to another thread; key triggers include OpentelemetryTracingModule, OpentelemetryTracingAttributesProvider, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, OpentelemetryTracingConfig, KoraTracer, OpentelemetryContext, Tracer, Span, SpanProcessor, SpanExporter, Sampler, OTLP."
+    use_when: "Use this file for Kora docs or implementation questions about OpenTelemetry tracing: choosing the OTLP/gRPC or OTLP/HTTP exporter, the tracing and tracing.exporter config sections, service-wide Resource attributes from tracing.attributes and OpentelemetryTracingAttributesProvider components, per-module telemetry.tracing options, W3C trace context propagation, sampling, creating spans manually and carrying the trace context to another thread; key triggers include OpentelemetryTracingModule, OpentelemetryTracingAttributesProvider, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, OpentelemetryTracingConfig, KoraTracer, OpentelemetryContext, Tracer, Span, SpanProcessor, SpanExporter, Sampler, OTLP."
 ---
 
 Трассировка помогает связать отдельные операции приложения в единую цепочку выполнения и понять, где запрос провел время или завершился ошибкой.
 Kora использует [`OpenTelemetry`](https://opentelemetry.io/docs/what-is-opentelemetry/) для создания `Span` и их экспорта в формате `OTLP`.
 
 Kora регистрирует собственную реализацию `ContextStorage` для `OpenTelemetry`, поэтому текущий контекст трассировки переносится через `ScopedValue`, а не через thread local.
-Благодаря этому `io.opentelemetry.context.Context.current()` и `io.opentelemetry.api.trace.Span.current()` возвращают корректные значения в любом месте внутри трассируемой операции, в том числе на виртуальных потоках.
+Благодаря этому `io.opentelemetry.context.Context.current()` и `io.opentelemetry.api.trace.Span.current()` возвращают корректные значения в любом месте внутри трассируемой операции, в том числе на
+виртуальных потоках.
 
 Большинство `Span` создаются за вас: HTTP-сервер и клиент, база данных, потребитель и продюсер `Kafka`, gRPC-сервер и клиент и другие подсистемы создают собственные span через свою телеметрию,
 а контекст трассировки переносится между сервисами по стандарту [W3C Trace Context](https://www.w3.org/TR/trace-context/).
@@ -95,14 +96,18 @@ Kora предоставляет два взаимоисключающих мод
 Секция `tracing` описывается классом `OpentelemetryTracingConfig` и предоставляется модулем `OpentelemetryTracingModule`:
 
 - `enabled` — глобальный переключатель трассировки (по умолчанию: `true`). При `false` Kora ставит `TracerProvider`-заглушку, поэтому `Span` не записываются и ничего не экспортируется.
-- `attributes` — атрибуты `OpenTelemetry Resource` (по умолчанию: `{}`); объединяются с атрибутами компонентов [`OpentelemetryTracingAttributesProvider`](#attributes-provider) и побеждают при совпадении ключей.
+- `attributes` — атрибуты `OpenTelemetry Resource` (по умолчанию: `{}`); объединяются с атрибутами компонентов [`OpentelemetryTracingAttributesProvider`](#attributes-provider) и побеждают при
+  совпадении ключей.
 
-Секция `tracing.exporter` описывается классами `OpentelemetryGrpcExporterConfig` (для `OTLP/gRPC`) и `OpentelemetryHttpExporterConfig` (для `OTLP/HTTP`); у обоих интерфейсов одинаковый набор полей, поэтому смена модуля экспортера не меняет конфигурацию.
-Если `tracing.exporter.endpoint` не указан, ни экспортер, ни обработчик span не создаются — приложение стартует, `Span` по-прежнему создаются и распространяются, просто их никогда не отправляют во внешний коллектор.
+Секция `tracing.exporter` описывается классами `OpentelemetryGrpcExporterConfig` (для `OTLP/gRPC`) и `OpentelemetryHttpExporterConfig` (для `OTLP/HTTP`); у обоих интерфейсов одинаковый набор полей,
+поэтому смена модуля экспортера не меняет конфигурацию.
+Если `tracing.exporter.endpoint` не указан, ни экспортер, ни обработчик span не создаются — приложение стартует, `Span` по-прежнему создаются и распространяются, просто их никогда не отправляют во
+внешний коллектор.
 
 Поле `tracing.attributes` задает атрибуты `OpenTelemetry Resource`, которые добавляются к **каждому** экспортируемому `Span` всего сервиса.
 По умолчанию оно пусто, поэтому укажите там хотя бы имя и пространство имен сервиса, например `service.name` и `service.namespace`, иначе коллектор получит span без принадлежности к сервису.
-Эти общесервисные атрибуты `Resource` отличаются от атрибутов span уровня модуля, настраиваемых в секции `<module>.telemetry.tracing.attributes`: те добавляются только к span конкретной подсистемы — смотрите [Конфигурация трассировки модуля](#module-config).
+Эти общесервисные атрибуты `Resource` отличаются от атрибутов span уровня модуля, настраиваемых в секции `<module>.telemetry.tracing.attributes`: те добавляются только к span конкретной подсистемы —
+смотрите [Конфигурация трассировки модуля](#module-config).
 
 ===! ":material-code-json: `Hocon`"
 
@@ -231,7 +236,8 @@ Kora предоставляет два взаимоисключающих мод
 
 ### Поставщик атрибутов Resource { #attributes-provider }
 
-Если значение атрибута `Resource` известно только при старте (имя хоста, имя пода, версия сборки), зарегистрируйте компонент `OpentelemetryTracingAttributesProvider` из пакета `io.koraframework.opentelemetry.tracing`:
+Если значение атрибута `Resource` известно только при старте (имя хоста, имя пода, версия сборки), зарегистрируйте компонент `OpentelemetryTracingAttributesProvider` из пакета
+`io.koraframework.opentelemetry.tracing`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -258,7 +264,8 @@ Kora предоставляет два взаимоисключающих мод
     }
     ```
 
-Поставщиков можно зарегистрировать сколько угодно. `OpentelemetryTracingModule` собирает их все и помещает их атрибуты в `Resource` провайдера `TracerProvider`, поэтому они прикрепляются к каждому `Span` так же, как `tracing.attributes`.
+Поставщиков можно зарегистрировать сколько угодно. `OpentelemetryTracingModule` собирает их все и помещает их атрибуты в `Resource` провайдера `TracerProvider`, поэтому они прикрепляются к каждому
+`Span` так же, как `tracing.attributes`.
 `tracing.attributes` применяется последним, поэтому при совпадении ключей значение из конфигурации побеждает любого поставщика.
 Атрибуты вычисляются один раз, при создании `Resource`.
 
@@ -267,7 +274,8 @@ Kora предоставляет два взаимоисключающих мод
 ## Автоматическая трассировка { #automatic }
 
 Модуль трассировки в графе приложения предоставляет компонент `Tracer`.
-Каждая подсистема Kora, у которой есть телеметрия, подхватывает этот `Tracer` и начинает создавать `Span` для своих операций: на каждый входящий запрос, исходящий вызов, сообщение, запрос к базе данных или запланированный запуск она открывает `Span`, привязывает его к текущему контексту, вкладывает в активный в этот момент `Span` и закрывает по завершении операции.
+Каждая подсистема Kora, у которой есть телеметрия, подхватывает этот `Tracer` и начинает создавать `Span` для своих операций: на каждый входящий запрос, исходящий вызов, сообщение, запрос к базе
+данных или запланированный запуск она открывает `Span`, привязывает его к текущему контексту, вкладывает в активный в этот момент `Span` и закрывает по завершении операции.
 Для этих `Span` не требуется ни аннотаций, ни ручного кода.
 
 Например, контроллер `GET /text` из примера телеметрии создает span типа `SERVER` с именем `GET /text`, а запрос репозитория вкладывается в него как span типа `CLIENT`:
@@ -325,34 +333,40 @@ Kora предоставляет два взаимоисключающих мод
 В таблице ниже перечислены подсистемы, создающие `Span`, итоговое имя span и его [тип](https://opentelemetry.io/docs/specs/otel/trace/api/#spankind), а также основные атрибуты.
 Имена атрибутов следуют [семантическим соглашениям OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/).
 
-| Подсистема          | Имя span                                          | Тип                     | Основные атрибуты                                                                                                                                                  |
-|---------------------|---------------------------------------------------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| HTTP-сервер         | `<METHOD> <route>`, например `GET /text`          | `SERVER`                | `http.request.method`, `http.route`, `url.scheme`, `url.path`, `server.address`, `server.port`, `server.name`, `http.response.status_code`, `http.response.result_code` |
-| HTTP-клиент         | `<METHOD> <uriTemplate>`                          | `CLIENT`                | `http.request.method`, `http.route`, `server.address`, `server.port`, `url.scheme`, `url.path`, `url.full`, `http.response.status_code`, `http.response.result_code`    |
-| База данных         | `<Repository>.<method>`                           | `CLIENT`                | `db.system.name`, `db.query.text`                                                                                                                                    |
-| Потребитель Kafka   | `kafka.poll`, `<topic> process record`            | `CONSUMER`              | `messaging.system` = `kafka`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `messaging.kafka.offset` |
-| Продюсер Kafka      | `<topic> send`, `producer transaction`            | `PRODUCER` / `INTERNAL` | `messaging.system` = `kafka`, `messaging.operation.type` = `send`, `messaging.destination.name`                                                                       |
-| gRPC-сервер         | `<service>/<method>`                              | `SERVER`                | `rpc.system` = `grpc`, `rpc.service`, `rpc.method`, `server.port`, `server.name`, `network.peer.address`                                                              |
-| gRPC-клиент         | `<fullMethodName>`                                | `CLIENT`                | `rpc.system` = `grpc`, `rpc.service`, `rpc.method`, `server.address`, `server.port`                                                                                  |
-| SOAP-клиент         | `SOAP <service> <method>`                         | `CLIENT`                | `rpc.system` = `soap`, `rpc.service`, `rpc.method`, `server.address`, `server.port`                                                                                  |
-| S3-клиент           | `S3.<operation>`                                  | `CLIENT`                | `rpc.system` = `s3`, `rpc.method`, `aws.s3.bucket`                                                                                                                   |
-| Потребитель JMS     | `<destination> receive`                           | `CONSUMER`              | `messaging.system` = `jms`, `messaging.destination.name`, `messaging.message.id`                                                                                    |
-| Планировщик         | `scheduling <class>`                              | `INTERNAL`              | `code.function.name`                                                                                                                                                 |
-| Кэш Redis           | `cache.operation`                                 | `INTERNAL`              | `operation`, `origin` = `redis`                                                                                                                                      |
-| Camunda BPMN        | `Camunda Delegate <name>`                         | `INTERNAL`              | `delegate`                                                                                                                                                           |
-| Camunda REST        | `<METHOD> <route>`                                | `SERVER`                | `http.request.method`, `http.route`, `url.scheme`, `url.path`, `server.address`                                                                                      |
-| Zeebe Worker        | `Zeebe Worker <type>`                             | `INTERNAL`              | `jobType`, `jobName`, `jobKey`, `jobWorker`, `processKey`, `elementId`                                                                                              |
+| Подсистема        | Имя span                                 | Тип                     | Основные атрибуты                                                                                                                                                                                              |
+|-------------------|------------------------------------------|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| HTTP-сервер       | `<METHOD> <route>`, например `GET /text` | `SERVER`                | `http.request.method`, `http.route`, `url.scheme`, `url.path`, `server.address`, `server.port`, `server.name`, `http.response.status_code`, `http.response.result_code`                                        |
+| HTTP-клиент       | `<METHOD> <uriTemplate>`                 | `CLIENT`                | `http.request.method`, `url.template`, `server.address`, `server.port`, `url.scheme`, `url.path`, `url.full`, `http.response.status_code`, `http.response.result_code`                                         |
+| База данных       | `<Repository>.<method>`                  | `CLIENT`                | `db.system.name`, `db.query.text`                                                                                                                                                                              |
+| Потребитель Kafka | `poll`, `process <topic>`                | `CONSUMER`              | `messaging.system` = `kafka`, `messaging.operation.name`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `messaging.kafka.offset` |
+| Продюсер Kafka    | `send <topic>`, `producer transaction`   | `PRODUCER` / `INTERNAL` | `messaging.system` = `kafka`, `messaging.operation.type` = `send`, `messaging.operation.name` = `send`, `messaging.destination.name`                                                                           |
+| gRPC-сервер       | `<service>/<method>`                     | `SERVER`                | `rpc.system.name` = `grpc`, `rpc.service`, `rpc.method`, `server.port`, `server.name`, `network.peer.address`, `rpc.response.status_code`, `error.type`                                                        |
+| gRPC-клиент       | `<fullMethodName>`                       | `CLIENT`                | `rpc.system.name` = `grpc`, `rpc.service`, `rpc.method`, `server.address`, `server.port`, `rpc.response.status_code`                                                                                           |
+| SOAP-клиент       | `SOAP <service> <method>`                | `CLIENT`                | `rpc.system.name` = `soap`, `rpc.service`, `rpc.method`, `server.address`, `server.port`, `soap.fault.code`, `soap.fault.actor`                                                                                |
+| S3-клиент         | `S3.<operation>`                         | `CLIENT`                | `rpc.system.name` = `s3`, `rpc.method`, `aws.s3.bucket`                                                                                                                                                        |
+| Потребитель JMS   | `process <destination>`                  | `CONSUMER`              | `messaging.system` = `jms`, `messaging.operation.name` = `process`, `messaging.destination.name`, `messaging.message.id`                                                                                       |
+| Планировщик       | `scheduling <class>`                     | `INTERNAL`              | `code.function.name`                                                                                                                                                                                           |
+| Кэш Redis         | `cache.operation`                        | `INTERNAL`              | `cache.operation`, `cache.origin` = `redis`                                                                                                                                                                    |
+| Camunda BPMN      | `Camunda Delegate <name>`                | `INTERNAL`              | `camunda.delegate`                                                                                                                                                                                             |
+| Camunda REST      | `<METHOD> <route>`                       | `SERVER`                | `http.request.method`, `http.route`, `url.scheme`, `url.path`, `server.address`                                                                                                                                |
+| Zeebe Worker      | `Zeebe Worker <type>`                    | `INTERNAL`              | `job.type`, `job.name`, `job.key`, `job.worker`, `process.key`, `element.id`                                                                                                                                   |
 
-Span *именованных* компонентов дополнительно несут атрибуты, говорящие, из какого объявления они пришли: `system.config` (путь конфигурации компонента), `system.name.simple` и `system.name.canonical` (простое и каноническое имена класса объявления).
-Их проставляют HTTP-клиент, потребитель и продюсер `Kafka`, SOAP- и S3-клиенты, кэши и запланированные задачи; в AWS-клиенте S3 первый из них называется `system.path`, а не `system.config`.
+Span *именованных* компонентов дополнительно несут атрибуты, говорящие, из какого объявления они пришли: `system.config` (путь конфигурации компонента), `system.name.simple` и
+`system.name.canonical` (простое и каноническое имена класса объявления).
+Их проставляют HTTP-клиент, потребитель и продюсер `Kafka`, SOAP- и S3-клиенты, кэши и запланированные задачи.
+
+События span базы данных называются `db.connection`, `db.statement` и `db.result`. Для span опроса Kafka используется событие `messaging.poll.result`.
 
 Несколько деталей, которые стоит знать:
 
 - HTTP-сервер создает span только для запроса, попавшего в маршрут, потому что имя span строится из шаблона маршрута. Запросы, завершающиеся `404` из-за несовпадения маршрута, span не порождают.
-- `url.path` и `url.full` добавляются только при включенном `tracePathFull` (сервер) или `pathFull` (клиент), что является поведением по умолчанию — выключите их, чтобы идентификаторы не попадали в трассировку.
-- Потребитель `Kafka` открывает span `kafka.poll` на весь poll и по одному span `<topic> process record` на запись; span записи имеет родителем контекст, извлеченный из заголовков записи, и *связан* со span `kafka.poll`.
+- `url.path` и `url.full` добавляются только при включенном `tracePathFull` (сервер) или `pathFull` (клиент), что является поведением по умолчанию — выключите их, чтобы идентификаторы не попадали в
+  трассировку.
+- Потребитель `Kafka` открывает span `poll` на весь poll и по одному span `process <topic>` на запись; span записи имеет родителем контекст, извлеченный из заголовков записи, и *связан* со span
+  `poll`.
 - Кэш `Caffeine` и аспекты [отказоустойчивости](resilient.md) сообщают метрики и логи, но span не создают.
-- При ошибке Kora устанавливает статус span в `ERROR` и записывает исключение через `Span#recordException`. Большинство подсистем при успехе выставляют `OK`; HTTP-сервер и HTTP-клиент оставляют успешный span в статусе `UNSET` и помечают `ERROR` только для статуса `4xx`/`5xx` или при ошибке соединения.
+- При ошибке Kora устанавливает статус span в `ERROR` и записывает исключение через `Span#recordException`. Большинство подсистем при успехе выставляют `OK`; HTTP-сервер и HTTP-клиент оставляют
+  успешный span в статусе `UNSET` и помечают `ERROR` только для статуса `4xx`/`5xx` или при ошибке соединения.
 
 ## Конфигурация трассировки модуля { #module-config }
 
@@ -360,26 +374,27 @@ Span *именованных* компонентов дополнительно 
 Для каждой подсистемы доступны две опции:
 
 - `enabled` (по умолчанию: `true`) — включает или выключает span подсистемы. Установите `false`, чтобы прекратить создание span для конкретного модуля, не удаляя экспортер.
-- `attributes` (по умолчанию: `{}`) — набор пар ключ/значение, добавляемых к каждому span, создаваемому **только этим модулем**. Эти атрибуты уровня span отличаются от общесервисных `tracing.attributes` (атрибутов `Resource`), применяемых ко всем span.
+- `attributes` (по умолчанию: `{}`) — набор пар ключ/значение, добавляемых к каждому span, создаваемому **только этим модулем**. Эти атрибуты уровня span отличаются от общесервисных
+  `tracing.attributes` (атрибутов `Resource`), применяемых ко всем span.
 
 Обратите внимание, что здесь `enabled` по умолчанию равно `true`, в отличие от `telemetry.logging.enabled` и `telemetry.metrics.enabled`, у которых по умолчанию `false`.
 Две группы модулей переопределяют это значение на `false`: [системный HTTP-сервер](http-server.md) (`httpServer.system.telemetry.tracing`) и аспекты [отказоустойчивости](resilient.md).
 
 Секция `telemetry.tracing` располагается по тому же пути, что и собственная конфигурация модуля:
 
-| Подсистема           | Путь конфигурации                                                        |
-|----------------------|--------------------------------------------------------------------------|
-| HTTP-сервер          | `httpServer.telemetry.tracing`                                            |
-| Системный HTTP-сервер | `httpServer.system.telemetry.tracing`                                    |
-| HTTP-клиент          | `httpClient.<name>.telemetry.tracing`                                     |
-| База данных JDBC     | `jdbc.telemetry.tracing`                                                  |
-| База данных Cassandra | `cassandra.telemetry.tracing`                                            |
-| gRPC-сервер          | `grpcServer.telemetry.tracing`                                            |
-| gRPC-клиент          | `grpcClient.<ServiceName>.telemetry.tracing`                              |
-| Потребитель Kafka    | `kafka.consumer.<name>.telemetry.tracing`                                 |
-| Продюсер Kafka       | `kafka.producer.<name>.telemetry.tracing`                                 |
-| Планировщик          | `scheduling.telemetry.tracing`                                            |
-| Кэш                  | `<путь конфигурации кэша>.telemetry.tracing`                              |
+| Подсистема            | Путь конфигурации                            |
+|-----------------------|----------------------------------------------|
+| HTTP-сервер           | `httpServer.telemetry.tracing`               |
+| Системный HTTP-сервер | `httpServer.system.telemetry.tracing`        |
+| HTTP-клиент           | `httpClient.<name>.telemetry.tracing`        |
+| База данных JDBC      | `jdbc.telemetry.tracing`                     |
+| База данных Cassandra | `cassandra.telemetry.tracing`                |
+| gRPC-сервер           | `grpcServer.telemetry.tracing`               |
+| gRPC-клиент           | `grpcClient.<ServiceName>.telemetry.tracing` |
+| Потребитель Kafka     | `kafka.consumer.<name>.telemetry.tracing`    |
+| Продюсер Kafka        | `kafka.producer.<name>.telemetry.tracing`    |
+| Планировщик           | `scheduling.telemetry.tracing`               |
+| Кэш                   | `<путь конфигурации кэша>.telemetry.tracing` |
 
 Две подсистемы добавляют собственную опцию поверх `enabled` и `attributes`:
 
@@ -435,15 +450,17 @@ Span *именованных* компонентов дополнительно 
     3. Атрибуты уровня span, добавляемые только к span HTTP-сервера (по умолчанию: `{}`).
     4. Отключает трассировку запросов к базе данных (по умолчанию: `true`).
 
-Специфичные для модуля параметры трассировки также описаны в документации соответствующих модулей, например [HTTP-сервер](http-server.md), [HTTP-клиент](http-client.md), [gRPC-сервер](grpc-server.md), [gRPC-клиент](grpc-client.md) и [Kafka](kafka.md).
+Специфичные для модуля параметры трассировки также описаны в документации соответствующих модулей,
+например [HTTP-сервер](http-server.md), [HTTP-клиент](http-client.md), [gRPC-сервер](grpc-server.md), [gRPC-клиент](grpc-client.md) и [Kafka](kafka.md).
 
 ## Распространение контекста { #propagation }
 
 Kora сшивает распределенные трассировки по стандарту [W3C Trace Context](https://www.w3.org/TR/trace-context/) через `W3CTraceContextPropagator`.
 Это происходит автоматически и не требует настройки:
 
-- **HTTP-сервер** — `traceparent` извлекается из заголовков запроса и становится родителем серверного `Span`; идентификаторы этого span затем записываются обратно в заголовки **ответа**, чтобы вызывающая сторона могла сопоставить ответ с трассировкой.
-- **Kafka** — `traceparent` внедряется в заголовки записи продюсером и извлекается из них потребителем, поэтому каждый span `<topic> process record` продолжает трассировку продюсера.
+- **HTTP-сервер** — `traceparent` извлекается из заголовков запроса и становится родителем серверного `Span`; идентификаторы этого span затем записываются обратно в заголовки **ответа**, чтобы
+  вызывающая сторона могла сопоставить ответ с трассировкой.
+- **Kafka** — `traceparent` внедряется в заголовки записи продюсером и извлекается из них потребителем, поэтому каждый span `process <topic>` продолжает трассировку продюсера.
 - **gRPC-клиент** — `traceparent` внедряется в метаданные вызова.
 - **gRPC-сервер** — `traceparent` извлекается из метаданных вызова и внедряется обратно в метаданные заголовков ответа.
 - **Потребитель JMS** — `traceparent` извлекается из свойств сообщения.
@@ -452,7 +469,8 @@ Kora сшивает распределенные трассировки по с�
 Исключение — HTTP-клиент Kora: он открывает `CLIENT`-span на исходящий вызов, чтобы вызов был виден в вашей собственной трассировке, но **не** пишет `traceparent` в исходящий запрос.
 Если нижележащий сервис должен продолжать ту же трассировку, добавьте заголовок самостоятельно в [перехватчике HTTP-клиента](http-client.md).
 
-Внутри одного сервиса передавать вручную ничего не нужно: текущий `Span` живет в `ScopedValue`, поэтому созданный вами вручную span (смотрите [Синхронная трассировка](#tracing-sync)) автоматически становится родителем всего, что вызвано внутри него в том же потоке.
+Внутри одного сервиса передавать вручную ничего не нужно: текущий `Span` живет в `ScopedValue`, поэтому созданный вами вручную span (смотрите [Синхронная трассировка](#tracing-sync)) автоматически
+становится родителем всего, что вызвано внутри него в том же потоке.
 Единственный случай, требующий явных действий, — переход границы потока, смотрите [Асинхронная трассировка](#async-tracing).
 
 ## Сэмплирование { #sampling }
@@ -460,7 +478,8 @@ Kora сшивает распределенные трассировки по с�
 Базовые компоненты трассировки предоставляются модулем `OpentelemetryTracingModule` как `@DefaultComponent`, а значит каждый из них можно заменить, объявив собственный компонент того же типа:
 
 - `Resource` — атрибуты уровня сервиса, прикрепляемые к каждому `Span`; по умолчанию собирается из компонентов [`OpentelemetryTracingAttributesProvider`](#attributes-provider) и `tracing.attributes`.
-- `Sampler` — решает, какие `Span` записываются. По умолчанию используется `Sampler.parentBased(Sampler.alwaysOn())`, то есть записывается каждый корневой `Span`, а для дочерних `Span` следует решению родителя.
+- `Sampler` — решает, какие `Span` записываются. По умолчанию используется `Sampler.parentBased(Sampler.alwaysOn())`, то есть записывается каждый корневой `Span`, а для дочерних `Span` следует решению
+  родителя.
 - `IdGenerator` — генерирует идентификаторы трассировки и span. По умолчанию используется `IdGenerator.random()`.
 - `Supplier<SpanLimits>` — ограничения на количество атрибутов, событий и связей у одного `Span`. По умолчанию используется `SpanLimits.getDefault()`.
 - `KoraTracer` — помощник для [ручного создания span](#tracing-sync).
@@ -494,7 +513,8 @@ Kora сшивает распределенные трассировки по с�
     }
     ```
 
-Опция экспорта `exportUnsampledSpans` управляет тем, отправляются ли в коллектор `Span`, которые **не** были выбраны `Sampler`; по умолчанию она равна `false`, поэтому экспортируются только выбранные `Span`.
+Опция экспорта `exportUnsampledSpans` управляет тем, отправляются ли в коллектор `Span`, которые **не** были выбраны `Sampler`; по умолчанию она равна `false`, поэтому экспортируются только выбранные
+`Span`.
 
 ## Контекст трассировки { #tracing-context }
 
@@ -528,43 +548,53 @@ Kora сшивает распределенные трассировки по с�
     val traceId = io.opentelemetry.api.trace.Span.current().getSpanContext().getTraceId()
     ```
 
-Если текущего `Span` нет, `Span.current()` возвращает `Span.getInvalid()`, а его `SpanContext` сообщает `isValid() == false` с нулевым идентификатором трассировки, поэтому эти вызовы никогда не возвращают `null` и не бросают исключение.
+Если текущего `Span` нет, `Span.current()` возвращает `Span.getInvalid()`, а его `SpanContext` сообщает `isValid() == false` с нулевым идентификатором трассировки, поэтому эти вызовы никогда не
+возвращают `null` и не бросают исключение.
 
 Механика, которая это обеспечивает, находится в пакете `io.koraframework.common.telemetry`:
 
-- `OpentelemetryContext` — реализация `io.opentelemetry.context.Context` поверх `ScopedValue`. Kora регистрирует её как `ContextStorageProvider` для `OpenTelemetry`, поэтому `Context.current()` и `Span.current()` работают в любом потоке, в который вошла Kora, включая виртуальные.
-- `OpentelemetryContext.VALUE` — сам `ScopedValue<Context>`. Привязка через `ScopedValue.where(OpentelemetryContext.VALUE, ctx)` — это и есть способ сделать контекст текущим; `Context#makeCurrent()` намеренно не поддерживается и бросает `IllegalStateException`, потому что scoped value нельзя присоединить и отсоединить императивно.
-- `Observation` — объект телеметрии текущей операции того модуля, который сейчас выполняется, также привязанный к `ScopedValue`. `Observation.current(HttpServerObservation.class)` возвращает его, а `observation.span()` дает собственный span модуля; вызов бросает исключение, если привязанного observation такого типа нет.
+- `OpentelemetryContext` — реализация `io.opentelemetry.context.Context` поверх `ScopedValue`. Kora регистрирует её как `ContextStorageProvider` для `OpenTelemetry`, поэтому `Context.current()` и
+  `Span.current()` работают в любом потоке, в который вошла Kora, включая виртуальные.
+- `OpentelemetryContext.VALUE` — сам `ScopedValue<Context>`. Привязка через `ScopedValue.where(OpentelemetryContext.VALUE, ctx)` — это и есть способ сделать контекст текущим; `Context#makeCurrent()`
+  намеренно не поддерживается и бросает `IllegalStateException`, потому что scoped value нельзя присоединить и отсоединить императивно.
+- `Observation` — объект телеметрии текущей операции того модуля, который сейчас выполняется, также привязанный к `ScopedValue`. `Observation.current(HttpServerObservation.class)` возвращает его, а
+  `observation.span()` дает собственный span модуля; вызов бросает исключение, если привязанного observation такого типа нет.
 
 ## Корреляция логов { #mdc }
 
-Корреляция логов выполняется [модулем Logback](logging-slf4j.md#logback): `KoraAsyncAppender` захватывает `Span.current().getSpanContext()` в момент постановки события в очередь, а `ConsoleTextRecordEncoder` пишет `traceId=` и `spanId=` в строку лога всякий раз, когда этот контекст span валиден.
+Корреляция логов выполняется [модулем Logback](logging-slf4j.md#logback): `KoraAsyncAppender` захватывает `Span.current().getSpanContext()` в момент постановки события в очередь, а
+`ConsoleTextRecordEncoder` пишет `traceId=` и `spanId=` в строку лога всякий раз, когда этот контекст span валиден.
 
 ```xml
+
 <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
 </appender>
 
 <appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
-    <appender-ref ref="STDOUT"/>
+<appender-ref ref="STDOUT"/>
 </appender>
 ```
 
-В результате каждая строка лога, порожденная в рамках трассируемой операции, несет `traceId` и `spanId`, что позволяет переходить от записи лога к соответствующей трассировке в системе наблюдаемости и обратно.
+В результате каждая строка лога, порожденная в рамках трассируемой операции, несет `traceId` и `spanId`, что позволяет переходить от записи лога к соответствующей трассировке в системе наблюдаемости и
+обратно.
 У строк, залогированных вне трассируемой операции, этих полей просто нет.
 
-[MDC](logging-slf4j.md#mdc) в Kora — отдельный механизм для ваших собственных структурированных полей: идентификаторы трассировки через него не проходят, поэтому вокруг span ничего не нужно класть в `MDC` и удалять оттуда.
+[MDC](logging-slf4j.md#mdc) в Kora — отдельный механизм для ваших собственных структурированных полей: идентификаторы трассировки через него не проходят, поэтому вокруг span ничего не нужно класть в
+`MDC` и удалять оттуда.
 
 ## Синхронная трассировка { #tracing-sync }
 
 Помимо `Span`, создаваемых фреймворком, вы можете создавать собственные.
-Самый простой способ — компонент `KoraTracer`: он строит `Span`, привязывает его как текущий контекст на время вызова, выставляет статус, записывает исключение, если оно было брошено, и завершает span — всё это одним вызовом.
+Самый простой способ — компонент `KoraTracer`: он строит `Span`, привязывает его как текущий контекст на время вызова, выставляет статус, записывает исключение, если оно было брошено, и завершает
+span — всё это одним вызовом.
 
 - `traceParent(name, …)` — создает `Span`, вложенный в активный в этот момент.
 - `traceNew(name, …)` — создает корневой `Span` без родителя, для работы, которая должна начинать собственную трассировку.
 - `tracer()` — возвращает лежащий в основе `io.opentelemetry.api.trace.Tracer`, когда нужен полный контроль.
 
-Каждый из них принимает либо `TraceCallable`, возвращающий значение, либо `TraceRunnable`, который ничего не возвращает; оба получают созданный `Span`, чтобы к нему можно было добавить атрибуты и события.
+Каждый из них принимает либо `TraceCallable`, возвращающий значение, либо `TraceRunnable`, который ничего не возвращает; оба получают созданный `Span`, чтобы к нему можно было добавить атрибуты и
+события.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -612,7 +642,8 @@ Kora сшивает распределенные трассировки по с�
 
     1. `traceParent` перегружен для `TraceCallable` и `TraceRunnable`, а `Kotlin` не может сам выбрать между двумя функциональными интерфейсами — передайте явный SAM-конструктор.
 
-Если нужно что-то, чего `KoraTracer` не покрывает, например собственный вид span или связь с другой трассировкой, постройте `Span` из `Tracer` самостоятельно и привяжите его как текущий контекст на время операции:
+Если нужно что-то, чего `KoraTracer` не покрывает, например собственный вид span или связь с другой трассировкой, постройте `Span` из `Tracer` самостоятельно и привяжите его как текущий контекст на
+время операции:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -696,7 +727,8 @@ Kora сшивает распределенные трассировки по с�
 Контекст трассировки — это `ScopedValue`, а scoped value виден только внутри той динамической области, которая его связала.
 Поэтому передача работы в другой поток теряет контекст, если не перенести его явно: захватите `io.opentelemetry.context.Context.current()` в вызывающем потоке и заново привяжите его в рабочем.
 
-`OpentelemetryContext` реализует семейство методов `wrap` интерфейса `Context` из `OpenTelemetry` поверх `ScopedValue`, поэтому обычно достаточно обернуть задачу — доступны `wrap(Runnable)`, `wrap(Callable)`, `wrapSupplier`, `wrapFunction` и `wrapConsumer`.
+`OpentelemetryContext` реализует семейство методов `wrap` интерфейса `Context` из `OpenTelemetry` поверх `ScopedValue`, поэтому обычно достаточно обернуть задачу — доступны `wrap(Runnable)`,
+`wrap(Callable)`, `wrapSupplier`, `wrapFunction` и `wrapConsumer`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -751,4 +783,5 @@ Kora сшивает распределенные трассировки по с�
     2. `wrapSupplier` заново привязывает этот контекст вокруг вызова в рабочем потоке.
 
 Учтите, что `KoraTracer` завершает span сразу после возврата из своего колбэка, а для примера выше это происходит до завершения future.
-Когда span должен покрывать всю асинхронную операцию, стройте его из `Tracer` самостоятельно, как показано в разделе [Синхронная трассировка](#tracing-sync), и вызывайте `span.end()` из колбэка завершения.
+Когда span должен покрывать всю асинхронную операцию, стройте его из `Tracer` самостоятельно, как показано в разделе [Синхронная трассировка](#tracing-sync), и вызывайте `span.end()` из колбэка
+завершения.

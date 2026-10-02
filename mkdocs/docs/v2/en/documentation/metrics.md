@@ -572,6 +572,8 @@ The `error.type` tag is always present on metrics that can fail — it holds the
 Every metric listed below additionally carries the tags configured in that module's [`telemetry.metrics.tags`](#module-metrics)
 and the application-wide common tags from [`metrics.tags`](#application-config) and [`MetricsTagsProvider`](#tags-provider).
 
+For exception tags, `error.type` uses the binary class name when a local or anonymous exception class has no canonical name. The updated metric names and tags require dashboard and alert query changes.
+
 ### HTTP server { #http-server }
 
 | Metric | Prometheus | Type | Description | Tags |
@@ -588,9 +590,10 @@ See [HTTP server](http-server.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `http.client.request.duration` | `http_client_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `HTTP` client request duration | `http.request.method`, `http.response.status_code`, `server.address`, `url.scheme`, `http.route`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `http.client.request.duration` | `http_client_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `HTTP` client request duration | `http.request.method`, `http.response.status_code`, `server.address`, `server.port`, `url.scheme`, `url.template`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
 `system.config` is the client's configuration path, `system.name.simple` and `system.name.canonical` are the simple and canonical names of the declarative client interface.
+`server.port` uses `80` for HTTP and `443` for HTTPS when the URI omits a port; for other schemes without an explicit port, the tag is omitted.
 
 See [HTTP client](http-client.md) module documentation for more details.
 
@@ -612,11 +615,11 @@ See [Database](database-common.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `messaging.process.duration` | `messaging_process_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Single message processing duration | `messaging.system`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
-| `messaging.process.batch.duration` | `messaging_process_batch_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Message batch processing duration | `messaging.system`, `messaging.client.id`, `messaging.consumer.group.name`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.process.duration` | `messaging_process_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Single message processing duration | `messaging.system`, `messaging.operation.name`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.process.batch.duration` | `messaging_process_batch_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Message batch processing duration | `messaging.system`, `messaging.operation.name`, `messaging.client.id`, `messaging.consumer.group.name`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
 | `messaging.kafka.consumer.lag` | `messaging_kafka_consumer_lag` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Consumer lag per partition | `messaging.system`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `system.config`, `system.name.simple`, `system.name.canonical` |
-| `messaging.client.operation.duration` | `messaging_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Message send duration | `messaging.system`, `messaging.client.id`, `messaging.operation.type`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
-| `messaging.client.sent.messages` | `messaging_client_sent_messages_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of sent messages | `messaging.system`, `messaging.client.id`, `messaging.operation.type`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.client.operation.duration` | `messaging_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Message send duration | `messaging.system`, `messaging.client.id`, `messaging.operation.type`, `messaging.operation.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.client.sent.messages` | `messaging_client_sent_messages_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of sent messages | `messaging.system`, `messaging.client.id`, `messaging.operation.type`, `messaging.operation.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
 `messaging.system` is always `kafka`; `messaging.operation.type` on the publisher side is `send`.
 
@@ -626,7 +629,7 @@ See [Kafka](kafka.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `rpc.server.duration` | `rpc_server_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | gRPC server call processing duration | `server.name`, `server.port`, `rpc.system`, `rpc.service`, `rpc.method`, `rpc.grpc.status_code` |
+| `rpc.server.call.duration` | `rpc_server_call_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | gRPC server call processing duration | `server.name`, `server.port`, `rpc.system.name`, `rpc.service`, `rpc.method`, `rpc.response.status_code`, `error.type` |
 
 See [gRPC server](grpc-server.md) module documentation for more details.
 
@@ -634,9 +637,10 @@ See [gRPC server](grpc-server.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | gRPC client call duration | `rpc.system`, `rpc.service`, `rpc.method`, `rpc.grpc.status_code`, `server.address`, `server.port`, `error.type` |
+| `rpc.client.call.duration` | `rpc_client_call_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | gRPC client call duration | `rpc.system.name`, `rpc.service`, `rpc.method`, `rpc.response.status_code`, `server.address`, `server.port`, `error.type` |
 
-`rpc.system` is `grpc` for both the gRPC server and the gRPC client.
+`rpc.system.name` is `grpc` for both the gRPC server and the gRPC client.
+`rpc.response.status_code` contains the gRPC status name (for example `OK` or `UNAVAILABLE`).
 
 See [gRPC client](grpc-client.md) module documentation for more details.
 
@@ -644,9 +648,9 @@ See [gRPC client](grpc-client.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | SOAP client call duration | `rpc.system`, `rpc.service`, `rpc.method`, `server.address`, `server.port`, `http.response.status_code`, `error.type`, `fault.code`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `rpc.client.call.duration` | `rpc_client_call_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | SOAP client call duration | `rpc.system.name`, `rpc.service`, `rpc.method`, `server.address`, `server.port`, `http.response.status_code`, `error.type`, `soap.fault.code`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
-`rpc.system` is `soap`; `fault.code` holds the `SOAP` fault code and is empty when the call did not return a fault.
+`rpc.system.name` is `soap`; `soap.fault.code` holds the `SOAP` fault code and is empty when the call did not return a fault.
 
 See [SOAP client](soap-client.md) module documentation for more details.
 
@@ -664,12 +668,12 @@ Distributed `Redis` caches report their own operation metrics:
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `cache.operation.duration` | `cache_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Cache operation duration (`GET`, `PUT`, `INVALIDATE`, and others) | `origin`, `operation`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
-| `cache.ratio` | `cache_ratio_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Cache hit/miss counter | `origin`, `operation`, `type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `cache.operation.duration` | `cache_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Cache operation duration (`GET`, `PUT`, `INVALIDATE`, and others) | `cache.origin`, `cache.operation`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `cache.requests` | `cache_requests_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Cache hit/miss counter | `cache.origin`, `cache.operation`, `cache.result`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
-`origin` is `redis`, `operation` is the `Cache` contract operation name, and `type` on `cache.ratio` is `hit` or `miss`.
+`cache.origin` is `redis`, `cache.operation` is the `Cache` contract operation name, and `cache.result` on `cache.requests` is `hit` or `miss`.
 
-`Caffeine` caches do not report `cache.operation.duration` and `cache.ratio` — their telemetry delegates to the standard `Micrometer` cache binders,
+`Caffeine` caches do not report `cache.operation.duration` and `cache.requests` — their telemetry delegates to the standard `Micrometer` cache binders,
 which are attached to the underlying cache when `telemetry.metrics.enabled = true`:
 
 | Metric | Prometheus | Type | Description | Tags |
@@ -689,28 +693,27 @@ See [Cache](cache.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `lettuce.command.completion.duration` | `lettuce_command_completion_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Redis command completion duration | `type`, `remote`, `command`, `error.type` |
-| `lettuce.command.firstresponse.duration` | `lettuce_command_firstresponse_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Redis command first response duration | `type`, `remote`, `command`, `error.type` |
+| `db.client.operation.duration` | `db_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Redis command completion duration | `db.system.name`, `db.operation.name`, `server.address`, `server.port`, `lettuce.type`, `error.type` |
+| `lettuce.command.firstresponse.duration` | `lettuce_command_firstresponse_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Redis command first response duration | `db.system.name`, `db.operation.name`, `server.address`, `server.port`, `lettuce.type`, `error.type` |
 
-`type` distinguishes the client kind, `remote` is the address of the `Redis` node, `command` is the `Redis` command name.
-On these two metrics `error.type` holds the `Redis` error text rather than an exception class name.
+`db.system.name` is `redis`; `db.operation.name` is the command, and `lettuce.type` identifies the client kind. `server.address` and `server.port` identify the Redis node. `error.type` holds only the Redis error prefix (for example `ERR` or `MOVED`) to keep tag cardinality bounded. The completion timer shares `db.client.operation.duration` with other database clients; filter on `db.system.name=redis`.
 
 ### Resilience { #resilience }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `resilient.circuitbreaker.state` | `resilient_circuitbreaker_state` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Circuit breaker state (0=CLOSED, 1=HALF_OPEN, 2=OPEN) | `name` |
-| `resilient.circuitbreaker.transition` | `resilient_circuitbreaker_transition_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Transitions into `OPEN` and `HALF_OPEN` | `name`, `state` |
-| `resilient.circuitbreaker.call.acquire` | `resilient_circuitbreaker_call_acquire_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Calls admitted in `HALF_OPEN` and calls rejected in `OPEN` | `name`, `state`, `status` |
-| `resilient.circuitbreaker.call.result` | `resilient_circuitbreaker_call_result_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Call outcomes registered by the circuit breaker | `name`, `state`, `status` |
-| `resilient.retry.attempts` | `resilient_retry_attempts_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of retry attempts | `name` |
-| `resilient.retry.exhausted` | `resilient_retry_exhausted_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of exhausted retries | `name`, `reason` |
-| `resilient.timeout.exhausted` | `resilient_timeout_exhausted_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of timeouts | `name` |
-| `resilient.fallback.attempts` | `resilient_fallback_attempts_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of fallback invocations | `name`, `type` |
-| `resilient.ratelimiter.acquire` | `resilient_ratelimiter_acquire_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Rate limiter permit acquisitions | `name`, `status` |
+| `resilient.circuitbreaker.state` | `resilient_circuitbreaker_state` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Circuit breaker state (0=CLOSED, 1=HALF_OPEN, 2=OPEN) | `resilient.name` |
+| `resilient.circuitbreaker.transition` | `resilient_circuitbreaker_transition_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Transitions into `OPEN` and `HALF_OPEN` | `resilient.name`, `resilient.state` |
+| `resilient.circuitbreaker.call.acquire` | `resilient_circuitbreaker_call_acquire_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Calls admitted in `HALF_OPEN` and calls rejected in `OPEN` | `resilient.name`, `resilient.state`, `resilient.status` |
+| `resilient.circuitbreaker.call.result` | `resilient_circuitbreaker_call_result_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Call outcomes registered by the circuit breaker | `resilient.name`, `resilient.state`, `resilient.status` |
+| `resilient.retry.attempts` | `resilient_retry_attempts_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of retry attempts | `resilient.name` |
+| `resilient.retry.exhausted` | `resilient_retry_exhausted_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of exhausted retries | `resilient.name`, `resilient.reason` |
+| `resilient.timeout.exhausted` | `resilient_timeout_exhausted_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of timeouts | `resilient.name` |
+| `resilient.fallback.attempts` | `resilient_fallback_attempts_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of fallback invocations | `resilient.name`, `resilient.type` |
+| `resilient.ratelimiter.acquire` | `resilient_ratelimiter_acquire_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Rate limiter permit acquisitions | `resilient.name`, `resilient.status` |
 
-Tag values: `status` is `PERMITTED` / `REJECTED` / `DISABLED` on `call.acquire` and `SUCCESS` / `FAILURE` / `IGNORED_FAILURE` / `FALLBACK` on `call.result`;
-`reason` is `EXHAUSTED_ATTEMPTS` or `EXHAUSTED_BUDGET`; the rate limiter's `status` is `acquired` or `rejected`; the fallback's `type` is `executed`.
+Tag values: `resilient.status` is `PERMITTED` / `REJECTED` / `DISABLED` on `call.acquire` and `SUCCESS` / `FAILURE` / `IGNORED_FAILURE` / `FALLBACK` on `call.result`;
+`resilient.reason` is `EXHAUSTED_ATTEMPTS` or `EXHAUSTED_BUDGET`; the rate limiter's `resilient.status` is `acquired` or `rejected`; the fallback's `resilient.type` is `executed`.
 
 See [Resilience](resilient.md) module documentation for more details.
 
@@ -718,7 +721,7 @@ See [Resilience](resilient.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `messaging.receive.duration` | `messaging_receive_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | JMS message receive duration | `messaging.system`, `messaging.destination.name`, `error.type` |
+| `messaging.process.duration` | `messaging_process_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | JMS message processing duration | `messaging.system`, `messaging.operation.name`, `messaging.destination.name`, `error.type` |
 
 `messaging.system` is always `jms`.
 
@@ -726,9 +729,9 @@ See [Resilience](resilient.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | S3 client operation duration | `rpc.system`, `rpc.method`, `aws.s3.bucket`, `error.type`, `system.path`, `system.name.simple`, `system.name.canonical` |
+| `rpc.client.call.duration` | `rpc_client_call_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | S3 client operation duration | `rpc.system.name`, `rpc.method`, `aws.s3.bucket`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
-`rpc.system` is `s3-aws` for the `AWS` based client. `rpc.method` is the S3 operation name and `system.path` is the client's configuration path.
+`rpc.system.name` is `s3` for the `AWS` based client. `rpc.method` is the S3 operation name and `system.config` is the client's configuration path.
 
 See [S3 client](s3-client.md) module documentation for more details.
 
@@ -736,7 +739,7 @@ See [S3 client](s3-client.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `camunda.engine.delegate.duration` | `camunda_engine_delegate_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Camunda BPMN Java delegate execution duration | `delegate`, `error.type` |
+| `camunda.engine.delegate.duration` | `camunda_engine_delegate_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Camunda BPMN Java delegate execution duration | `camunda.delegate`, `error.type` |
 
 The engine's own metrics are published separately and require `camunda.engine.bpmn.telemetry.metrics.engineMetrics = true`.
 
@@ -757,7 +760,7 @@ See [Camunda 7 REST](camunda7-rest.md) module documentation for more details.
 |--------|------------|------|-------------|------|
 | `zeebe.worker.handler.duration` | `zeebe_worker_handler_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `Zeebe Worker` job handler duration | `job.name`, `job.type`, `error.type` |
 
-The `Camunda` client additionally publishes its own worker job metrics into the same registry, tagged with the job `type`.
+The `Camunda` client additionally publishes its own worker job metrics into the same registry, tagged with the job `job.type`.
 
 See [Camunda 8 worker](camunda8-worker.md) module documentation for more details.
 

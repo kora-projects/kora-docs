@@ -539,18 +539,9 @@ Kora трассирует поддерживаемые модули за вас.
 
 Самый быстро окупающийся результат подключения трассировки — это не интерфейс трассировок, а то, что в строках лога появляется идентификатор трассировки.
 
-`KoraAsyncAppender` захватывает текущий контекст спана в момент постановки события в очередь, а `ConsoleTextRecordEncoder` пишет `traceId=` и `spanId=` в строку всякий раз, когда этот контекст валиден.
-Конфигурация Logback из руководства по HTTP-серверу уже содержит оба:
+Без `logback.xml` класс `KoraLogbackConfigurator` автоматически подключает `KoraAsyncAppender` и консольный энкодер. Аппендер захватывает текущий контекст спана при постановке события в очередь. `ConsoleTextRecordEncoder` выводит `traceId=` и `spanId=` в текстовом логе при наличии контекста; если в classpath есть `logging-logback-json`, энкодер по умолчанию вместо этого выводит структурированный JSON с идентификаторами трассировки. Для явного выбора текста укажите `kora.logging.encoder=text`. См. [настройку Logback](../documentation/logging-slf4j.md#configuration-2).
 
-```xml title="src/main/resources/logback.xml"
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
-</appender>
-
-<appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
-    <appender-ref ref="STDOUT"/>
-</appender>
-```
+Добавляйте [необязательный `logback.xml`](observability.md#logging) только для собственных аппендеров или маршрутизации. XML заменяет автоматический выбор энкодера, поэтому для сохранения связи с трассировкой явно настройте `KoraAsyncAppender` и текстовый или JSON-энкодер.
 
 Залогируйте строку внутри трассируемой операции — и она получит идентификаторы автоматически:
 
@@ -666,7 +657,7 @@ OTLP:
 : Проверьте `tracing.enabled` и `<module>.telemetry.tracing.enabled` у самого модуля. Оба по умолчанию `true`, поэтому выключить их мог только явный `false`.
 
 В логах нет `traceId`:
-: Строка была залогирована вне трассируемой операции, либо в `logback.xml` не используется `KoraAsyncAppender` с `ConsoleTextRecordEncoder`.
+: Строка залогирована вне трассируемой операции. Если используется собственный `logback.xml`, проверьте наличие `KoraAsyncAppender` и энкодера, выводящего идентификаторы трассировки.
 
 ## Что дальше? { #whats-next }
 

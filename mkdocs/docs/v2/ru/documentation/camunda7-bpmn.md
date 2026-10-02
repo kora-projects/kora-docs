@@ -64,6 +64,7 @@ agent:
     camunda {
         engine {
             bpmn {
+                authorizationEnabled = false
                 jobExecutor {
                     corePoolSize = 5 //(1)!
                     maxPoolSize = 25 //(2)!
@@ -148,6 +149,7 @@ agent:
     camunda:
       engine:
         bpmn:
+          authorizationEnabled: false
           jobExecutor:
             corePoolSize: 5 #(1)!
             maxPoolSize: 25 #(2)!
@@ -215,6 +217,7 @@ agent:
     25. Атрибуты трассировки (по умолчанию: `{}`).
 
 Секция `deployment` является опциональной: если она не указана, модуль не выполняет автоматическую загрузку ресурсов.
+`authorizationEnabled` по умолчанию равен `false`. Установите `true`, чтобы Camunda проверяла права доступа к ресурсам, в том числе для пользователей, прошедших аутентификацию через [Camunda REST API](camunda7-rest.md#authentication).
 Если секция указана, `resources` должна содержать хотя бы один путь.
 Ресурсы ищутся рекурсивно в `classpath`; неподдерживаемые пути без префикса `classpath:` пропускаются.
 

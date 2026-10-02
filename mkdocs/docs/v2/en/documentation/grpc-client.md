@@ -1067,8 +1067,8 @@ For each gRPC call `GrpcClientTelemetry.observe(...)` creates a `GrpcClientObser
 
 The default factory `DefaultGrpcClientTelemetryFactory` combines:
 
-- an OpenTelemetry `Tracer` — a `CLIENT` span per call, named after the full gRPC method, with `rpc.system`, `rpc.service`, `rpc.method`, `server.address`, and `server.port` attributes;
-- a Micrometer `MeterRegistry` — the `rpc.client.duration` timer with the configured `slo` buckets;
+- an OpenTelemetry `Tracer` — a `CLIENT` span per call, named after the full gRPC method, with `rpc.system.name`, `rpc.service`, `rpc.method`, `server.address`, and `server.port` attributes;
+- a Micrometer `MeterRegistry` — the `rpc.client.call.duration` timer with the configured `slo` buckets;
 - `DefaultGrpcClientLoggerFactory` — start/end logs written to the `<serviceName>.request` and `<serviceName>.response` loggers, where `serviceName` is the fully qualified `protobuf` service name. Request headers are added at the `DEBUG` level with [masking](#telemetry-masking);
 - `DefaultGrpcClientMetricsFactory` — the metric implementation itself.
 

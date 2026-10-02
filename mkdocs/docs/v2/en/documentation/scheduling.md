@@ -1,10 +1,10 @@
 ---
 seo_title: "Kora Scheduling: Cron, Fixed Rate, Quartz and db-scheduler Jobs"
 seo_description: "Reference for Kora scheduling: JDK, Quartz and database-backed db-scheduler jobs, fixed rate, fixed delay, one-shot and cron jobs, triggers, graceful shutdown."
-keywords: ["Kora Framework", "Kora scheduling", "cron jobs Java", "Quartz", "db-scheduler", "scheduled tasks", "@ScheduleAtFixedRate", "virtual threads"]
-description: "Explains Kora scheduling for the JDK, Quartz and db-scheduler schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, virtual-thread execution, persistent database jobs, graceful shutdown, and concurrency controls. Use when working with @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, VirtualThreadSchedulingJdkExecutor, CronExpression, QuartzModule, DbSchedulerModule, DbSchedulerConfig, DbSchedulerWrapper, DbSchedulerJob."
+keywords: ["Kora Framework", "Kora scheduling", "cron jobs Java", "Quartz", "db-scheduler", "scheduled tasks", "@ScheduleJdkAtFixedRate", "virtual threads"]
+description: "Explains Kora scheduling for the JDK, Quartz and db-scheduler schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, virtual-thread execution, persistent database jobs, graceful shutdown, and concurrency controls. Use when working with @ScheduleJdkAtFixedRate, @ScheduleJdkWithFixedDelay, @ScheduleJdkOnce, @ScheduleJdkWithCron, @ScheduleQuartzWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, VirtualThreadSchedulingJdkExecutor, CronExpression, QuartzModule, DbSchedulerModule, DbSchedulerConfig, KoraDbScheduler, DbSchedulerJob."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora scheduling for the JDK, Quartz and db-scheduler schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, virtual-thread execution, persistent database jobs, graceful shutdown, and concurrency controls; key triggers include @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, VirtualThreadSchedulingJdkExecutor, maxConcurrentExecutions, CronExpression, QuartzModule, scheduling-db-scheduler, DbSchedulerModule, DbSchedulerConfig, DbSchedulerWrapper, DbSchedulerJob, Configurer<SchedulerBuilder>."
+  use_when: "Use this file for Kora docs or implementation questions about Kora scheduling for the JDK, Quartz and db-scheduler schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, virtual-thread execution, persistent database jobs, graceful shutdown, and concurrency controls; key triggers include @ScheduleJdkAtFixedRate, @ScheduleJdkWithFixedDelay, @ScheduleJdkOnce, @ScheduleJdkWithCron, @ScheduleQuartzWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, VirtualThreadSchedulingJdkExecutor, executionParallelism, CronExpression, QuartzModule, scheduling-db-scheduler, DbSchedulerModule, DbSchedulerConfig, KoraDbScheduler, DbSchedulerJob, Configurer<SchedulerBuilder>."
 ---
 
 The Kora scheduling module allows application methods to run on a schedule in a declarative style through annotations.
@@ -16,13 +16,16 @@ The `JDK` scheduler covers periodic and `cron` tasks inside a single application
 `Quartz` adds custom `Trigger` instances, a pluggable `JobStore`, per-task execution rules, and the Quartz `cron` dialect with its `L`, `W` and `#` modifiers,
 and the `DB Scheduler` keeps task state in a database table, so tasks survive restarts and are coordinated between application instances.
 
+Each scheduler has its own annotations: `io.koraframework.scheduling.jdk.annotation.ScheduleJdk*`, `io.koraframework.scheduling.quartz.annotation.ScheduleQuartz*`, and `io.koraframework.scheduling.db.scheduler.annotation.ScheduleDb*`. Jobs with a `config` path support `enabled = false`; persistent schedulers also unschedule a disabled job at startup.
+Generated jobs inherit `@Conditional` from the component that declares the scheduled method, so a failed condition keeps the job out of the graph.
+
 ## JDK Scheduler { #native }
 
 The `JDK` scheduler is built on the `JDK` standard library and follows the [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) model:
 a single timer thread tracks when tasks are due, and every execution runs on its own [virtual thread](https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html).
 
 Special annotations from the `io.koraframework.scheduling.jdk.annotation` package are used to create tasks:
-`@ScheduleAtFixedRate`, `@ScheduleWithFixedDelay`, `@ScheduleOnce` and `@ScheduleWithCron`.
+`@ScheduleJdkAtFixedRate`, `@ScheduleJdkWithFixedDelay`, `@ScheduleJdkOnce` and `@ScheduleJdkWithCron`.
 
 All annotations have the `config` parameter.
 If it is specified, parameter values are taken from the configuration at that path and have priority over annotation values.
@@ -40,9 +43,9 @@ Scheduled methods must satisfy the following requirements:
     Every `JDK` annotation needs a schedule either from its own attributes or from a `config` path.
     If neither is present, compilation fails:
 
-    - `@ScheduleAtFixedRate` — `Either period() or config() annotation parameter must be provided`
-    - `@ScheduleWithFixedDelay` and `@ScheduleOnce` — `Either delay() or config() annotation parameter must be provided`
-    - `@ScheduleWithCron` — `Either value() or config() annotation parameter must be provided`
+    - `@ScheduleJdkAtFixedRate` — `Either period() or config() annotation parameter must be provided`
+    - `@ScheduleJdkWithFixedDelay` and `@ScheduleJdkOnce` — `Either delay() or config() annotation parameter must be provided`
+    - `@ScheduleJdkWithCron` — `Either value() or config() annotation parameter must be provided`
 
     The default value of `period()` and `delay()` is `0`, which counts as "not provided".
 
@@ -85,7 +88,7 @@ telemetry options are shared by both schedulers and live in the `scheduling.tele
     scheduling {
         jdk {
             shutdownWait = "30s" //(1)!
-            maxConcurrentExecutions = 10 //(2)!
+            executionParallelism = 10 //(2)!
         }
         telemetry {
             logging {
@@ -125,7 +128,7 @@ telemetry options are shared by both schedulers and live in the `scheduling.tele
     scheduling:
       jdk:
         shutdownWait: "30s" #(1)!
-        maxConcurrentExecutions: 10 #(2)!
+        executionParallelism: 10 #(2)!
       telemetry:
         logging:
           enabled: false #(3)!
@@ -154,7 +157,7 @@ telemetry options are shared by both schedulers and live in the `scheduling.tele
 The default `SchedulingJdkExecutor` is `VirtualThreadSchedulingJdkExecutor`.
 It keeps a single non-daemon platform thread named `kora-jdk-scheduler-timer` that only tracks fire times,
 and starts every job execution on a new virtual thread named `kora-jdk-scheduler-job-N`, so jobs do not occupy platform threads while they wait for I/O.
-Executions of the same job never overlap, and the number of executions running at once across all jobs is limited by `scheduling.jdk.maxConcurrentExecutions`.
+Executions of the same job never overlap, and the number of executions running at once across all jobs is limited by `scheduling.jdk.executionParallelism`.
 The executor is registered as a `@DefaultComponent`, so registering your own `SchedulingJdkExecutor` component replaces it.
 
 Module metrics are described in the [Metrics Reference](metrics.md#scheduling) section.
@@ -215,7 +218,7 @@ executions of the same task never overlap, they only start late.
     @Component
     public class SomeService {
 
-        @ScheduleAtFixedRate(initialDelay = 50, period = 50, unit = ChronoUnit.MILLIS)
+        @ScheduleJdkAtFixedRate(initialDelay = 50, period = 50, unit = ChronoUnit.MILLIS)
         void schedule() {
             // do something
         }
@@ -228,7 +231,7 @@ executions of the same task never overlap, they only start late.
     @Component
     class SomeService {
 
-        @ScheduleAtFixedRate(initialDelay = 50, period = 50, unit = ChronoUnit.MILLIS)
+        @ScheduleJdkAtFixedRate(initialDelay = 50, period = 50, unit = ChronoUnit.MILLIS)
         fun schedule() {
             // do something
         }
@@ -247,7 +250,7 @@ parameters and its `telemetry` live together (as in the [example project](https:
     @Component
     public class SomeService {
 
-        @ScheduleAtFixedRate(config = "scheduling.jobs.fix-rate")
+        @ScheduleJdkAtFixedRate(config = "scheduling.jobs.fix-rate")
         void schedule() {
             // do something
         }
@@ -260,7 +263,7 @@ parameters and its `telemetry` live together (as in the [example project](https:
     @Component
     class SomeService {
 
-        @ScheduleAtFixedRate(config = "scheduling.jobs.fix-rate")
+        @ScheduleJdkAtFixedRate(config = "scheduling.jobs.fix-rate")
         fun schedule() {
             // do something
         }
@@ -315,7 +318,7 @@ the next task starts after the previous task completes and the configured delay 
     @Component
     public class SomeService {
 
-        @ScheduleWithFixedDelay(initialDelay = 50, delay = 50, unit = ChronoUnit.MILLIS)
+        @ScheduleJdkWithFixedDelay(initialDelay = 50, delay = 50, unit = ChronoUnit.MILLIS)
         void schedule() {
             // do something
         }
@@ -328,7 +331,7 @@ the next task starts after the previous task completes and the configured delay 
     @Component
     class SomeService {
 
-        @ScheduleWithFixedDelay(initialDelay = 50, delay = 50, unit = ChronoUnit.MILLIS)
+        @ScheduleJdkWithFixedDelay(initialDelay = 50, delay = 50, unit = ChronoUnit.MILLIS)
         fun schedule() {
             // do something
         }
@@ -345,7 +348,7 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     public class SomeService {
 
-        @ScheduleWithFixedDelay(config = "scheduling.jobs.fix-delay")
+        @ScheduleJdkWithFixedDelay(config = "scheduling.jobs.fix-delay")
         void schedule() {
             // do something
         }
@@ -358,7 +361,7 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     class SomeService {
 
-        @ScheduleWithFixedDelay(config = "scheduling.jobs.fix-delay")
+        @ScheduleJdkWithFixedDelay(config = "scheduling.jobs.fix-delay")
         fun schedule() {
             // do something
         }
@@ -406,7 +409,7 @@ Runs a task once after the configured time interval.
     @Component
     public class SomeService {
 
-        @ScheduleOnce(delay = 50, unit = ChronoUnit.MILLIS)
+        @ScheduleJdkOnce(delay = 50, unit = ChronoUnit.MILLIS)
         void schedule() {
             // do something
         }
@@ -419,7 +422,7 @@ Runs a task once after the configured time interval.
     @Component
     class SomeService {
 
-        @ScheduleOnce(delay = 50, unit = ChronoUnit.MILLIS)
+        @ScheduleJdkOnce(delay = 50, unit = ChronoUnit.MILLIS)
         fun schedule() {
             // do something
         }
@@ -436,7 +439,7 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     public class SomeService {
 
-        @ScheduleOnce(config = "scheduling.jobs.once")
+        @ScheduleJdkOnce(config = "scheduling.jobs.once")
         void schedule() {
             // do something
         }
@@ -449,7 +452,7 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     class SomeService {
 
-        @ScheduleOnce(config = "scheduling.jobs.once")
+        @ScheduleJdkOnce(config = "scheduling.jobs.once")
         fun schedule() {
             // do something
         }
@@ -488,7 +491,7 @@ Configuration file example:
 The `JDK` scheduler runs `cron` tasks without any external scheduler.
 Expressions are parsed and evaluated by the `CronExpression` class that ships with the `scheduling-jdk` artifact.
 
-After every execution the job computes the next fire time from the current moment in the default time zone of the `JVM`
+After every execution the job computes the next fire time from the current moment in the time zone of a `ZoneId` component tagged `@Tag(SchedulingModule.class)`, or the default time zone of the `JVM` when no such component exists,
 and schedules itself again, so a slow execution never causes a burst of catch-up runs.
 
 Daylight saving time transitions are evaluated in chronological order:
@@ -501,7 +504,7 @@ and a local time that occurs twice because the clock jumps back fires at both oc
     @Component
     public class SomeService {
 
-        @ScheduleWithCron("*/10 * * * * *") //(1)!
+        @ScheduleJdkWithCron("*/10 * * * * *") //(1)!
         void schedule() {
             // do something
         }
@@ -516,7 +519,7 @@ and a local time that occurs twice because the clock jumps back fires at both oc
     @Component
     class SomeService {
 
-        @ScheduleWithCron("*/10 * * * * *") //(1)!
+        @ScheduleJdkWithCron("*/10 * * * * *") //(1)!
         fun schedule() {
             // do something
         }
@@ -576,8 +579,7 @@ Expression examples:
     `Cron field doesn't support L, W, # or C modifiers`.
     Expressions that need them must run on the [Quartz](#quartz) scheduler.
 
-The expression is parsed when the dependency graph is built, not at compile time,
-so an invalid expression fails application startup with an `IllegalArgumentException` describing the offending field.
+Literal annotation expressions are checked by the Java or Kotlin processor at compile time. An expression supplied through configuration is parsed when the graph is built; an invalid configured expression fails startup.
 If an expression can never fire again — for example a fixed year in the past — the job logs a warning and stops scheduling itself.
 
 #### Configuration { #configuration-jdk-cron }
@@ -590,7 +592,7 @@ The expression can be passed through configuration; the configuration has priori
     @Component
     public class SomeService {
 
-        @ScheduleWithCron(config = "scheduling.jobs.cron")
+        @ScheduleJdkWithCron(config = "scheduling.jobs.cron")
         void schedule() {
             // do something
         }
@@ -603,7 +605,7 @@ The expression can be passed through configuration; the configuration has priori
     @Component
     class SomeService {
 
-        @ScheduleWithCron(config = "scheduling.jobs.cron")
+        @ScheduleJdkWithCron(config = "scheduling.jobs.cron")
         fun schedule() {
             // do something
         }
@@ -699,7 +701,7 @@ each returning a `ScheduledFuture`:
     }
     ```
 
-Tasks scheduled this way are plain `Runnable` instances: they run on virtual threads and count toward `scheduling.jdk.maxConcurrentExecutions` together with annotated jobs,
+Tasks scheduled this way are plain `Runnable` instances: they run on virtual threads and count toward `scheduling.jdk.executionParallelism` together with annotated jobs,
 but are not wrapped in scheduling telemetry.
 Executions of the same periodic task never overlap, a `period` or `delay` that is not positive fails with `IllegalArgumentException`,
 and scheduling after the executor was released fails with `RejectedExecutionException`.
@@ -749,9 +751,9 @@ Kora settings for graceful shutdown live in `scheduling.quartz`, and telemetry i
     ```javascript
     scheduling {
         quartz {
-            waitForJobComplete = true //(1)!
+            shutdownWait = "30s" //(1)!
             cleanupOrphanedJobs = false //(2)!
-            compareStartEndTime = true //(3)!
+            compareStartTime = false //(3)!
             properties { //(4)!
                 "org.quartz.threadPool.threadCount" = "10"
             }
@@ -779,9 +781,9 @@ Kora settings for graceful shutdown live in `scheduling.quartz`, and telemetry i
     }
     ```
 
-    1. Whether to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `true`)
+    1. Wait for running jobs before interrupting them during [graceful shutdown](#graceful-shutdown-quartz) (default: `30s`)
     2. Whether to remove [orphaned jobs](#persistent-job-store) from the persistent job store on scheduler startup (default: `false`)
-    3. Whether to include the trigger's absolute start/end time in the [schedule equality check](#persistent-job-store) on restart (default: `true`)
+    3. Compare the trigger start time when reconciling persisted jobs (default: `false`); the end time is always compared
     4. `Quartz` scheduler configuration parameters, merged over the defaults below (optional)
     5. Enables module logging (default: `false`)
     6. Enables module metrics (default: `false`)
@@ -795,9 +797,9 @@ Kora settings for graceful shutdown live in `scheduling.quartz`, and telemetry i
     ```yaml
     scheduling:
       quartz:
-        waitForJobComplete: true #(1)!
+        shutdownWait: "30s" #(1)!
         cleanupOrphanedJobs: false #(2)!
-        compareStartEndTime: true #(3)!
+        compareStartTime: false #(3)!
         properties: #(4)!
           org.quartz.threadPool.threadCount: "10"
       telemetry:
@@ -816,9 +818,9 @@ Kora settings for graceful shutdown live in `scheduling.quartz`, and telemetry i
             key2: value2
     ```
 
-    1. Whether to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `true`)
+    1. Wait for running jobs before interrupting them during [graceful shutdown](#graceful-shutdown-quartz) (default: `30s`)
     2. Whether to remove [orphaned jobs](#persistent-job-store) from the persistent job store on scheduler startup (default: `false`)
-    3. Whether to include the trigger's absolute start/end time in the [schedule equality check](#persistent-job-store) on restart (default: `true`)
+    3. Compare the trigger start time when reconciling persisted jobs (default: `false`); the end time is always compared
     4. `Quartz` scheduler configuration parameters, merged over the defaults below (optional)
     5. Enables module logging (default: `false`)
     6. Enables module metrics (default: `false`)
@@ -884,7 +886,7 @@ Expression examples:
     @Component
     public class SomeService {
 
-        @ScheduleWithCron("* * * ? * * *") //(1)!
+        @ScheduleQuartzWithCron("* * * ? * * *") //(1)!
         void schedule() {
             // do something
         }
@@ -899,7 +901,7 @@ Expression examples:
     @Component
     class SomeService {
 
-        @ScheduleWithCron("* * * ? * * *") //(1)!
+        @ScheduleQuartzWithCron("* * * ? * * *") //(1)!
         fun schedule() {
             // do something
         }
@@ -918,7 +920,7 @@ When it is not set, the identity defaults to the fully qualified class name and 
     @Component
     public class SomeService {
 
-        @ScheduleWithCron(value = "0 0 * * * ?", identity = "my-hourly-job") //(1)!
+        @ScheduleQuartzWithCron(value = "0 0 * * * ?", identity = "my-hourly-job") //(1)!
         void schedule() {
             // do something
         }
@@ -933,7 +935,7 @@ When it is not set, the identity defaults to the fully qualified class name and 
     @Component
     class SomeService {
 
-        @ScheduleWithCron(value = "0 0 * * * ?", identity = "my-hourly-job") //(1)!
+        @ScheduleQuartzWithCron(value = "0 0 * * * ?", identity = "my-hourly-job") //(1)!
         fun schedule() {
             // do something
         }
@@ -944,8 +946,8 @@ When it is not set, the identity defaults to the fully qualified class name and 
 
 !!! warning "Cron source is required"
 
-    `@ScheduleWithCron` must get its expression either from `value()` or from `config()`.
-    If neither is set, compilation fails with `Quartz @ScheduleWithCron on '...' has no cron source.`
+    `@ScheduleQuartzWithCron` must get its expression either from `value()` or from `config()`.
+    If neither is set, compilation fails with `Quartz @ScheduleQuartzWithCron on '...' has no cron source.`
 
 #### Configuration { #configuration-6 }
 
@@ -959,7 +961,7 @@ As with the `JDK` scheduler, the `config` path is arbitrary and by convention is
     @Component
     public class SomeService {
 
-        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        @ScheduleQuartzWithCron(config = "scheduling.jobs.quartz")
         void schedule() {
             // do something
         }
@@ -972,7 +974,7 @@ As with the `JDK` scheduler, the `config` path is arbitrary and by convention is
     @Component
     class SomeService {
 
-        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        @ScheduleQuartzWithCron(config = "scheduling.jobs.quartz")
         fun schedule() {
             // do something
         }
@@ -1013,7 +1015,7 @@ The configuration path accepts either an object with the `cron` key and an optio
 ### Trigger { #trigger }
 
 For a custom schedule, you can create a `Trigger` from the `Quartz` library, register it in the dependency graph with a tag,
-and then pass that tag class to the `@ScheduleWithTrigger` annotation.
+and then pass that tag class to the `@ScheduleQuartzWithTrigger` annotation.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1036,7 +1038,7 @@ and then pass that tag class to the `@ScheduleWithTrigger` annotation.
     @Component
     public class SomeService {
 
-        @ScheduleWithTrigger(SomeService.class) //(2)!
+        @ScheduleQuartzWithTrigger(SomeService.class) //(2)!
         void schedule() {
             // do something
         }
@@ -1069,7 +1071,7 @@ and then pass that tag class to the `@ScheduleWithTrigger` annotation.
     @Component
     class SomeService {
 
-        @ScheduleWithTrigger(SomeService::class) //(2)!
+        @ScheduleQuartzWithTrigger(SomeService::class) //(2)!
         fun schedule() {
             // do something
         }
@@ -1079,7 +1081,7 @@ and then pass that tag class to the `@ScheduleWithTrigger` annotation.
     1. Tag used to register the `Trigger` in the dependency graph.
     2. The same tag used by the task to receive the `Trigger`.
 
-`@ScheduleWithTrigger` has no `config` attribute: everything about the schedule is expressed by the `Trigger` component itself.
+`@ScheduleQuartzWithTrigger` has no `config` attribute: everything about the schedule is expressed by the `Trigger` component itself.
 
 ### Non-Concurrent Execution { #non-concurrent-execution }
 
@@ -1094,7 +1096,7 @@ placing the original `org.quartz.DisallowConcurrentExecution` on the enclosing c
     public class SomeService {
 
         @DisallowConcurrentExecution
-        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        @ScheduleQuartzWithCron(config = "scheduling.jobs.quartz")
         void schedule() {
             // do something
         }
@@ -1108,7 +1110,7 @@ placing the original `org.quartz.DisallowConcurrentExecution` on the enclosing c
     class SomeService {
 
         @DisallowConcurrentExecution
-        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        @ScheduleQuartzWithCron(config = "scheduling.jobs.quartz")
         fun schedule() {
             // do something
         }
@@ -1127,7 +1129,7 @@ The context gives access to the task's `org.quartz.JobDataMap`, which is the way
     @Component
     public class SomeService {
 
-        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        @ScheduleQuartzWithCron(config = "scheduling.jobs.quartz")
         void schedule(JobExecutionContext context) {
             JobDataMap data = context.getJobDetail().getJobDataMap();
             int counter = data.containsKey("counter") ? data.getInt("counter") : 0;
@@ -1142,7 +1144,7 @@ The context gives access to the task's `org.quartz.JobDataMap`, which is the way
     @Component
     class SomeService {
 
-        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        @ScheduleQuartzWithCron(config = "scheduling.jobs.quartz")
         fun schedule(context: JobExecutionContext) {
             val data = context.jobDetail.jobDataMap
             val counter = if (data.containsKey("counter")) data.getInt("counter") else 0
@@ -1167,7 +1169,7 @@ to avoid data storage conflicts during concurrent task execution.
 
         @DisallowConcurrentExecution
         @PersistJobDataAfterExecution
-        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        @ScheduleQuartzWithCron(config = "scheduling.jobs.quartz")
         void schedule(JobExecutionContext context) {
             JobDataMap data = context.getJobDetail().getJobDataMap();
             int counter = data.containsKey("counter") ? data.getInt("counter") : 0;
@@ -1186,7 +1188,7 @@ to avoid data storage conflicts during concurrent task execution.
 
         @DisallowConcurrentExecution
         @PersistJobDataAfterExecution
-        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        @ScheduleQuartzWithCron(config = "scheduling.jobs.quartz")
         fun schedule(context: JobExecutionContext) {
             val data = context.jobDetail.jobDataMap
             val counter = if (data.containsKey("counter")) data.getInt("counter") else 0
@@ -1199,10 +1201,7 @@ to avoid data storage conflicts during concurrent task execution.
 
 ### Graceful Shutdown { #graceful-shutdown-quartz }
 
-During [graceful shutdown](container.md#component-lifecycle), the `scheduling.quartz.waitForJobComplete` option controls how the `Quartz` scheduler stops.
-With `true` (default) it calls `scheduler.shutdown(true)` and blocks until running tasks finish; with `false` it stops without waiting.
-As with the `JDK` scheduler, long-running tasks should still cooperatively check
-[Thread.currentThread().isInterrupted()](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Thread.html#isInterrupted()) and stop the work manually.
+During [graceful shutdown](container.md#component-lifecycle), `scheduling.quartz.shutdownWait` defaults to `30s`. Quartz stops firing triggers and waits up to this duration for running jobs. It then interrupts unfinished jobs and waits up to the same duration again, so shutdown can take twice the configured wait. Set `0s` to interrupt immediately. Long-running jobs should respond to interruption.
 
 ### Persistent Job Store { #persistent-job-store }
 
@@ -1211,19 +1210,14 @@ so on every startup and graph refresh Kora reconciles the stored state with the 
 Two options control this reconciliation:
 
 - `scheduling.quartz.cleanupOrphanedJobs` (default: `false`) removes from the store, on scheduler startup, every job that is no longer registered in the application graph,
-  for example after a class with `@ScheduleWithCron` was deleted or renamed.
+  for example after a class with `@ScheduleQuartzWithCron` was deleted or renamed.
   When disabled, such orphaned jobs remain in the store and `Quartz` logs `JobPersistenceException: Couldn't retrieve job because a required class was not found`
   on every startup while its misfire handler retries them.
-- `scheduling.quartz.compareStartEndTime` (default: `true`) includes the trigger's absolute start and end time in the check that decides whether a persisted trigger must be rescheduled.
-  When disabled, a persisted trigger is rescheduled only if its schedule definition changes: the `cron` expression, or the repeat interval and count of a `SimpleTrigger`.
-  Disable it when a trigger's start time is built relative to application startup (for example, `startAt(now + interval)`):
-  otherwise the trigger is rescheduled on every restart, its `next_fire_time` shifts, and the schedule loses its original phase.
+- `scheduling.quartz.compareStartTime` (default: `false`) also compares a persisted trigger's start time. By default, a trigger is rescheduled when its schedule or end time changes; its start time is ignored because Quartz defaults it to the moment the trigger is built. Enable this only for fixed `startAt()` values.
 
 !!! warning "Enable `cleanupOrphanedJobs` with caution"
 
-    Cleanup removes every job absent from the current application graph, so it also removes foreign jobs when the scheduler store is shared with other job sources:
-    jobs added to `org.quartz.Scheduler` directly, outside `@ScheduleWithCron` and `@ScheduleWithTrigger`,
-    or jobs registered by another application instance in a clustered setup, for example during a rolling deployment when one instance does not yet know about the jobs of another.
+    Cleanup removes Kora-managed jobs absent from the current application graph; jobs added directly to `org.quartz.Scheduler` are kept. Use a dedicated store for one application. Applications sharing a store, or different versions during a rolling deployment, can remove one another's Kora jobs.
 
 ### Scheduler { #scheduler }
 
@@ -1262,15 +1256,15 @@ Scheduled executions survive application restarts, and application instances tha
 so every execution is picked by one instance only. A task is identified in the table by its name, which is why task names must stay stable between deployments.
 
 Tasks are created with annotations from the `io.koraframework.scheduling.db.scheduler.annotation` package:
-`@ScheduleWithCron`, `@ScheduleWithFixedDelay` and `@ScheduleOnce`.
-They share their simple names with the [JDK scheduler](#native) annotations, so check the import.
+`@ScheduleDbWithCron`, `@ScheduleDbWithFixedDelay` and `@ScheduleDbOnce`.
+Their names distinguish them from the [JDK scheduler](#native) annotations.
 The method requirements are the same as for the `JDK` scheduler: the method belongs to a component, has no arguments, and in `Kotlin` is a non-`suspend` member function.
 
 Every annotation has the `name` and `config` attributes:
 
-- `name` sets the task name stored in the table; when it is empty, the name is `ClassName#methodName` built from the simple class name, for example `SomeService#schedule`.
+- `name` sets the task name stored in the table; when empty, the default is `CanonicalClassName#methodName`, for example `com.example.SomeService#schedule`.
 - `config` sets a configuration path whose values have priority over annotation values, as for the [JDK scheduler](#configuration-2).
-  The configuration may also contain `name`, which has priority over the annotation `name`, and a `telemetry` section that overrides `scheduling.telemetry` for that task.
+  It may also contain `enabled` and a `telemetry` section. The task name comes only from the annotation.
 
 ### Dependency { #dependency-3 }
 
@@ -1304,28 +1298,7 @@ The module requires a `javax.sql.DataSource` component in the graph, for example
     interface Application : DbSchedulerModule, JdbcDatabaseModule
     ```
 
-The scheduler itself is the `DbSchedulerWrapper` component. `DbSchedulerModule` does not mark it as a [root component](container.md#root-component),
-and the generated task components do not depend on it, so it is created only when some component in the graph depends on it.
-Make sure such a dependency exists, for example with a root component that receives it:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Root
-    @Component
-    public final class DbSchedulerStarter {
-
-        public DbSchedulerStarter(DbSchedulerWrapper scheduler) { }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Root
-    @Component
-    class DbSchedulerStarter(scheduler: DbSchedulerWrapper)
-    ```
+The scheduler itself is the `KoraDbScheduler` component. `DbSchedulerModule` marks it as a [root component](container.md#root-component), so it starts with the application.
 
 ### Configuration { #configuration-7 }
 
@@ -1337,8 +1310,8 @@ telemetry is shared with the other schedulers in the `scheduling.telemetry` sect
     ```javascript
     scheduling {
         dbScheduler {
-            initializeTable = false //(1)!
-            tableName = "kora_scheduling_db_jobs" //(2)!
+            tableInitialize = false //(1)!
+            tableName = "kora_scheduling_db_scheduler_jobs" //(2)!
             executionParallelism = 10 //(3)!
             shutdownWait = "30s" //(4)!
             polling {
@@ -1351,7 +1324,7 @@ telemetry is shared with the other schedulers in the `scheduling.telemetry` sect
     ```
 
     1. Creates the table on startup when it does not exist, see [Database Table](#db-scheduler-table) (default: `false`)
-    2. Name of the table used by the scheduler (default: `kora_scheduling_db_jobs`)
+    2. Name of the table used by the scheduler (default: `kora_scheduling_db_scheduler_jobs`)
     3. Maximum number of task executions running at the same time; it is passed to `db-scheduler` as its thread count and limits the virtual threads that run executions (default: `10`)
     4. Time the scheduler waits for running executions during [graceful shutdown](#graceful-shutdown-db-scheduler), passed to `db-scheduler` as `shutdownMaxWait` (default: `30s`)
     5. Polling strategy: `FETCH` or `LOCK_AND_FETCH` (default: `FETCH`)
@@ -1363,8 +1336,8 @@ telemetry is shared with the other schedulers in the `scheduling.telemetry` sect
     ```yaml
     scheduling:
       dbScheduler:
-        initializeTable: false #(1)!
-        tableName: "kora_scheduling_db_jobs" #(2)!
+        tableInitialize: false #(1)!
+        tableName: "kora_scheduling_db_scheduler_jobs" #(2)!
         executionParallelism: 10 #(3)!
         shutdownWait: "30s" #(4)!
         polling:
@@ -1374,7 +1347,7 @@ telemetry is shared with the other schedulers in the `scheduling.telemetry` sect
     ```
 
     1. Creates the table on startup when it does not exist, see [Database Table](#db-scheduler-table) (default: `false`)
-    2. Name of the table used by the scheduler (default: `kora_scheduling_db_jobs`)
+    2. Name of the table used by the scheduler (default: `kora_scheduling_db_scheduler_jobs`)
     3. Maximum number of task executions running at the same time; it is passed to `db-scheduler` as its thread count and limits the virtual threads that run executions (default: `10`)
     4. Time the scheduler waits for running executions during [graceful shutdown](#graceful-shutdown-db-scheduler), passed to `db-scheduler` as `shutdownMaxWait` (default: `30s`)
     5. Polling strategy: `FETCH` or `LOCK_AND_FETCH` (default: `FETCH`)
@@ -1386,28 +1359,23 @@ Module metrics are the same as for the other schedulers and are described in the
 
 ### Database Table { #db-scheduler-table }
 
-`db-scheduler` needs its table to exist before the scheduler starts.
-The `scheduling-db-scheduler` artifact ships the schema for `PostgreSQL`, `MySQL`, `MariaDB`, `Microsoft SQL Server`, `Oracle` and `HSQLDB`:
+`db-scheduler` needs its table before startup. The module includes SQL schemas for PostgreSQL, MySQL, MariaDB, Microsoft SQL Server, Oracle and HSQLDB at
+`db/kora/scheduling-db-scheduler/schema/<database>.sql`, and a Liquibase changelog at
+`db/kora/scheduling-db-scheduler/liquibase/changelog.yaml`.
+The default table is `kora_scheduling_db_scheduler_jobs`; its primary key and indexes use the same prefix.
+For Flyway, copy the SQL for your database into your application's next free migration version. The module does not ship a versioned Flyway migration because its version could collide with application migrations.
+For Liquibase, include the bundled changelog in your master changelog.
+If you change `scheduling.dbScheduler.tableName`, rename the table and constraints in a copied SQL script.
 
-- `Flyway` scripts: `db/scheduling-db/flyway/<database>/V1__create_scheduled_tasks.sql`, where `<database>` is `postgresql`, `mysql`, `mariadb`, `mssql`, `oracle` or `hsql`;
-- `Liquibase` changelog: `db/scheduling-db/liquibase/changelog.yaml`, with one changeset per database guarded by `dbms`.
-
-The bundled scripts create a table named `scheduled_tasks`, while the default `tableName` is `kora_scheduling_db_jobs`.
-When applying them with your [migration tool](database-migration.md), either set `scheduling.dbScheduler.tableName = "scheduled_tasks"`
-or copy the script into your own migrations and rename the table.
-The `Flyway` scripts are versioned `V1`, so adding their location to an application that already has its own `V1` migration causes a version conflict; copying the script avoids it.
-
-With `initializeTable = true` the module checks on startup whether the `tableName` table exists and, if it does not,
-runs the bundled script for the detected database with `scheduled_tasks` replaced by `tableName`.
-For an unsupported database startup fails with `Unsupported database for DbScheduler table initialization: ...`.
-This is convenient for development and tests; production deployments usually manage the schema with a migration tool.
+With `tableInitialize = true`, the module creates the configured table at startup if absent, using the bundled schema for the detected database. The default is `false`; manage production schema with your migration tool when you need controlled migrations.
 
 ### Cron { #db-scheduler-cron }
 
 Runs a task by a `cron` expression.
 The expression is evaluated by the `CronSchedule` class of `db-scheduler`, not by the `JDK` scheduler's [CronExpression](#jdk-cron-format):
-it uses the Spring 5.3 `cron` format with six fields, starting with seconds, and the default time zone of the `JVM`,
+it uses the Spring 5.3 `cron` format with six fields, starting with seconds, and the tagged scheduling `ZoneId` or the default time zone of the `JVM`,
 see the [db-scheduler documentation](https://github.com/kagkarlsson/db-scheduler) for details.
+This dialect accepts `@yearly`, `@monthly`, `@weekly`, `@daily` and `@hourly`. A single `-` disables a configured cron job and removes its scheduled execution at startup. Literal expressions are validated during Java/Kotlin processing; configured expressions are validated when the graph starts.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1415,7 +1383,7 @@ see the [db-scheduler documentation](https://github.com/kagkarlsson/db-scheduler
     @Component
     public class SomeService {
 
-        @ScheduleWithCron(value = "*/10 * * * * *", name = "some-cron") //(1)!
+        @ScheduleDbWithCron(value = "*/10 * * * * *", name = "some-cron") //(1)!
         void schedule() {
             // do something
         }
@@ -1430,7 +1398,7 @@ see the [db-scheduler documentation](https://github.com/kagkarlsson/db-scheduler
     @Component
     class SomeService {
 
-        @ScheduleWithCron(value = "*/10 * * * * *", name = "some-cron") //(1)!
+        @ScheduleDbWithCron(value = "*/10 * * * * *", name = "some-cron") //(1)!
         fun schedule() {
             // do something
         }
@@ -1440,7 +1408,7 @@ see the [db-scheduler documentation](https://github.com/kagkarlsson/db-scheduler
     1. `cron` expression that runs the task every ten seconds, stored in the table under the task name `some-cron`
 
 If neither `value` nor `config` is set, compilation fails with `Either value() or config() annotation parameter must be provided`.
-The `config` path accepts either an object with the `cron`, `name` and `telemetry` keys, or a plain string with the expression.
+The `config` path accepts either an object with `cron`, `enabled` and `telemetry`, or a plain string with the expression. Set the task name with the annotation's `name` parameter.
 When the annotation also carries an expression, the configuration path may be absent entirely.
 
 ### Fixed Delay { #db-scheduler-fixed-delay }
@@ -1454,7 +1422,7 @@ Runs a task repeatedly, waiting for a fixed time interval after the previous exe
     @Component
     public class SomeService {
 
-        @ScheduleWithFixedDelay(initialDelay = 5, delay = 30, unit = ChronoUnit.SECONDS)
+        @ScheduleDbWithFixedDelay(initialDelay = 5, delay = 30, unit = ChronoUnit.SECONDS)
         void schedule() {
             // do something
         }
@@ -1467,7 +1435,7 @@ Runs a task repeatedly, waiting for a fixed time interval after the previous exe
     @Component
     class SomeService {
 
-        @ScheduleWithFixedDelay(initialDelay = 5, delay = 30, unit = ChronoUnit.SECONDS)
+        @ScheduleDbWithFixedDelay(initialDelay = 5, delay = 30, unit = ChronoUnit.SECONDS)
         fun schedule() {
             // do something
         }
@@ -1488,7 +1456,7 @@ and is removed from the table after it completes. A failed execution is removed 
     @Component
     public class SomeService {
 
-        @ScheduleOnce(delay = 30, unit = ChronoUnit.SECONDS)
+        @ScheduleDbOnce(delay = 30, unit = ChronoUnit.SECONDS)
         void schedule() {
             // do something
         }
@@ -1501,7 +1469,7 @@ and is removed from the table after it completes. A failed execution is removed 
     @Component
     class SomeService {
 
-        @ScheduleOnce(delay = 30, unit = ChronoUnit.SECONDS)
+        @ScheduleDbOnce(delay = 30, unit = ChronoUnit.SECONDS)
         fun schedule() {
             // do something
         }
@@ -1520,17 +1488,17 @@ Parameters of every annotation can be passed through configuration; the configur
     @Component
     public class SomeService {
 
-        @ScheduleWithCron(config = "scheduling.jobs.db-cron")
+        @ScheduleDbWithCron(config = "scheduling.jobs.db-cron")
         void cron() {
             // do something
         }
 
-        @ScheduleWithFixedDelay(config = "scheduling.jobs.db-delay")
+        @ScheduleDbWithFixedDelay(config = "scheduling.jobs.db-delay")
         void fixedDelay() {
             // do something
         }
 
-        @ScheduleOnce(config = "scheduling.jobs.db-once")
+        @ScheduleDbOnce(config = "scheduling.jobs.db-once")
         void once() {
             // do something
         }
@@ -1543,17 +1511,17 @@ Parameters of every annotation can be passed through configuration; the configur
     @Component
     class SomeService {
 
-        @ScheduleWithCron(config = "scheduling.jobs.db-cron")
+        @ScheduleDbWithCron(config = "scheduling.jobs.db-cron")
         fun cron() {
             // do something
         }
 
-        @ScheduleWithFixedDelay(config = "scheduling.jobs.db-delay")
+        @ScheduleDbWithFixedDelay(config = "scheduling.jobs.db-delay")
         fun fixedDelay() {
             // do something
         }
 
-        @ScheduleOnce(config = "scheduling.jobs.db-once")
+        @ScheduleDbOnce(config = "scheduling.jobs.db-once")
         fun once() {
             // do something
         }
@@ -1569,24 +1537,22 @@ Configuration file example:
         jobs {
             db-cron {
                 cron = "*/10 * * * * *" //(1)!
-                name = "some-cron" //(2)!
             }
             db-delay {
-                initialDelay = "5s" //(3)!
-                delay = "30s" //(4)!
+                initialDelay = "5s" //(2)!
+                delay = "30s" //(3)!
             }
             db-once {
-                delay = "30s" //(5)!
+                delay = "30s" //(4)!
             }
         }
     }
     ```
 
     1. `cron` expression (`required`, no default)
-    2. Task name stored in the table; available for every annotation (default: the annotation `name`, otherwise `ClassName#methodName`)
-    3. Delay before the first execution (default: `0ms`)
-    4. Delay after an execution completes before the next one (`required`, no default)
-    5. Delay before the single execution (`required`, no default)
+    2. Delay before the first execution (default: `0ms`)
+    3. Delay after an execution completes before the next one (`required`, no default)
+    4. Delay before the single execution (`required`, no default)
 
 === ":simple-yaml: `YAML`"
 
@@ -1595,25 +1561,23 @@ Configuration file example:
       jobs:
         db-cron:
           cron: "*/10 * * * * *" #(1)!
-          name: "some-cron" #(2)!
         db-delay:
-          initialDelay: "5s" #(3)!
-          delay: "30s" #(4)!
+          initialDelay: "5s" #(2)!
+          delay: "30s" #(3)!
         db-once:
-          delay: "30s" #(5)!
+          delay: "30s" #(4)!
     ```
 
     1. `cron` expression (`required`, no default)
-    2. Task name stored in the table; available for every annotation (default: the annotation `name`, otherwise `ClassName#methodName`)
-    3. Delay before the first execution (default: `0ms`)
-    4. Delay after an execution completes before the next one (`required`, no default)
-    5. Delay before the single execution (`required`, no default)
+    2. Delay before the first execution (default: `0ms`)
+    3. Delay after an execution completes before the next one (`required`, no default)
+    4. Delay before the single execution (`required`, no default)
 
 If the annotation already provides the value, it becomes the default of the generated configuration and the configuration only has to override what should differ.
 
 ### Customization { #db-scheduler-customization }
 
-The scheduler uses the `DataSource` tagged `@Tag(DbSchedulerWrapper.class)`; by default it is the application `DataSource`,
+The scheduler uses the `DataSource` tagged `@Tag(KoraDbScheduler.class)`; by default it is the application `DataSource`,
 so registering a `DataSource` component with this tag moves the scheduler to another database.
 
 The `db-scheduler` `SchedulerBuilder` can be adjusted before the scheduler is built by registering a `Configurer<SchedulerBuilder>` component
@@ -1681,12 +1645,12 @@ Such a task is not wrapped in scheduling telemetry:
     }
     ```
 
-`DbSchedulerWrapper` wraps the `db-scheduler` `com.github.kagkarlsson.scheduler.Scheduler`,
+`KoraDbScheduler` wraps the `db-scheduler` `com.github.kagkarlsson.scheduler.Scheduler`,
 so the `Scheduler` itself can be injected, for example to schedule new instances of a task or to inspect scheduled executions.
 
 ### Graceful Shutdown { #graceful-shutdown-db-scheduler }
 
-During [graceful shutdown](container.md#component-lifecycle) `DbSchedulerWrapper` stops the `db-scheduler` scheduler,
+During [graceful shutdown](container.md#component-lifecycle) `KoraDbScheduler` stops the `db-scheduler` scheduler,
 which stops picking new executions and waits up to `scheduling.dbScheduler.shutdownWait` for the running executions to finish.
 When the wait expires, running executions are interrupted and the scheduler waits up to `shutdownWait` once more.
 As with the other schedulers, long-running tasks should finish on their own

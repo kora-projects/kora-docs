@@ -3546,8 +3546,8 @@
             </div>
             <div class="nav-actions">
                 <div class="lang" aria-label="Documentation language">
-                    <a{% if current_lang == 'en' %} class="is-active" aria-current="page"{% endif %} href="{{ en_path }}" hreflang="en" lang="en" data-lang="en">EN</a>
-                    <a{% if current_lang == 'ru' %} class="is-active" aria-current="page"{% endif %} href="{{ ru_path }}" hreflang="ru" lang="ru" data-lang="ru">RU</a>
+                    <a href="{{ en_path }}" hreflang="en" lang="en" data-lang="en">EN</a>
+                    <a href="{{ ru_path }}" hreflang="ru" lang="ru" data-lang="ru">RU</a>
                 </div>
                 <a class="button" href="{{ docs_path }}documentation/general/">Docs</a>
             </div>
@@ -3619,43 +3619,43 @@
         <section class="section" id="principles">
             <div class="section-header">
                 <h2>Built for teams that want simplicity, control and efficiency.</h2>
-                <p class="section-lead">Kora keeps familiar JVM development, but moves framework work into the compiler where it can be checked, generated, and understood. Magic non-sence no more.</p>
+                <p class="section-lead">A STEP development process for interns, engineers, and AI agents: Simple, Transparent, Efficient, Predictable.</p>
             </div>
             <div class="feature-grid">
                 <article class="feature">
                     <span class="feature-index">01</span>
-                    <h3>Compile-Time Certainty, No Runtime Magic</h3>
-                    <p>Kora checks the application graph, contracts, and generated code at compile time. Diagnostics and readable source with no runtime surprises.</p>
+                    <h3>Familiar Patterns.<br>One Consistent Model.</h3>
+                    <p>Familiar modules, clients, repositories, and controllers use direct, synchronous Java and Kotlin, with typed contracts and generated implementations. The same patterns carry across HTTP, OpenAPI, gRPC, data, messaging, resilience, and configuration, so your existing JVM experience applies throughout the stack.</p>
                     <div class="diagram" aria-hidden="true">
-                        <div class="diagram-row"><span class="diagram-label">Checks</span><span class="diagram-value">dependencies, injections, cycles, aspects</span></div>
-                        <div class="diagram-row"><span class="diagram-label">Generates</span><span class="diagram-value">wiring, mappers, repositories</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Write</span><span class="diagram-value">familiar Java and Kotlin</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Generate</span><span class="diagram-value">wiring, handlers, repositories</span></div>
                     </div>
                 </article>
                 <article class="feature">
                     <span class="feature-index">02</span>
-                    <h3 class="nowrap-heading">Simple. Coherent. Familiar.</h3>
-                    <p>The abstractions are ones you already know&mdash;modules, clients, repositories, controllers&mdash;as direct, synchronous Java and Kotlin. Nothing new to learn: the same familiar patterns just become simplier, direct, typed, generated, and transparent across HTTP, OpenAPI, gRPC, data, messaging, resilience, and config.</p>
+                    <h3>No Magic.<br>You're in Control.</h3>
+                    <p>Open the generated source and follow the real execution path, from dependency wiring to request handling and database calls. Replace default components, customize behavior, and add integrations through explicit, typed contracts&mdash;without fighting the framework or reverse-engineering hidden runtime behavior.</p>
                     <div class="diagram" aria-hidden="true">
-                        <div class="diagram-row"><span class="diagram-label">Familiar</span><span class="diagram-value">modules, clients, repositories, abstractions</span></div>
-                        <div class="diagram-row"><span class="diagram-label">Coherent</span><span class="diagram-value">one approach across modules</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Inspect</span><span class="diagram-value">readable generated source</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Extend</span><span class="diagram-value">replace components, add integrations</span></div>
                     </div>
                 </article>
                 <article class="feature">
                     <span class="feature-index">03</span>
-                    <h3>Peak Performance<br>by Design</h3>
-                    <p>Performance follows from compile-time decisions, generated code, thin abstractions, and selected high-performance integrations from startup to request processing&mdash;already tuned inside Kora, so you just pick a JVM and write business code.</p>
+                    <h3>Simple and Easy.<br>AI-Friendly Development.</h3>
+                    <p>Explicit code, focused docs, runnable examples, and official Kora AI-Skills reduce cognitive load and the framework context you keep in your head. Engineers and AI agents develop STEP by STEP, using precise compiler feedback and fast tests to learn, build, verify, and refine services.</p>
                     <div class="diagram" aria-hidden="true">
-                        <div class="diagram-row"><span class="diagram-label">Startup</span><span class="diagram-value">prebuilt graph, parallel init</span></div>
-                        <div class="diagram-row"><span class="diagram-label">Runtime</span><span class="diagram-value">thin abstractions, fast integrations</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Learn</span><span class="diagram-value">docs, examples, Kora AI-Skills</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Verify</span><span class="diagram-value">compiler feedback, fast tests</span></div>
                     </div>
                 </article>
                 <article class="feature">
                     <span class="feature-index">04</span>
-                    <h3>Production-Grade,<br>Cloud-Ready</h3>
-                    <p>Production defaults cover OpenTelemetry, structured logs, probes, lifecycle, graceful shutdown, and resilience policies for predictable services under load.</p>
+                    <h3>Optimized by Default.<br>Production-Ready.</h3>
+                    <p>Framework optimizations are already built in, so developers can focus on business code without spending time tuning internals or keeping performance hacks in their heads. Low CPU and memory overhead, fast readiness, resilience, graceful shutdown, metrics, and tracing support efficient, stable, predictable, observable production services.</p>
                     <div class="diagram" aria-hidden="true">
-                        <div class="diagram-row"><span class="diagram-label">Operate</span><span class="diagram-value">metrics, traces, logs, probes</span></div>
-                        <div class="diagram-row"><span class="diagram-label">Scale</span><span class="diagram-value">fast readiness, graceful shutdown</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Start</span><span class="diagram-value">fast readiness, low overhead</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Monitor</span><span class="diagram-value">metrics, traces, health probes</span></div>
                     </div>
                 </article>
             </div>
@@ -3886,7 +3886,7 @@
                     </div>
                     <div class="docs-actions">
                         <a class="button primary" href="{{ docs_path }}guides/getting-started/">Guides</a>
-                        <a class="button accent" href="https://github.com/kora-projects/kora-skills">Kora Skills</a>
+                        <a class="button accent" href="https://github.com/kora-projects/kora-skills">Kora AI-Skills</a>
                         <a class="button" href="{{ docs_path }}documentation/general/">Docs</a>
                         <a class="button" href="https://github.com/kora-projects/kora-examples">Examples</a>
                     </div>
@@ -4307,7 +4307,7 @@
             <div class="footer-links">
                 <a href="{{ docs_path }}documentation/general/">Docs</a>
                 <a href="https://github.com/kora-projects/kora-examples">Examples</a>
-                <a href="https://github.com/kora-projects/kora-skills">Kora Skills</a>
+                <a href="https://github.com/kora-projects/kora-skills">Kora AI-Skills</a>
                 <a href="https://github.com/kora-projects">GitHub</a>
                 <a href="https://t.me/kora_users">Telegram</a>
             </div>
@@ -4372,33 +4372,35 @@
             "Generated sources": "Сгенерированные исходники",
             "Generated human-readable source code": "Сгенерированный читаемый исходный код",
             "Built for teams that want simplicity, control and efficiency.": "Для команд, которым нужна простота, контроль и эффективность.",
-            "Kora keeps familiar JVM development, but moves framework work into the compiler where it can be checked, generated, and understood. Magic non-sence no more.": "Kora сохраняет привычную разработку на JVM, но переносит работу фреймворка в компилятор: там ее можно проверить, сгенерировать и понять. Больше никакой магической недосказанности.",
-            "Compile-Time Certainty, No Runtime Magic": "Уверенность во время компиляции, без магии во время выполнения",
-            "Kora checks the application graph, contracts, and generated code at compile time. Diagnostics and readable source with no runtime surprises.": "Kora проверяет граф приложения, контракты и сгенерированный код во время компиляции. Диагностика и читаемые исходники — без неожиданностей во время выполнения.",
-            "Checks": "Проверяет",
-            "dependencies, injections, cycles, aspects": "зависимости, внедрения, циклы, аспекты",
-            "Generates": "Генерирует",
-            "wiring, mappers, repositories": "связи, преобразователи, репозитории",
-            "Simple. Coherent. Familiar.": "Просто. Понятно. Знакомо.",
-            "The abstractions are ones you already know—modules, clients, repositories, controllers—as direct, synchronous Java and Kotlin. Nothing new to learn: the same familiar patterns just become simplier, direct, typed, generated, and transparent across HTTP, OpenAPI, gRPC, data, messaging, resilience, and config.": "Абстракции — те, что вы уже знаете: модули, клиенты, репозитории, контроллеры — в виде прямого синхронного кода на Java и Kotlin. Учить ничего нового не нужно: те же знакомые приёмы просто становятся проще, понятнее, типизированнее, генерируются и остаются прозрачными для HTTP, OpenAPI, gRPC, работы с данными, обмена сообщениями, отказоустойчивости и конфигурации.",
-            "Familiar": "Знакомо",
-            "modules, clients, repositories, abstractions": "модули, клиенты, репозитории, абстракции",
-            "Coherent": "Предсказуемо",
-            "one approach across modules": "один подход во всех модулях",
-            "Peak Performance": "Заложенная пиковая",
-            "by Design": "производительность",
-            "Performance follows from compile-time decisions, generated code, thin abstractions, and selected high-performance integrations from startup to request processing—already tuned inside Kora, so you just pick a JVM and write business code.": "Производительность следует из решений во время компиляции, сгенерированного кода, тонких абстракций и производительных интеграций: от старта до обработки запросов — всё уже настроено внутри Kora, вам остаётся выбрать версию JVM и писать бизнес-код.",
-            "Startup": "Старт",
-            "prebuilt graph, parallel init": "готовый граф, параллелизация запуска",
-            "Runtime": "Работа",
-            "thin abstractions, fast integrations": "тонкие абстракции, быстрые интеграции",
-            "Production-Grade,": "Промышленная",
-            "Cloud-Ready": "облачная разработка",
-            "Production defaults cover OpenTelemetry, structured logs, probes, lifecycle, graceful shutdown, and resilience policies for predictable services under load.": "Готовые промышленные настройки включают системы мониторинга, структурированное логирование, проверки работоспособности, управление жизненным циклом, корректное завершение и политики отказоустойчивости — всё это обеспечивает надёжную работу сервисов при высоких нагрузках.",
-            "Operate": "Operate",
-            "metrics, traces, logs, probes": "метрики, логи, трассировка, пробы",
-            "Scale": "Контейнер",
-            "fast readiness, graceful shutdown": "быстрая готовность, корректное завершение",
+            "A STEP development process for interns, engineers, and AI agents: Simple, Transparent, Efficient, Predictable.": "Процесс разработки STEP для стажеров, инженеров и нейро-агентов: просто, прозрачно, эффективно и предсказуемо.",
+            "Familiar Patterns.": "Знакомые подходы.",
+            "One Consistent Model.": "Единая модель.",
+            "Familiar modules, clients, repositories, and controllers use direct, synchronous Java and Kotlin, with typed contracts and generated implementations. The same patterns carry across HTTP, OpenAPI, gRPC, data, messaging, resilience, and configuration, so your existing JVM experience applies throughout the stack.": "Знакомые модули, клиенты, репозитории и контроллеры используют прямой синхронный код на Java и Kotlin с типизированными контрактами и генерацией реализаций. Те же подходы работают для HTTP, OpenAPI, gRPC, данных, обмена сообщениями, отказоустойчивости и конфигурации — ваш опыт JVM-разработки применим во всём стеке.",
+            "Write": "Пишите",
+            "familiar Java and Kotlin": "привычные Java и Kotlin",
+            "Generate": "Генерация",
+            "wiring, handlers, repositories": "связи, обработчики, репозитории",
+            "No Magic.": "Без магии.",
+            "You're in Control.": "Всё под контролем.",
+            "Open the generated source and follow the real execution path, from dependency wiring to request handling and database calls. Replace default components, customize behavior, and add integrations through explicit, typed contracts—without fighting the framework or reverse-engineering hidden runtime behavior.": "Откройте сгенерированный код и проследите реальный путь выполнения: от связывания зависимостей до обработки запросов и обращений к базе данных. Заменяйте стандартные компоненты, меняйте поведение и добавляйте интеграции через явные типизированные контракты — без борьбы с фреймворком и разгадывания скрытых механизмов выполнения.",
+            "Inspect": "Контроль",
+            "readable generated source": "читаемый сгенерированный код",
+            "Extend": "Расширяйте",
+            "replace components, add integrations": "замена компонентов, свои интеграции",
+            "Simple and Easy.": "Просто и легко.",
+            "AI-Friendly Development.": "Разработка по шагам.",
+            "Explicit code, focused docs, runnable examples, and official Kora AI-Skills reduce cognitive load and the framework context you keep in your head. Engineers and AI agents develop STEP by STEP, using precise compiler feedback and fast tests to learn, build, verify, and refine services.": "Явный код, документация по конкретным задачам, запускаемые примеры и официальный Kora нейро-навык снижают когнитивную нагрузку: меньше правил и контекста фреймворка приходится держать в голове. Инженеры и нейро-агенты работают шаг за шагом, используя точную диагностику компилятора и быстрые тесты, чтобы изучать, создавать, проверять и улучшать сервисы.",
+            "Learn": "Осваивайте",
+            "docs, examples, Kora AI-Skills": "документация, примеры, Kora нейро-навык",
+            "Verify": "Проверяйте",
+            "compiler feedback, fast tests": "диагностика компилятора, быстрые тесты",
+            "Optimized by Default.": "Оптимизировано.",
+            "Production-Ready.": "Готово к эксплуатации.",
+            "Framework optimizations are already built in, so developers can focus on business code without spending time tuning internals or keeping performance hacks in their heads. Low CPU and memory overhead, fast readiness, resilience, graceful shutdown, metrics, and tracing support efficient, stable, predictable, observable production services.": "Оптимизации уже сделаны: разработчикам не нужно тратить время на тюнинг фреймворка и держать в голове хаки производительности. Низкое потребление CPU и памяти, быстрый запуск, отказоустойчивость, корректное завершение, метрики и трассировка поддерживают стабильную, предсказуемую и наблюдаемую работу сервисов.",
+            "Start": "Запуск",
+            "fast readiness, low overhead": "готовность, скорость, эффективность",
+            "Monitor": "Мониторинг",
+            "metrics, traces, health probes": "метрики, трассировка, завершение",
             "More throughput per core, fewer machines to pay for.": "Больше производительности на ядро — меньше расходов, больше стабильности.",
             "A TechEmpower Single query (external): responses per second for one database query per request. Higher is better.": "TechEmpower Single query (external): число ответов в секунду при одном запросе к базе данных на HTTP-запрос. Чем больше, тем лучше.",
             "Snapshot": "Срез",
@@ -4561,7 +4563,7 @@
             "▾ See how an AI agent teaches you Kora": "▾ Посмотрите, как нейро-агент учит вас Kora",
             "▴ Hide the walkthrough": "▴ Скрыть демонстрацию",
             "Learning Kora today can be as simple as installing the official kora-skills skill and asking your agent — it consults the skill, then teaches straight from the official guides and examples.": "Учиться Kora сегодня можно просто: установите официальный навык kora-skills и задайте вопрос своему агенту — он сверяется с навыком и объясняет прямо по официальным руководствам и примерам.",
-            "Kora Skills": "Kora Skills",
+            "Kora AI-Skills": "Kora нейро-навык",
             "functionality documented": "функциональности задокументировано",
             "step-by-step guides": "пошаговых Руководств",
             "module references": "справочников по модулям",
@@ -4638,6 +4640,12 @@
             return "v2";
         };
         const docsVersion = readDocsVersion();
+        const templateLanguage = "{{ current_lang }}";
+        const isUnrenderedTemplate = templateLanguage !== "en" && templateLanguage !== "ru";
+        const isStandalone = window.location.protocol === "file:" || isUnrenderedTemplate;
+        const pageTitles = isUnrenderedTemplate
+            ? { en: "Kora Framework - Compile-Time Java and Kotlin Backend", ru: "Kora - Java- и Kotlin-фреймворк с генерацией кода" }
+            : { en: "{{ seo_title_en }}", ru: "{{ seo_title_ru }}" };
 
         const localizeHref = (href, lang) => {
             if (!href || href.startsWith("#") || href.startsWith("https://") || href.startsWith("http://") || href.startsWith("mailto:")) return href;
@@ -4659,9 +4667,7 @@
 
         const applyLanguage = (lang) => {
             document.documentElement.lang = lang;
-            document.title = lang === "ru"
-                ? "{{ seo_title_ru }}"
-                : "{{ seo_title_en }}";
+            document.title = pageTitles[lang];
             document.querySelectorAll("[data-lang]").forEach((button) => {
                 button.classList.toggle("is-active", button.dataset.lang === lang);
                 if (button.dataset.lang === lang) button.setAttribute("aria-current", "page");
@@ -4704,13 +4710,13 @@
         collectTextNodes();
         collectAttrNodes();
 
-        // At the site root the EN/RU toggle switches language in place. On /ru/
-        // (and /v2/<lang>/) it navigates, so remember the choice first, otherwise
-        // the root would reopen in the language from the old kora_lang cookie.
+        // Standalone previews and the site root switch language in place. Built
+        // /ru/ and /v2/<lang>/ pages navigate, remembering the choice for the root.
         const isRoot = window.location.pathname === "{{ en_path }}";
         document.querySelectorAll("a[data-lang]").forEach((link) => {
+            if (isStandalone) link.setAttribute("href", "#");
             link.addEventListener("click", (event) => {
-                if (isRoot) {
+                if (isRoot || isStandalone) {
                     event.preventDefault();
                     applyLanguage(link.dataset.lang);
                     return;
@@ -4720,8 +4726,14 @@
         });
 
         window.setKoraLanguage = applyLanguage;
-        window.koraLanguage = (isRoot && window.koraRootLanguage) || "{{ current_lang }}";
-        applyLanguage(window.koraLanguage);
+        let initialLanguage = (isRoot && window.koraRootLanguage) || (isUnrenderedTemplate ? "en" : templateLanguage);
+        if (isStandalone) {
+            try {
+                const saved = window.localStorage.getItem("kora-home-language");
+                if (saved === "en" || saved === "ru") initialLanguage = saved;
+            } catch (e) { /* storage disabled */ }
+        }
+        applyLanguage(initialLanguage);
         document.documentElement.classList.remove("kora-lang-pending");
     })();
 

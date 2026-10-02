@@ -532,18 +532,9 @@ A `ScopedValue` is visible only inside the dynamic scope that bound it, so handi
 
 The most immediately useful result of connecting tracing is not the trace UI — it is that your log lines gain a trace id.
 
-`KoraAsyncAppender` captures the current span context when a log event is queued, and `ConsoleTextRecordEncoder` writes `traceId=` and `spanId=` into the line whenever that context is valid. The
-Logback configuration from the HTTP server guide already has both:
+Without `logback.xml`, `KoraLogbackConfigurator` installs `KoraAsyncAppender` and a console encoder automatically. The appender captures the current span context when a log event is queued. `ConsoleTextRecordEncoder` writes `traceId=` and `spanId=` into text output when the context is valid; with `logging-logback-json` on the classpath, the default encoder writes structured JSON with the trace identifiers instead. Use `kora.logging.encoder=text` to select text explicitly. See [Logback configuration](../documentation/logging-slf4j.md#configuration-2).
 
-```xml title="src/main/resources/logback.xml"
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
-</appender>
-
-<appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
-    <appender-ref ref="STDOUT"/>
-</appender>
-```
+Add [optional `logback.xml`](observability.md#logging) only for custom appenders or routing. XML replaces automatic encoder selection, so keep `KoraAsyncAppender` and explicitly configure a text or JSON encoder to retain trace correlation.
 
 Log a line inside the traced operation and it carries the identifiers automatically:
 
@@ -659,7 +650,7 @@ No spans at all:
 : Check `tracing.enabled` and the module's own `<module>.telemetry.tracing.enabled`. Both default to `true`, so an explicit `false` is the only way they are off.
 
 Logs have no `traceId`:
-: The line was logged outside a traced operation, or `logback.xml` is not using `KoraAsyncAppender` with `ConsoleTextRecordEncoder`.
+: The line was logged outside a traced operation. If a custom `logback.xml` is present, also check that it uses `KoraAsyncAppender` and an encoder that writes trace identifiers.
 
 ## What's Next? { #whats-next }
 

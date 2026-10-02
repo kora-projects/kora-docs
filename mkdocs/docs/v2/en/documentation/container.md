@@ -815,6 +815,7 @@ Conditions are evaluated when the graph is initialized, and again on every graph
 
 * if the condition is `Matched`, the component is created as usual
 * if the condition is `Failed`, the node stays empty and reading it throws `Graph node value was not initialized because condition failed: <reason>`
+* an `@Nullable` dependency on that conditional component instead receives `null` when the condition fails (in Kotlin, declare the dependency as a nullable type)
 * a [list of components](#list-of-components) silently skips components whose condition failed
 * `@Conditional` is also allowed on `@Root` components, in which case the whole subtree behind that root is not created
 

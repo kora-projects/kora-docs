@@ -1058,8 +1058,8 @@ in a `DefaultGrpcServerBodyConverter` subclass registered as a component.
 ### Metrics { #telemetry-metrics }
 
 Metrics require `grpcServer.telemetry.metrics.enabled` **and** a `MeterRegistry` supplied by a [metrics](metrics.md) module.
-The module reports a single `rpc.server.duration` timer, with the buckets from `grpcServer.telemetry.metrics.slo` and the tags
-`server.name`, `server.port`, `rpc.system` (always `grpc`), `rpc.service`, `rpc.method` and `rpc.grpc.status_code`,
+The module reports a single `rpc.server.call.duration` timer, with the buckets from `grpcServer.telemetry.metrics.slo` and the tags
+`server.name`, `server.port`, `rpc.system.name` (always `grpc`), `rpc.service`, `rpc.method`, `rpc.response.status_code` and `error.type`,
 plus everything declared in `grpcServer.telemetry.metrics.tags`.
 
 Metrics are described in the [Metrics Reference](metrics.md#grpc-server) section.
@@ -1070,8 +1070,8 @@ Tracing requires `grpcServer.telemetry.tracing.enabled` **and** a `Tracer` suppl
 A `SERVER` span named `<service>/<method>` is created for every call; its parent is extracted from the request `Metadata` using the
 `W3C Trace Context` propagator, so a trace started by the caller continues on the server.
 
-The span carries the `server.port`, `server.name`, `rpc.system`, `rpc.service`, `rpc.method` and `network.peer.address` attributes,
-plus everything declared in `grpcServer.telemetry.tracing.attributes`; on close `rpc.grpc.status_code` is added.
+The span carries the `server.port`, `server.name`, `rpc.system.name`, `rpc.service`, `rpc.method` and `network.peer.address` attributes,
+plus everything declared in `grpcServer.telemetry.tracing.attributes`; on close `rpc.response.status_code` and, on failure, `error.type` are added.
 Each sent and received message adds an `rpc.message` event with the `rpc.message.type` attribute.
 A non-OK `Status` or an exception marks the span status as `ERROR`.
 

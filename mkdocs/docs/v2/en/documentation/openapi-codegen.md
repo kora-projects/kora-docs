@@ -1387,6 +1387,7 @@ When `enableServerValidation` is enabled, the generator marks models with `@Vali
 and adds `@Validate` to controller methods with validated parameters.
 `minimum`/`maximum` become `@Min`, `@Max` or `@Range(from, to, boundary)` depending on how many bounds the schema declares;
 `minLength`/`maxLength` and `minItems`/`maxItems` become `@Size`; `pattern` becomes `@Pattern`.
+Independent constraints are emitted together: a field with both length and pattern limits gets both `@Size` and `@Pattern`. Nested model fields and arrays of models get `@Valid` in addition to their own constraints. This applies to Java and Kotlin server generation. Numeric bounds also support `BigDecimal` and `BigInteger`; exclusive limits retain the contract's boundary semantics.
 
 `enableServerValidationInterceptor` controls adding `@InterceptWith(ValidationHttpServerInterceptor.class)`, which converts validation errors to HTTP responses.
 It defaults to enabled whenever server validation is enabled.

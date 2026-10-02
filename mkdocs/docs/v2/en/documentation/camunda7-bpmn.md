@@ -64,6 +64,7 @@ Example of the complete configuration described by the `CamundaEngineBpmnConfig`
     camunda {
         engine {
             bpmn {
+                authorizationEnabled = false
                 jobExecutor {
                     corePoolSize = 5 //(1)!
                     maxPoolSize = 25 //(2)!
@@ -148,6 +149,7 @@ Example of the complete configuration described by the `CamundaEngineBpmnConfig`
     camunda:
       engine:
         bpmn:
+          authorizationEnabled: false
           jobExecutor:
             corePoolSize: 5 #(1)!
             maxPoolSize: 25 #(2)!
@@ -215,6 +217,7 @@ Example of the complete configuration described by the `CamundaEngineBpmnConfig`
     25. Tracing attributes (default: `{}`).
 
 The `deployment` section is optional: if it is not specified, the module does not automatically deploy resources.
+`authorizationEnabled` defaults to `false`. Set it to `true` to enforce Camunda resource permissions, including for users authenticated through the [Camunda REST API](camunda7-rest.md#authentication).
 If the section is specified, `resources` must contain at least one path.
 Resources are searched recursively in `classpath`; unsupported paths without the `classpath:` prefix are skipped.
 

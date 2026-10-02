@@ -203,16 +203,15 @@ Kora использует [`slf4j-api`](https://www.slf4j.org/) как общи�
 1. Если `Logback` находит файл конфигурации (`logback-test.xml`, `logback.xml` или файл, указанный системным свойством `logback.configurationFile`), файл применяется как обычно, и Kora не добавляет собственных аппендеров.
 2. Иначе Kora выбирает один [энкодер](#encoder-selection) и подключает его к корневому логгеру через `ConsoleAppender` с именем `KORA_CONSOLE`, обернутый в `KoraAsyncAppender` с именем `KORA_ASYNC`. Корневой уровень такой цепочки берется из свойства [`kora.logging.levels.root`](#bootstrap-properties) (по умолчанию: `INFO`).
 
+Для нового приложения начните без XML: подключите `logging-logback` и `LogbackModule` для текстового вывода. Добавьте `logging-logback-json`, если сборщику логов нужен структурированный JSON; вне тестовых воркеров Gradle он станет форматом по умолчанию. Укажите `kora.logging.encoder` или `KORA_LOGGING_ENCODER` со значением `text`, `pretty` или `json`, если формат не должен зависеть от classpath и среды тестирования. Для `json` нужна зависимость `logging-logback-json`. Для изменения вывода с сохранением автоматической цепочки используйте [фабрику энкодера](#custom-encoders). XML нужен для собственных аппендеров, маршрутизации Logback и других настроек, которые цепочка по умолчанию не поддерживает.
+
 В обоих случаях `java.util.logging` перенаправляется в `Logback`: стандартный консольный обработчик `JUL` удаляется, а уровни `Logback` зеркалируются в `JUL`, так что библиотека, логирующая через `JUL`, подчиняется уровням из `logging.levels`.
 Мост не устанавливается повторно, если его уже установил файл конфигурации, и отключается свойством `kora.logging.config.jul-bridge=false`.
 
-Файл конфигурации нужен, только когда цепочка по умолчанию не подходит, например чтобы добавить файловый аппендер или [собственный шаблон](#custom-pattern).
-Пример `logback.xml`:
+Файл конфигурации нужен, только когда цепочка по умолчанию не подходит, например чтобы добавить файловый аппендер или [собственный шаблон](#custom-pattern). XML имеет приоритет над `kora.logging.encoder`: энкодер и цепочку аппендеров нужно задать явно. Этот необязательный `logback.xml` воспроизводит стандартную текстовую цепочку:
 
 ```xml
 <configuration debug="false">
-    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
-
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
     </appender>
@@ -221,11 +220,13 @@ Kora использует [`slf4j-api`](https://www.slf4j.org/) как общи�
         <appender-ref ref="STDOUT"/>
     </appender>
 
-    <root level="WARN">
+    <root level="INFO">
         <appender-ref ref="ASYNC"/>
     </root>
 </configuration>
 ```
+
+Для JSON в таком необязательном XML добавьте `logging-logback-json` и замените класс энкодера на `io.koraframework.logging.logback.json.JsonRecordEncoder`. В обоих случаях сохраняйте `KoraAsyncAppender`, чтобы захватывать контекст MDC и трассировки. Без XML Kora создаст эту цепочку сама.
 
 `KoraAsyncAppender` выполняет сразу две задачи.
 Он передает запись рабочему потоку для асинхронной записи, а перед этим снимает все, что живет в текущей области видимости и иначе потерялось бы по дороге: значения Kora [`MDC`](#mdc) и текущий спан `OpenTelemetry`.
@@ -353,6 +354,69 @@ Kora использует [`slf4j-api`](https://www.slf4j.org/) как общи�
 Энкодер можно объявить и в `logback.xml`.
 Как и текстовый энкодер, он собирается из писателей — реализаций `LoggingEventJsonWriter` из пакета `io.koraframework.logging.logback.json.writer`, — и вложенные элементы `<writer>` заменяют список по умолчанию целиком.
 Писатель, выбросивший исключение, не теряет запись: энкодер откатывается на запись с `@timestamp`, `level`, `logger`, `message` и описанием сбоя в `exception`.
+
+### Собственный текстовый или JSON-энкодер без XML { #custom-encoders }
+
+Если нужно добавить поля в консольный или JSON-формат, но подходит стандартная асинхронная цепочка, реализуйте `LogbackEncoderFactory`. Код приложения продолжает использовать обычный SLF4J `Logger`; фабрика определяет запись событий. Фабрика возвращает **незапущенный** энкодер: `KoraLogbackConfigurator` задает ему контекст, запускает и оборачивает консольный аппендер в `KoraAsyncAppender`. Фабрика находится через `ServiceLoader`, а не как компонент графа Kora.
+
+Для текста возьмите стандартных писателей и вставьте собственный `LoggingEventTextWriter` перед сообщением:
+
+```java title="src/main/java/com/example/CompanyTextEncoderFactory.java"
+package com.example;
+
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.encoder.Encoder;
+import io.koraframework.logging.logback.LogbackEncoderFactory;
+import io.koraframework.logging.logback.text.ConsoleTextRecordEncoder;
+import java.util.ArrayList;
+
+public final class CompanyTextEncoderFactory implements LogbackEncoderFactory {
+    @Override public String name() { return "company-text"; }
+    @Override public int priority() { return -1; }
+
+    @Override public Encoder<ILoggingEvent> create(LoggerContext context) {
+        var writers = new ArrayList<>(ConsoleTextRecordEncoder.defaultWriters(false));
+        writers.add(3, (out, event) -> out.append("[service=orders] "));
+        return new ConsoleTextRecordEncoder(writers);
+    }
+}
+```
+
+Для структурированного JSON дополните стандартный список реализацией `LoggingEventJsonWriter`; энкодер по-прежнему пишет по одному JSON-объекту на строку:
+
+```java title="src/main/java/com/example/CompanyJsonEncoderFactory.java"
+package com.example;
+
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.encoder.Encoder;
+import io.koraframework.logging.logback.LogbackEncoderFactory;
+import io.koraframework.logging.logback.json.JsonRecordEncoder;
+import java.util.ArrayList;
+
+public final class CompanyJsonEncoderFactory implements LogbackEncoderFactory {
+    @Override public String name() { return "company-json"; }
+    @Override public int priority() { return -1; }
+
+    @Override public Encoder<ILoggingEvent> create(LoggerContext context) {
+        var writers = new ArrayList<>(JsonRecordEncoder.defaultWriters());
+        writers.add((gen, event) -> gen.writeStringProperty("service", "orders"));
+        return new JsonRecordEncoder(writers);
+    }
+}
+```
+
+Для JSON-фабрики нужна зависимость `logging-logback-json` в дополнение к `logging-logback`. Зарегистрируйте одну или обе фабрики по полным именам классов, по одному в строке:
+
+```text title="src/main/resources/META-INF/services/io.koraframework.logging.logback.LogbackEncoderFactory"
+com.example.CompanyTextEncoderFactory
+com.example.CompanyJsonEncoderFactory
+```
+
+Выберите фабрику через `kora.logging.encoder=company-text` или `kora.logging.encoder=company-json` (либо `KORA_LOGGING_ENCODER`). Приоритет `-1` не меняет формат по умолчанию, пока имя не задано явно. Реализация на Kotlin использует тот же интерфейс `LogbackEncoderFactory` и сервисный файл. Для более глубокого изменения формата реализуйте `LoggingEventTextWriter` или `LoggingEventJsonWriter`; включайте его вместе со стандартными писателями, чтобы сохранить поля трассировки, MDC и исключений. Маскирование полей показано в [примере JSON](#json-masking).
+
+Если провайдер находится в именованном Java-модуле, вместо файла `META-INF/services` укажите в `module-info.java` строку `provides io.koraframework.logging.logback.LogbackEncoderFactory with com.example.CompanyTextEncoderFactory, com.example.CompanyJsonEncoderFactory;`. Для структурированных значений в отдельных вызовах лога используйте [структурированные аргументы](#structured-logs) с обычным логгером SLF4J.
 
 #### Маскирование записи { #json-masking }
 

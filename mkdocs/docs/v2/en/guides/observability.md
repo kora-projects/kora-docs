@@ -325,28 +325,27 @@ your real traces.
 
 ## Logging { #logging }
 
-The Logback configuration from the HTTP server guide is what makes logs correlate with traces:
+With `logging-logback` on the classpath and no `logback.xml`, `KoraLogbackConfigurator` installs an asynchronous console pipeline automatically. `KoraAsyncAppender` captures the current span context when a log event is queued. The default `ConsoleTextRecordEncoder` writes `traceId=` and `spanId=` into text output when that context is valid. If `logging-logback-json` is also on the classpath, the default encoder instead writes structured JSON with trace identifiers.
 
-```xml title="src/main/resources/logback.xml"
-<configuration debug="false">
+No XML file is required for either default. Use [`kora.logging.encoder`](../documentation/logging-slf4j.md#encoder-selection) to select `text`, `pretty` or `json` explicitly; add `logback.xml` when you need custom appenders or Logback routing. Runtime levels come from `logging.levels`.
+
+If you need a custom Logback appender or routing, add `src/main/resources/logback.xml`. It replaces Kora's automatic appender setup, so declare the encoder and `KoraAsyncAppender` yourself:
+
+```xml title="src/main/resources/logback.xml (optional)"
+<configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
     </appender>
-
     <appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
         <appender-ref ref="STDOUT"/>
     </appender>
-
-    <root level="WARN">
+    <root level="INFO">
         <appender-ref ref="ASYNC"/>
     </root>
 </configuration>
 ```
 
-`KoraAsyncAppender` captures the current span context at the moment a log event is queued, and `ConsoleTextRecordEncoder` writes `traceId=` and `spanId=` into the line whenever that captured context
-is valid. Both appenders are needed: without the async appender there is no captured span context, and without the encoder it is never written out.
-
-Levels come from the `logging.levels` config section rather than from this file, which is what lets you raise a logger at runtime without rebuilding the image.
+For structured JSON in this XML, add `logging-logback-json` and use `io.koraframework.logging.logback.json.JsonRecordEncoder` instead of the text encoder. For custom output without XML, [register your own encoder factory](../documentation/logging-slf4j.md#custom-encoders).
 
 ## Signals Together { #signals-together }
 
@@ -586,7 +585,7 @@ Nothing reaches the trace collector:
 : Check `tracing.exporter.endpoint`. Without it, spans are created and propagated but never exported, silently.
 
 Logs have no `traceId`:
-: The line was logged outside a traced operation, or `logback.xml` is not using `KoraAsyncAppender` with `ConsoleTextRecordEncoder`.
+: The line was logged outside a traced operation. If a custom `logback.xml` is present, also check that it uses `KoraAsyncAppender` and an encoder that writes trace identifiers.
 
 Any operational endpoint answers `404`:
 : You are on the public port. All of them live on `httpServer.system.port` (default: `8085`).

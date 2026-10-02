@@ -1804,6 +1804,7 @@ Such actions can be added only inside an active transaction — otherwise `after
     1.  The single-argument `inTx` overload hands over the `ConnectionContext` of the current transaction
 
 An exception thrown by a post-commit action is propagated to the caller, but the transaction stays committed.
+Actions registered for one transaction run once and are cleared before the next transaction on the same connection. If several post-commit actions fail, Kora still runs the remaining actions and attaches later failures as suppressed exceptions to the first one.
 
 ### Post-Rollback Actions { #post-rollback-actions }
 
@@ -1859,6 +1860,7 @@ Such actions can be added only inside an active transaction — otherwise `after
 
 An exception thrown by a post-rollback action does not replace the original failure:
 it is attached to it as a suppressed exception.
+Post-rollback actions also run once for their own transaction; callbacks from an earlier transaction do not run again when the connection is reused.
 
 ## Signatures { #signatures }
 

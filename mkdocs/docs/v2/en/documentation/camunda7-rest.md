@@ -69,6 +69,7 @@ it has its own [CORS](#cors) filter, its own [telemetry](#telemetry), and its ow
 The `Camunda REST API` and the application's own controllers therefore run on different ports and do not share request handling or configuration.
 
 The server is disabled by default and is started by `camunda.rest.enabled = true`.
+It binds to `camunda.rest.host` (default: `0.0.0.0`); set a loopback or private address if this API should not be reachable on every network interface.
 The `REST` handler itself is always built during graph initialization — `enabled` only decides whether the HTTP listener is opened.
 If the configured `port` is already taken, startup fails with `Camunda HTTP Server (Undertow) failed to start, cause port '<port>' is already in use`.
 
@@ -94,7 +95,13 @@ Example of the complete configuration described by the `CamundaRestConfig` inter
             enabled = false //(1)!
             path = "/engine-rest" //(2)!
             port = 8081 //(3)!
+            host = "0.0.0.0"
             shutdownWait = "30s" //(4)!
+            auth {
+                enabled = false
+                openapi = true
+                realm = "camunda"
+            }
             openapi {
                 enabled = false //(5)!
                 files = [ "openapi.json" ] //(6)!
@@ -202,7 +209,12 @@ Example of the complete configuration described by the `CamundaRestConfig` inter
         enabled: false #(1)!
         path: "/engine-rest" #(2)!
         port: 8081 #(3)!
+        host: "0.0.0.0"
         shutdownWait: "30s" #(4)!
+        auth:
+          enabled: false
+          openapi: true
+          realm: "camunda"
         openapi:
           enabled: false #(5)!
           files: [ "openapi.json" ] #(6)!
@@ -325,6 +337,16 @@ A typical setup exposes the `REST API` on a custom `port` together with the `Ope
     ```
 
 `cache` values are matched against the enum constants exactly, so they must be written in upper case.
+
+## Authentication { #authentication }
+
+Authentication is off by default. Set `camunda.rest.auth.enabled = true` to require credentials for REST requests. The default `CamundaRestAuthenticationProvider` uses HTTP Basic and checks the user and password with the engine `IdentityService`; `auth.realm` sets its `WWW-Authenticate` realm (default: `camunda`). Missing or invalid credentials return HTTP `401`.
+
+`auth.openapi` defaults to `true`: when authentication is enabled, it also protects OpenAPI, Swagger UI and Scalar routes. Set it to `false` to leave those pages public. With CORS enabled, preflight `OPTIONS` requests bypass authentication.
+
+You can replace the default provider with a `CamundaRestAuthenticationProvider` component for another credential scheme. Implement `authenticate(HttpServerExchange, ProcessEngine)` and return an `AuthenticationResult`; `challenge()` can supply the `WWW-Authenticate` header for a `401`. The authenticated user, groups and tenants are installed in the engine `IdentityService` for the request, then cleared. If the provider omits groups or tenants, Kora resolves them from the engine identity service.
+
+To enforce resource permissions for that user, also set `camunda.engine.bpmn.authorizationEnabled = true` in the [BPMN engine configuration](camunda7-bpmn.md#configuration). Authentication alone identifies the caller; the engine option enables Camunda authorization checks.
 
 ## OpenAPI { #openapi }
 

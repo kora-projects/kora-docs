@@ -69,6 +69,7 @@ agent:
 Таким образом, `Camunda REST API` и собственные контроллеры приложения работают на разных портах и не разделяют обработку запросов или конфигурацию.
 
 По умолчанию сервер выключен и запускается опцией `camunda.rest.enabled = true`.
+Он привязывается к адресу `camunda.rest.host` (по умолчанию `0.0.0.0`); задайте локальный или частный адрес, если API не должен быть доступен через все сетевые интерфейсы.
 Сам `REST`-обработчик всегда собирается при инициализации графа — `enabled` определяет лишь то, будет ли открыт HTTP-слушатель.
 Если указанный `port` уже занят, запуск падает с ошибкой `Camunda HTTP Server (Undertow) failed to start, cause port '<port>' is already in use`.
 
@@ -94,7 +95,13 @@ agent:
             enabled = false //(1)!
             path = "/engine-rest" //(2)!
             port = 8081 //(3)!
+            host = "0.0.0.0"
             shutdownWait = "30s" //(4)!
+            auth {
+                enabled = false
+                openapi = true
+                realm = "camunda"
+            }
             openapi {
                 enabled = false //(5)!
                 files = [ "openapi.json" ] //(6)!
@@ -202,7 +209,12 @@ agent:
         enabled: false #(1)!
         path: "/engine-rest" #(2)!
         port: 8081 #(3)!
+        host: "0.0.0.0"
         shutdownWait: "30s" #(4)!
+        auth:
+          enabled: false
+          openapi: true
+          realm: "camunda"
         openapi:
           enabled: false #(5)!
           files: [ "openapi.json" ] #(6)!
@@ -325,6 +337,16 @@ agent:
     ```
 
 Значения `cache` сопоставляются с константами перечисления буквально, поэтому их нужно писать в верхнем регистре.
+
+## Аутентификация { #authentication }
+
+Аутентификация по умолчанию выключена. Задайте `camunda.rest.auth.enabled = true`, чтобы требовать учётные данные для REST-запросов. Стандартный `CamundaRestAuthenticationProvider` использует HTTP Basic и проверяет пользователя и пароль через `IdentityService` движка; `auth.realm` задаёт область в заголовке `WWW-Authenticate` (по умолчанию `camunda`). При отсутствии или ошибке учётных данных возвращается HTTP `401`.
+
+`auth.openapi` по умолчанию равен `true`: при включённой аутентификации он также защищает маршруты OpenAPI, Swagger UI и Scalar. Значение `false` оставляет эти страницы открытыми. При включённом CORS предварительные запросы `OPTIONS` проходят без аутентификации.
+
+Для другой схемы учётных данных замените стандартный компонент собственной реализацией `CamundaRestAuthenticationProvider`. Реализуйте `authenticate(HttpServerExchange, ProcessEngine)` с результатом `AuthenticationResult`; метод `challenge()` может вернуть заголовок `WWW-Authenticate` для ответа `401`. Аутентифицированный пользователь, его группы и арендаторы устанавливаются в `IdentityService` на время запроса, затем очищаются. Если провайдер не передал группы или арендаторов, Kora получает их из службы идентификации движка.
+
+Чтобы применять права пользователя к ресурсам, также задайте `camunda.engine.bpmn.authorizationEnabled = true` в [конфигурации BPMN-движка](camunda7-bpmn.md#configuration). Аутентификация устанавливает личность пользователя; эта настройка включает проверки авторизации Camunda.
 
 ## OpenAPI { #openapi }
 
