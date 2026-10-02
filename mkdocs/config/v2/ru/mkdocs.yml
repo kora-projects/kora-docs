@@ -59,6 +59,7 @@ nav:
       - Конвертация:
         - Json: documentation/json.md
         - MapStruct: documentation/mapstruct.md
+        - Konvert: documentation/konvert.md
       - Мониторинг:
         - Пробы: documentation/probes.md
         - Логирование: documentation/logging-slf4j.md
@@ -79,6 +80,7 @@ nav:
         - Kafka: documentation/kafka.md
         - gRPC сервер: documentation/grpc-server.md
         - gRPC клиент: documentation/grpc-client.md
+        - AWS S3 клиент: documentation/s3-client-aws.md
       - Аспекты:
         - Отказоустойчивость: documentation/resilient.md
         - Кэширование: documentation/cache.md
@@ -91,7 +93,7 @@ nav:
         - GraalVM Native: documentation/graalvm-native.md
         - Netty: documentation/netty.md
       - Экспериментальное:
-        - S3 клиент: documentation/s3-client.md
+        - Декларативный S3 клиент: documentation/s3-client.md
         - Camunda BPMN: documentation/camunda7-bpmn.md
         - Camunda REST: documentation/camunda7-rest.md
         - Camunda Zeebe: documentation/camunda8-worker.md

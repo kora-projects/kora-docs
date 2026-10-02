@@ -241,7 +241,7 @@ The `telemetry.metrics` block is nested under the module's own configuration sec
 | [Resilience](resilient.md) | `resilient.telemetry.{circuitBreaker,retry,timeout,fallback,rateLimiter}.metrics` |
 | [Kafka](kafka.md) | the consumer's or publisher's own configuration path plus `.telemetry.metrics` |
 | [Cache](cache.md) | the cache's `@Cache` configuration path plus `.telemetry.metrics` |
-| [S3 client](s3-client.md) | `s3client.aws.telemetry.metrics` |
+| [AWS S3 client](s3-client-aws.md) | `s3client.aws.telemetry.metrics` |
 | Redis (`Lettuce`) | `lettuce.telemetry.metrics` |
 | [Camunda 7 BPMN](camunda7-bpmn.md) | `camunda.engine.bpmn.telemetry.metrics` |
 | [Camunda 7 REST](camunda7-rest.md) | `camunda.rest.telemetry.metrics` |
@@ -733,7 +733,7 @@ See [Resilience](resilient.md) module documentation for more details.
 
 `rpc.system.name` is `s3` for the `AWS` based client. `rpc.method` is the S3 operation name and `system.config` is the client's configuration path.
 
-See [S3 client](s3-client.md) module documentation for more details.
+See [AWS S3 integration](s3-client-aws.md) for more details.
 
 ### Camunda 7 BPMN { #camunda-7-bpmn }
 

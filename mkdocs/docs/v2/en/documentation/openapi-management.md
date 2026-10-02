@@ -2,9 +2,9 @@
 seo_title: "Kora OpenAPI Management: Swagger UI and Scalar"
 seo_description: "Publish OpenAPI contract files with Swagger UI and Scalar pages from a Kora service: module setup, configuration and endpoint paths."
 keywords: ["Kora Framework", "Kora OpenAPI", "Swagger UI", "Scalar", "API documentation", "OpenAPI viewer"]
-description: "Explains the Kora OpenAPI management module that publishes OpenAPI contract files and the Swagger UI and Scalar viewer pages through the public HTTP server. Use when working with OpenApiManagementModule, OpenApiManagementConfig, openapi.management.files, CacheMode, Swagger UI, Scalar."
+description: "Explains publishing OpenAPI contract files, Swagger UI and Scalar on the public HTTP server by default, or on a custom internal server using tagged handlers. Use when working with OpenApiManagementModule, OpenApiManagementConfig, openapi.management.files, CacheMode, Swagger UI, Scalar."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about the Kora OpenAPI management module that publishes OpenAPI contract files and the Swagger UI and Scalar viewer pages through the public HTTP server; key triggers include OpenApiManagementModule, OpenApiManagementConfig, OpenApiHttpServerHandler, SwaggerUIHttpServerHandler, ScalarHttpServerHandler, openapi.management.files, openapi.management.path, swaggerui, scalar, CacheMode, /openapi, /swagger-ui, /scalar."
+  use_when: "Use this file for publishing OpenAPI files, Swagger UI and Scalar on the public server or a custom internal HTTP server; key triggers include OpenApiManagementModule, OpenApiManagementConfig, OpenApiHttpServerHandler, SwaggerUIHttpServerHandler, ScalarHttpServerHandler, UndertowHttpServerFactoryModule, @FactoryModule, @Tag, openapi.management.files, swaggerui, scalar, /openapi, /swagger-ui, /scalar."
 ---
 
 The `openapi-management` module publishes ready-made `OpenAPI` files from an application, along with the [Swagger UI](https://swagger.io/tools/swagger-ui/) and [Scalar](https://scalar.com/) pages for viewing them.
@@ -46,7 +46,7 @@ For a step-by-step walkthrough before the reference details, see [OpenAPI HTTP S
     ```
 
 Requires the [HTTP server](http-server.md) module because it registers its own `GET` handlers for serving files and viewer pages.
-These are ordinary `HttpServerRequestHandler` components declared without the system tag, so they are collected by the **public** HTTP server: `/openapi`, `/swagger-ui`, and `/scalar` are exposed on `httpServer.port`, not on the system port `httpServer.system.port`.
+By default these are untagged `HttpServerRequestHandler` components, so the **public** HTTP server collects them: `/openapi`, `/swagger-ui`, and `/scalar` are exposed on `httpServer.port`, not on the system port `httpServer.system.port`. To publish them on a dedicated port instead, see [Custom internal server](#internal-server).
 
 ## Configuration { #configuration }
 
@@ -304,7 +304,7 @@ Nothing has to be configured for a specific host or port, but if a reverse proxy
 
 ## Endpoints { #endpoints }
 
-With serving enabled, the module registers the following `GET` routes on the public HTTP server (paths shown with default `path` values):
+With serving enabled, the module registers the following `GET` routes on the public HTTP server by default, or on the [custom internal server](#internal-server) when its handlers are tagged (paths shown with default `path` values):
 
 | Route | Backing handler | Enabled by |
 |-------|-----------------|------------|
@@ -331,5 +331,120 @@ Because of that, enabling a viewer page without `enabled = true` produces a page
 
 ???+ warning "Do not expose the contract publicly by accident"
 
-    All three routes live on the public HTTP server, so anything enabled here is reachable by every client that can reach the service.
+    By default the routes live on the public HTTP server, so anything enabled here is reachable by every client that can reach the service. A [custom internal server](#internal-server) can move them to a separate port; restrict that port at the network boundary.
     `enabled`, `swaggerui.enabled`, and `scalar.enabled` all default to `false`; keep the viewer pages turned on only in environments where the API description may be read freely.
+
+## Custom internal server { #internal-server }
+
+Define a reusable `@Module` that extends `UndertowSystemHttpServerModule` and `OpenApiManagementModule`. It creates a separate Undertow listener through a [tagged factory module](container.md#factory-module-tag), so it works without a public HTTP server. Tag all four OpenAPI handlers to route the contract, both viewers and the Swagger OAuth redirect to this listener. Each override delegates to the original method, retaining its path, enable flag and caching behavior.
+
+??? note "Complete Java and Kotlin example"
+
+    ===! ":fontawesome-brands-java: `Java`"
+
+        ```java title="InternalOpenApiModule.java"
+        import io.koraframework.common.annotation.FactoryModule;
+        import io.koraframework.common.annotation.Module;
+        import io.koraframework.common.annotation.Tag;
+        import io.koraframework.http.server.common.request.HttpServerRequestHandler;
+        import io.koraframework.http.server.undertow.UndertowHttpServerFactoryModule;
+        import io.koraframework.http.server.undertow.UndertowSystemHttpServerModule;
+        import io.koraframework.openapi.management.OpenApiManagementConfig;
+        import io.koraframework.openapi.management.OpenApiManagementModule;
+
+        @Module
+        public interface InternalOpenApiModule extends UndertowSystemHttpServerModule, OpenApiManagementModule {
+
+            interface InternalApi { }
+
+            @Tag(InternalApi.class)
+            @FactoryModule
+            default UndertowHttpServerFactoryModule internalHttpApi() {
+                return new UndertowHttpServerFactoryModule("kora-undertow-internal", "httpServer.internal");
+            }
+
+            @Override
+            @Tag(InternalApi.class)
+            default HttpServerRequestHandler openApiManagementController(OpenApiManagementConfig config) {
+                return OpenApiManagementModule.super.openApiManagementController(config);
+            }
+
+            @Override
+            @Tag(InternalApi.class)
+            default HttpServerRequestHandler swaggerUIManagementController(OpenApiManagementConfig config) {
+                return OpenApiManagementModule.super.swaggerUIManagementController(config);
+            }
+
+            @Override
+            @Tag(InternalApi.class)
+            default HttpServerRequestHandler swaggerOauthManagementController(OpenApiManagementConfig config) {
+                return OpenApiManagementModule.super.swaggerOauthManagementController(config);
+            }
+
+            @Override
+            @Tag(InternalApi.class)
+            default HttpServerRequestHandler scalarManagementController(OpenApiManagementConfig config) {
+                return OpenApiManagementModule.super.scalarManagementController(config);
+            }
+        }
+        ```
+
+    === ":simple-kotlin: `Kotlin`"
+
+        ```kotlin title="InternalOpenApiModule.kt"
+        import io.koraframework.common.annotation.FactoryModule
+        import io.koraframework.common.annotation.Module
+        import io.koraframework.common.annotation.Tag
+        import io.koraframework.http.server.common.request.HttpServerRequestHandler
+        import io.koraframework.http.server.undertow.UndertowHttpServerFactoryModule
+        import io.koraframework.http.server.undertow.UndertowSystemHttpServerModule
+        import io.koraframework.openapi.management.OpenApiManagementConfig
+        import io.koraframework.openapi.management.OpenApiManagementModule
+
+        @Module
+        interface InternalOpenApiModule : UndertowSystemHttpServerModule, OpenApiManagementModule {
+
+            interface InternalApi
+
+            @Tag(InternalApi::class)
+            @FactoryModule
+            fun internalHttpApi(): UndertowHttpServerFactoryModule =
+                UndertowHttpServerFactoryModule("kora-undertow-internal", "httpServer.internal")
+
+            @Tag(InternalApi::class)
+            override fun openApiManagementController(config: OpenApiManagementConfig): HttpServerRequestHandler =
+                super<OpenApiManagementModule>.openApiManagementController(config)
+
+            @Tag(InternalApi::class)
+            override fun swaggerUIManagementController(config: OpenApiManagementConfig): HttpServerRequestHandler =
+                super<OpenApiManagementModule>.swaggerUIManagementController(config)
+
+            @Tag(InternalApi::class)
+            override fun swaggerOauthManagementController(config: OpenApiManagementConfig): HttpServerRequestHandler =
+                super<OpenApiManagementModule>.swaggerOauthManagementController(config)
+
+            @Tag(InternalApi::class)
+            override fun scalarManagementController(config: OpenApiManagementConfig): HttpServerRequestHandler =
+                super<OpenApiManagementModule>.scalarManagementController(config)
+        }
+        ```
+
+    Place the contract at `src/main/resources/openapi/api.yaml` and configure the dedicated listener and published pages:
+
+    ```javascript title="application.conf"
+    httpServer {
+        system.port = 8085
+        internal.port = 8086
+    }
+
+    openapi.management {
+        enabled = true
+        files = ["openapi/api.yaml"]
+        swaggerui.enabled = true
+        scalar.enabled = true
+    }
+    ```
+
+The contract is available at `http://localhost:8086/openapi`, Swagger UI at `http://localhost:8086/swagger-ui`, and Scalar at `http://localhost:8086/scalar`. The Swagger OAuth redirect is also on port `8086`. The system port `8085` keeps its probes and metrics. If the application also starts a public server, that server does not receive these OpenAPI handlers. The browser loads the contract from the same origin as the viewer. If "Try it out" calls an API on another port, configure the contract's `servers` URL and cross-origin access for that API.
+
+The custom Undertow listener binds to `0.0.0.0`; a separate port alone does not restrict access. Limit port `8086` with your network or ingress rules. Connect `InternalOpenApiModule` to the application graph as you would any other [module](container.md#module-factory). It uses the `http-server-undertow` and `openapi-management` dependencies; no extra server library is needed.

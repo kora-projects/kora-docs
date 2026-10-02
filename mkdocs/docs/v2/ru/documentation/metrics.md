@@ -241,7 +241,7 @@ agent:
 | [Отказоустойчивость](resilient.md) | `resilient.telemetry.{circuitBreaker,retry,timeout,fallback,rateLimiter}.metrics` |
 | [Kafka](kafka.md) | собственный путь конфигурации потребителя или продюсера плюс `.telemetry.metrics` |
 | [Кэш](cache.md) | путь конфигурации кэша из `@Cache` плюс `.telemetry.metrics` |
-| [S3-клиент](s3-client.md) | `s3client.aws.telemetry.metrics` |
+| [AWS S3-клиент](s3-client-aws.md) | `s3client.aws.telemetry.metrics` |
 | Redis (`Lettuce`) | `lettuce.telemetry.metrics` |
 | [Camunda 7 BPMN](camunda7-bpmn.md) | `camunda.engine.bpmn.telemetry.metrics` |
 | [Camunda 7 REST](camunda7-rest.md) | `camunda.rest.telemetry.metrics` |
@@ -733,7 +733,7 @@ Kora строит обычный (не загружающий) кэш `Caffeine`
 
 Тег `rpc.system.name` равен `s3` для клиента на базе `AWS`. `rpc.method` — имя операции S3, а `system.config` — путь конфигурации клиента.
 
-Подробнее смотрите в документации модуля [S3-клиент](s3-client.md).
+Подробнее смотрите в документации [интеграции с AWS S3](s3-client-aws.md).
 
 ### Camunda 7 BPMN { #camunda-7-bpmn }
 

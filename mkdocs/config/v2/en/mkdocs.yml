@@ -59,6 +59,7 @@ nav:
       - Mapping:
         - Json: documentation/json.md
         - MapStruct: documentation/mapstruct.md
+        - Konvert: documentation/konvert.md
       - Observability:
         - Probes: documentation/probes.md
         - Logging: documentation/logging-slf4j.md
@@ -79,6 +80,7 @@ nav:
         - Kafka: documentation/kafka.md
         - gRPC server: documentation/grpc-server.md
         - gRPC client: documentation/grpc-client.md
+        - AWS S3 client: documentation/s3-client-aws.md
       - AOP:
         - Resilience: documentation/resilient.md
         - Cache: documentation/cache.md
@@ -91,7 +93,7 @@ nav:
         - GraalVM Native: documentation/graalvm-native.md
         - Netty: documentation/netty.md
       - Experimental:
-        - S3 client: documentation/s3-client.md
+        - Declarative S3 client: documentation/s3-client.md
         - Camunda BPMN: documentation/camunda7-bpmn.md
         - Camunda REST: documentation/camunda7-rest.md
         - Camunda Zeebe: documentation/camunda8-worker.md

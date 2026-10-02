@@ -707,6 +707,413 @@ Executions of the same periodic task never overlap, a `period` or `delay` that i
 and scheduling after the executor was released fails with `RejectedExecutionException`.
 Periodic tasks are cancelled when the executor is released, and pending one-shot tasks are subject to the same `shutdownWait` as described in [Graceful Shutdown](#graceful-shutdown).
 
+## DB Scheduler { #db-scheduler }
+
+The implementation based on the [db-scheduler](https://github.com/kagkarlsson/db-scheduler) library keeps task state in a database table.
+Scheduled executions survive application restarts, and application instances that share the table coordinate through it,
+so every execution is picked by one instance only. A task is identified in the table by its name, which is why task names must stay stable between deployments.
+
+Tasks are created with annotations from the `io.koraframework.scheduling.db.scheduler.annotation` package:
+`@ScheduleDbWithCron`, `@ScheduleDbWithFixedDelay` and `@ScheduleDbOnce`.
+Their names distinguish them from the [JDK scheduler](#native) annotations.
+The method requirements are the same as for the `JDK` scheduler: the method belongs to a component, has no arguments, and in `Kotlin` is a non-`suspend` member function.
+
+Every annotation has the `name` and `config` attributes:
+
+- `name` sets the task name stored in the table; when empty, the default is `CanonicalClassName#methodName`, for example `com.example.SomeService#schedule`.
+- `config` sets a configuration path whose values have priority over annotation values, as for the [JDK scheduler](#configuration-2).
+  It may also contain `enabled` and a `telemetry` section. The task name comes only from the annotation.
+
+### Dependency { #dependency-3 }
+
+The module requires a `javax.sql.DataSource` component in the graph, for example the one provided by the [JDBC](database-jdbc.md) module.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    [Dependency](general.md#dependencies) `build.gradle`:
+    ```groovy
+    implementation "io.koraframework:scheduling-db-scheduler"
+    implementation "io.koraframework:database-jdbc"
+    ```
+
+    Module:
+    ```java
+    @KoraApp
+    public interface Application extends DbSchedulerModule, JdbcDatabaseModule { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
+    ```kotlin
+    implementation("io.koraframework:scheduling-db-scheduler")
+    implementation("io.koraframework:database-jdbc")
+    ```
+
+    Module:
+    ```kotlin
+    @KoraApp
+    interface Application : DbSchedulerModule, JdbcDatabaseModule
+    ```
+
+The scheduler itself is the `KoraDbScheduler` component. `DbSchedulerModule` marks it as a [root component](container.md#root-component), so it starts with the application.
+
+### Configuration { #configuration-7 }
+
+Scheduler options are described by the `DbSchedulerConfig` class and live in the `scheduling.dbScheduler` section,
+telemetry is shared with the other schedulers in the `scheduling.telemetry` section described for the [JDK scheduler](#configuration):
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    scheduling {
+        dbScheduler {
+            tableInitialize = false //(1)!
+            tableName = "kora_scheduling_db_scheduler_jobs" //(2)!
+            executionParallelism = 10 //(3)!
+            shutdownWait = "30s" //(4)!
+            polling {
+                strategy = "FETCH" //(5)!
+                prefetchMode = "DEFAULT" //(6)!
+                interval = "10s" //(7)!
+            }
+        }
+    }
+    ```
+
+    1. Creates the table on startup when it does not exist, see [Database Table](#db-scheduler-table) (default: `false`)
+    2. Name of the table used by the scheduler (default: `kora_scheduling_db_scheduler_jobs`)
+    3. Maximum number of task executions running at the same time; it is passed to `db-scheduler` as its thread count and limits the virtual threads that run executions (default: `10`)
+    4. Time the scheduler waits for running executions during [graceful shutdown](#graceful-shutdown-db-scheduler), passed to `db-scheduler` as `shutdownMaxWait` (default: `30s`)
+    5. Polling strategy: `FETCH` or `LOCK_AND_FETCH` (default: `FETCH`)
+    6. How many due executions are prefetched relative to `executionParallelism`: `DEFAULT` keeps the `db-scheduler` defaults, `BOUNDED` keeps the local backlog close to `executionParallelism`, `BUFFERED` keeps a larger buffer to reduce idle gaps between polls (default: `DEFAULT`)
+    7. Delay between polls of the table for due executions (default: `10s`)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    scheduling:
+      dbScheduler:
+        tableInitialize: false #(1)!
+        tableName: "kora_scheduling_db_scheduler_jobs" #(2)!
+        executionParallelism: 10 #(3)!
+        shutdownWait: "30s" #(4)!
+        polling:
+          strategy: "FETCH" #(5)!
+          prefetchMode: "DEFAULT" #(6)!
+          interval: "10s" #(7)!
+    ```
+
+    1. Creates the table on startup when it does not exist, see [Database Table](#db-scheduler-table) (default: `false`)
+    2. Name of the table used by the scheduler (default: `kora_scheduling_db_scheduler_jobs`)
+    3. Maximum number of task executions running at the same time; it is passed to `db-scheduler` as its thread count and limits the virtual threads that run executions (default: `10`)
+    4. Time the scheduler waits for running executions during [graceful shutdown](#graceful-shutdown-db-scheduler), passed to `db-scheduler` as `shutdownMaxWait` (default: `30s`)
+    5. Polling strategy: `FETCH` or `LOCK_AND_FETCH` (default: `FETCH`)
+    6. How many due executions are prefetched relative to `executionParallelism`: `DEFAULT` keeps the `db-scheduler` defaults, `BOUNDED` keeps the local backlog close to `executionParallelism`, `BUFFERED` keeps a larger buffer to reduce idle gaps between polls (default: `DEFAULT`)
+    7. Delay between polls of the table for due executions (default: `10s`)
+
+Task executions run on virtual threads named `kora-db-scheduler-N`.
+Module metrics are the same as for the other schedulers and are described in the [Metrics Reference](metrics.md#scheduling) section.
+
+### Database Table { #db-scheduler-table }
+
+`db-scheduler` needs its table before startup. The module includes SQL schemas for PostgreSQL, MySQL, MariaDB, Microsoft SQL Server, Oracle and HSQLDB at
+`db/kora/scheduling-db-scheduler/schema/<database>.sql`, and a Liquibase changelog at
+`db/kora/scheduling-db-scheduler/liquibase/changelog.yaml`.
+The default table is `kora_scheduling_db_scheduler_jobs`; its primary key and indexes use the same prefix.
+For Flyway, copy the SQL for your database into your application's next free migration version. The module does not ship a versioned Flyway migration because its version could collide with application migrations.
+For Liquibase, include the bundled changelog in your master changelog.
+If you change `scheduling.dbScheduler.tableName`, rename the table and constraints in a copied SQL script.
+
+With `tableInitialize = true`, the module creates the configured table at startup if absent, using the bundled schema for the detected database. The default is `false`; manage production schema with your migration tool when you need controlled migrations.
+
+### Cron { #db-scheduler-cron }
+
+Runs a task by a `cron` expression.
+The expression is evaluated by the `CronSchedule` class of `db-scheduler`, not by the `JDK` scheduler's [CronExpression](#jdk-cron-format):
+it uses the Spring 5.3 `cron` format with six fields, starting with seconds, and the tagged scheduling `ZoneId` or the default time zone of the `JVM`,
+see the [db-scheduler documentation](https://github.com/kagkarlsson/db-scheduler) for details.
+This dialect accepts `@yearly`, `@monthly`, `@weekly`, `@daily` and `@hourly`. A single `-` disables a configured cron job and removes its scheduled execution at startup. Literal expressions are validated during Java/Kotlin processing; configured expressions are validated when the graph starts.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @ScheduleDbWithCron(value = "*/10 * * * * *", name = "some-cron") //(1)!
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+    1. `cron` expression that runs the task every ten seconds, stored in the table under the task name `some-cron`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleDbWithCron(value = "*/10 * * * * *", name = "some-cron") //(1)!
+        fun schedule() {
+            // do something
+        }
+    }
+    ```
+
+    1. `cron` expression that runs the task every ten seconds, stored in the table under the task name `some-cron`
+
+If neither `value` nor `config` is set, compilation fails with `Either value() or config() annotation parameter must be provided`.
+The `config` path accepts either an object with `cron`, `enabled` and `telemetry`, or a plain string with the expression. Set the task name with the annotation's `name` parameter.
+When the annotation also carries an expression, the configuration path may be absent entirely.
+
+### Fixed Delay { #db-scheduler-fixed-delay }
+
+Runs a task repeatedly, waiting for a fixed time interval after the previous execution completes.
+`initialDelay` delays the first execution (default: `0`).
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @ScheduleDbWithFixedDelay(initialDelay = 5, delay = 30, unit = ChronoUnit.SECONDS)
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleDbWithFixedDelay(initialDelay = 5, delay = 30, unit = ChronoUnit.SECONDS)
+        fun schedule() {
+            // do something
+        }
+    }
+    ```
+
+If neither `delay` nor `config` is set, compilation fails with `Either delay() or config() annotation parameter must be provided`.
+
+### Once { #db-scheduler-once }
+
+Runs a task once after the configured delay.
+The execution is created when the scheduler starts, unless one with the same name is already stored in the table,
+and is removed from the table after it completes. A failed execution is removed as well: there are no retries.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @ScheduleDbOnce(delay = 30, unit = ChronoUnit.SECONDS)
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleDbOnce(delay = 30, unit = ChronoUnit.SECONDS)
+        fun schedule() {
+            // do something
+        }
+    }
+    ```
+
+If neither `delay` nor `config` is set, compilation fails with `Either delay() or config() annotation parameter must be provided`.
+
+### Configuration { #configuration-8 }
+
+Parameters of every annotation can be passed through configuration; the configuration has priority over annotation values:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @ScheduleDbWithCron(config = "scheduling.jobs.db-cron")
+        void cron() {
+            // do something
+        }
+
+        @ScheduleDbWithFixedDelay(config = "scheduling.jobs.db-delay")
+        void fixedDelay() {
+            // do something
+        }
+
+        @ScheduleDbOnce(config = "scheduling.jobs.db-once")
+        void once() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleDbWithCron(config = "scheduling.jobs.db-cron")
+        fun cron() {
+            // do something
+        }
+
+        @ScheduleDbWithFixedDelay(config = "scheduling.jobs.db-delay")
+        fun fixedDelay() {
+            // do something
+        }
+
+        @ScheduleDbOnce(config = "scheduling.jobs.db-once")
+        fun once() {
+            // do something
+        }
+    }
+    ```
+
+Configuration file example:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    scheduling {
+        jobs {
+            db-cron {
+                cron = "*/10 * * * * *" //(1)!
+            }
+            db-delay {
+                initialDelay = "5s" //(2)!
+                delay = "30s" //(3)!
+            }
+            db-once {
+                delay = "30s" //(4)!
+            }
+        }
+    }
+    ```
+
+    1. `cron` expression (`required`, no default)
+    2. Delay before the first execution (default: `0ms`)
+    3. Delay after an execution completes before the next one (`required`, no default)
+    4. Delay before the single execution (`required`, no default)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    scheduling:
+      jobs:
+        db-cron:
+          cron: "*/10 * * * * *" #(1)!
+        db-delay:
+          initialDelay: "5s" #(2)!
+          delay: "30s" #(3)!
+        db-once:
+          delay: "30s" #(4)!
+    ```
+
+    1. `cron` expression (`required`, no default)
+    2. Delay before the first execution (default: `0ms`)
+    3. Delay after an execution completes before the next one (`required`, no default)
+    4. Delay before the single execution (`required`, no default)
+
+If the annotation already provides the value, it becomes the default of the generated configuration and the configuration only has to override what should differ.
+
+### Customization { #db-scheduler-customization }
+
+The scheduler uses the `DataSource` tagged `@Tag(KoraDbScheduler.class)`; by default it is the application `DataSource`,
+so registering a `DataSource` component with this tag moves the scheduler to another database.
+
+The `db-scheduler` `SchedulerBuilder` can be adjusted before the scheduler is built by registering a `Configurer<SchedulerBuilder>` component
+(`io.koraframework.common.Configurer`); it is applied after the settings from `DbSchedulerConfig`, so it can also override them:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MySchedulerConfigurer implements Configurer<SchedulerBuilder> {
+
+        @Override
+        public SchedulerBuilder configure(SchedulerBuilder builder) {
+            return builder.pollingInterval(Duration.ofSeconds(1));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MySchedulerConfigurer : Configurer<SchedulerBuilder> {
+
+        override fun configure(builder: SchedulerBuilder): SchedulerBuilder {
+            return builder.pollingInterval(Duration.ofSeconds(1))
+        }
+    }
+    ```
+
+Any component implementing `DbSchedulerJob` is registered in the scheduler together with the annotated tasks.
+Implement it manually when a task needs `db-scheduler` APIs directly, such as custom task data or completion handling.
+Such a task is not wrapped in scheduling telemetry:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class ReportJob implements DbSchedulerJob {
+
+        private final RecurringTask<Void> task = Tasks.recurring("report", FixedDelay.of(Duration.ofMinutes(5)))
+            .execute((instance, context) -> {
+                // do something
+            });
+
+        @Override
+        public Task<?> task() {
+            return task;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ReportJob : DbSchedulerJob {
+
+        private val task: RecurringTask<Void> = Tasks.recurring("report", FixedDelay.of(Duration.ofMinutes(5)))
+            .execute { _, _ ->
+                // do something
+            }
+
+        override fun task(): Task<*> = task
+    }
+    ```
+
+`KoraDbScheduler` wraps the `db-scheduler` `com.github.kagkarlsson.scheduler.Scheduler`,
+so the `Scheduler` itself can be injected, for example to schedule new instances of a task or to inspect scheduled executions.
+
+### Graceful Shutdown { #graceful-shutdown-db-scheduler }
+
+During [graceful shutdown](container.md#component-lifecycle) `KoraDbScheduler` stops the `db-scheduler` scheduler,
+which stops picking new executions and waits up to `scheduling.dbScheduler.shutdownWait` for the running executions to finish.
+When the wait expires, running executions are interrupted and the scheduler waits up to `shutdownWait` once more.
+As with the other schedulers, long-running tasks should finish on their own
+or check [Thread.currentThread().isInterrupted()](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Thread.html#isInterrupted()).
+
 ## Quartz { #quartz }
 
 The implementation based on the [Quartz](https://www.quartz-scheduler.org/) library is used for tasks with custom `Trigger` instances,
@@ -1248,410 +1655,3 @@ such as registering tasks programmatically or inspecting the scheduler state:
 Every declared task is registered as a durable `JobDetail` whose identity is the canonical name of the generated job class.
 Registration is repeated when the dependency graph is refreshed: triggers whose definition changed are rescheduled,
 and triggers that no longer exist are removed.
-
-## DB Scheduler { #db-scheduler }
-
-The implementation based on the [db-scheduler](https://github.com/kagkarlsson/db-scheduler) library keeps task state in a database table.
-Scheduled executions survive application restarts, and application instances that share the table coordinate through it,
-so every execution is picked by one instance only. A task is identified in the table by its name, which is why task names must stay stable between deployments.
-
-Tasks are created with annotations from the `io.koraframework.scheduling.db.scheduler.annotation` package:
-`@ScheduleDbWithCron`, `@ScheduleDbWithFixedDelay` and `@ScheduleDbOnce`.
-Their names distinguish them from the [JDK scheduler](#native) annotations.
-The method requirements are the same as for the `JDK` scheduler: the method belongs to a component, has no arguments, and in `Kotlin` is a non-`suspend` member function.
-
-Every annotation has the `name` and `config` attributes:
-
-- `name` sets the task name stored in the table; when empty, the default is `CanonicalClassName#methodName`, for example `com.example.SomeService#schedule`.
-- `config` sets a configuration path whose values have priority over annotation values, as for the [JDK scheduler](#configuration-2).
-  It may also contain `enabled` and a `telemetry` section. The task name comes only from the annotation.
-
-### Dependency { #dependency-3 }
-
-The module requires a `javax.sql.DataSource` component in the graph, for example the one provided by the [JDBC](database-jdbc.md) module.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    [Dependency](general.md#dependencies) `build.gradle`:
-    ```groovy
-    implementation "io.koraframework:scheduling-db-scheduler"
-    implementation "io.koraframework:database-jdbc"
-    ```
-
-    Module:
-    ```java
-    @KoraApp
-    public interface Application extends DbSchedulerModule, JdbcDatabaseModule { }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    [Dependency](general.md#dependencies) `build.gradle.kts`:
-    ```kotlin
-    implementation("io.koraframework:scheduling-db-scheduler")
-    implementation("io.koraframework:database-jdbc")
-    ```
-
-    Module:
-    ```kotlin
-    @KoraApp
-    interface Application : DbSchedulerModule, JdbcDatabaseModule
-    ```
-
-The scheduler itself is the `KoraDbScheduler` component. `DbSchedulerModule` marks it as a [root component](container.md#root-component), so it starts with the application.
-
-### Configuration { #configuration-7 }
-
-Scheduler options are described by the `DbSchedulerConfig` class and live in the `scheduling.dbScheduler` section,
-telemetry is shared with the other schedulers in the `scheduling.telemetry` section described for the [JDK scheduler](#configuration):
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    scheduling {
-        dbScheduler {
-            tableInitialize = false //(1)!
-            tableName = "kora_scheduling_db_scheduler_jobs" //(2)!
-            executionParallelism = 10 //(3)!
-            shutdownWait = "30s" //(4)!
-            polling {
-                strategy = "FETCH" //(5)!
-                prefetchMode = "DEFAULT" //(6)!
-                interval = "10s" //(7)!
-            }
-        }
-    }
-    ```
-
-    1. Creates the table on startup when it does not exist, see [Database Table](#db-scheduler-table) (default: `false`)
-    2. Name of the table used by the scheduler (default: `kora_scheduling_db_scheduler_jobs`)
-    3. Maximum number of task executions running at the same time; it is passed to `db-scheduler` as its thread count and limits the virtual threads that run executions (default: `10`)
-    4. Time the scheduler waits for running executions during [graceful shutdown](#graceful-shutdown-db-scheduler), passed to `db-scheduler` as `shutdownMaxWait` (default: `30s`)
-    5. Polling strategy: `FETCH` or `LOCK_AND_FETCH` (default: `FETCH`)
-    6. How many due executions are prefetched relative to `executionParallelism`: `DEFAULT` keeps the `db-scheduler` defaults, `BOUNDED` keeps the local backlog close to `executionParallelism`, `BUFFERED` keeps a larger buffer to reduce idle gaps between polls (default: `DEFAULT`)
-    7. Delay between polls of the table for due executions (default: `10s`)
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    scheduling:
-      dbScheduler:
-        tableInitialize: false #(1)!
-        tableName: "kora_scheduling_db_scheduler_jobs" #(2)!
-        executionParallelism: 10 #(3)!
-        shutdownWait: "30s" #(4)!
-        polling:
-          strategy: "FETCH" #(5)!
-          prefetchMode: "DEFAULT" #(6)!
-          interval: "10s" #(7)!
-    ```
-
-    1. Creates the table on startup when it does not exist, see [Database Table](#db-scheduler-table) (default: `false`)
-    2. Name of the table used by the scheduler (default: `kora_scheduling_db_scheduler_jobs`)
-    3. Maximum number of task executions running at the same time; it is passed to `db-scheduler` as its thread count and limits the virtual threads that run executions (default: `10`)
-    4. Time the scheduler waits for running executions during [graceful shutdown](#graceful-shutdown-db-scheduler), passed to `db-scheduler` as `shutdownMaxWait` (default: `30s`)
-    5. Polling strategy: `FETCH` or `LOCK_AND_FETCH` (default: `FETCH`)
-    6. How many due executions are prefetched relative to `executionParallelism`: `DEFAULT` keeps the `db-scheduler` defaults, `BOUNDED` keeps the local backlog close to `executionParallelism`, `BUFFERED` keeps a larger buffer to reduce idle gaps between polls (default: `DEFAULT`)
-    7. Delay between polls of the table for due executions (default: `10s`)
-
-Task executions run on virtual threads named `kora-db-scheduler-N`.
-Module metrics are the same as for the other schedulers and are described in the [Metrics Reference](metrics.md#scheduling) section.
-
-### Database Table { #db-scheduler-table }
-
-`db-scheduler` needs its table before startup. The module includes SQL schemas for PostgreSQL, MySQL, MariaDB, Microsoft SQL Server, Oracle and HSQLDB at
-`db/kora/scheduling-db-scheduler/schema/<database>.sql`, and a Liquibase changelog at
-`db/kora/scheduling-db-scheduler/liquibase/changelog.yaml`.
-The default table is `kora_scheduling_db_scheduler_jobs`; its primary key and indexes use the same prefix.
-For Flyway, copy the SQL for your database into your application's next free migration version. The module does not ship a versioned Flyway migration because its version could collide with application migrations.
-For Liquibase, include the bundled changelog in your master changelog.
-If you change `scheduling.dbScheduler.tableName`, rename the table and constraints in a copied SQL script.
-
-With `tableInitialize = true`, the module creates the configured table at startup if absent, using the bundled schema for the detected database. The default is `false`; manage production schema with your migration tool when you need controlled migrations.
-
-### Cron { #db-scheduler-cron }
-
-Runs a task by a `cron` expression.
-The expression is evaluated by the `CronSchedule` class of `db-scheduler`, not by the `JDK` scheduler's [CronExpression](#jdk-cron-format):
-it uses the Spring 5.3 `cron` format with six fields, starting with seconds, and the tagged scheduling `ZoneId` or the default time zone of the `JVM`,
-see the [db-scheduler documentation](https://github.com/kagkarlsson/db-scheduler) for details.
-This dialect accepts `@yearly`, `@monthly`, `@weekly`, `@daily` and `@hourly`. A single `-` disables a configured cron job and removes its scheduled execution at startup. Literal expressions are validated during Java/Kotlin processing; configured expressions are validated when the graph starts.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public class SomeService {
-
-        @ScheduleDbWithCron(value = "*/10 * * * * *", name = "some-cron") //(1)!
-        void schedule() {
-            // do something
-        }
-    }
-    ```
-
-    1. `cron` expression that runs the task every ten seconds, stored in the table under the task name `some-cron`
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class SomeService {
-
-        @ScheduleDbWithCron(value = "*/10 * * * * *", name = "some-cron") //(1)!
-        fun schedule() {
-            // do something
-        }
-    }
-    ```
-
-    1. `cron` expression that runs the task every ten seconds, stored in the table under the task name `some-cron`
-
-If neither `value` nor `config` is set, compilation fails with `Either value() or config() annotation parameter must be provided`.
-The `config` path accepts either an object with `cron`, `enabled` and `telemetry`, or a plain string with the expression. Set the task name with the annotation's `name` parameter.
-When the annotation also carries an expression, the configuration path may be absent entirely.
-
-### Fixed Delay { #db-scheduler-fixed-delay }
-
-Runs a task repeatedly, waiting for a fixed time interval after the previous execution completes.
-`initialDelay` delays the first execution (default: `0`).
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public class SomeService {
-
-        @ScheduleDbWithFixedDelay(initialDelay = 5, delay = 30, unit = ChronoUnit.SECONDS)
-        void schedule() {
-            // do something
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class SomeService {
-
-        @ScheduleDbWithFixedDelay(initialDelay = 5, delay = 30, unit = ChronoUnit.SECONDS)
-        fun schedule() {
-            // do something
-        }
-    }
-    ```
-
-If neither `delay` nor `config` is set, compilation fails with `Either delay() or config() annotation parameter must be provided`.
-
-### Once { #db-scheduler-once }
-
-Runs a task once after the configured delay.
-The execution is created when the scheduler starts, unless one with the same name is already stored in the table,
-and is removed from the table after it completes. A failed execution is removed as well: there are no retries.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public class SomeService {
-
-        @ScheduleDbOnce(delay = 30, unit = ChronoUnit.SECONDS)
-        void schedule() {
-            // do something
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class SomeService {
-
-        @ScheduleDbOnce(delay = 30, unit = ChronoUnit.SECONDS)
-        fun schedule() {
-            // do something
-        }
-    }
-    ```
-
-If neither `delay` nor `config` is set, compilation fails with `Either delay() or config() annotation parameter must be provided`.
-
-### Configuration { #configuration-8 }
-
-Parameters of every annotation can be passed through configuration; the configuration has priority over annotation values:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public class SomeService {
-
-        @ScheduleDbWithCron(config = "scheduling.jobs.db-cron")
-        void cron() {
-            // do something
-        }
-
-        @ScheduleDbWithFixedDelay(config = "scheduling.jobs.db-delay")
-        void fixedDelay() {
-            // do something
-        }
-
-        @ScheduleDbOnce(config = "scheduling.jobs.db-once")
-        void once() {
-            // do something
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class SomeService {
-
-        @ScheduleDbWithCron(config = "scheduling.jobs.db-cron")
-        fun cron() {
-            // do something
-        }
-
-        @ScheduleDbWithFixedDelay(config = "scheduling.jobs.db-delay")
-        fun fixedDelay() {
-            // do something
-        }
-
-        @ScheduleDbOnce(config = "scheduling.jobs.db-once")
-        fun once() {
-            // do something
-        }
-    }
-    ```
-
-Configuration file example:
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    scheduling {
-        jobs {
-            db-cron {
-                cron = "*/10 * * * * *" //(1)!
-            }
-            db-delay {
-                initialDelay = "5s" //(2)!
-                delay = "30s" //(3)!
-            }
-            db-once {
-                delay = "30s" //(4)!
-            }
-        }
-    }
-    ```
-
-    1. `cron` expression (`required`, no default)
-    2. Delay before the first execution (default: `0ms`)
-    3. Delay after an execution completes before the next one (`required`, no default)
-    4. Delay before the single execution (`required`, no default)
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    scheduling:
-      jobs:
-        db-cron:
-          cron: "*/10 * * * * *" #(1)!
-        db-delay:
-          initialDelay: "5s" #(2)!
-          delay: "30s" #(3)!
-        db-once:
-          delay: "30s" #(4)!
-    ```
-
-    1. `cron` expression (`required`, no default)
-    2. Delay before the first execution (default: `0ms`)
-    3. Delay after an execution completes before the next one (`required`, no default)
-    4. Delay before the single execution (`required`, no default)
-
-If the annotation already provides the value, it becomes the default of the generated configuration and the configuration only has to override what should differ.
-
-### Customization { #db-scheduler-customization }
-
-The scheduler uses the `DataSource` tagged `@Tag(KoraDbScheduler.class)`; by default it is the application `DataSource`,
-so registering a `DataSource` component with this tag moves the scheduler to another database.
-
-The `db-scheduler` `SchedulerBuilder` can be adjusted before the scheduler is built by registering a `Configurer<SchedulerBuilder>` component
-(`io.koraframework.common.Configurer`); it is applied after the settings from `DbSchedulerConfig`, so it can also override them:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public final class MySchedulerConfigurer implements Configurer<SchedulerBuilder> {
-
-        @Override
-        public SchedulerBuilder configure(SchedulerBuilder builder) {
-            return builder.pollingInterval(Duration.ofSeconds(1));
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class MySchedulerConfigurer : Configurer<SchedulerBuilder> {
-
-        override fun configure(builder: SchedulerBuilder): SchedulerBuilder {
-            return builder.pollingInterval(Duration.ofSeconds(1))
-        }
-    }
-    ```
-
-Any component implementing `DbSchedulerJob` is registered in the scheduler together with the annotated tasks.
-Implement it manually when a task needs `db-scheduler` APIs directly, such as custom task data or completion handling.
-Such a task is not wrapped in scheduling telemetry:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public final class ReportJob implements DbSchedulerJob {
-
-        private final RecurringTask<Void> task = Tasks.recurring("report", FixedDelay.of(Duration.ofMinutes(5)))
-            .execute((instance, context) -> {
-                // do something
-            });
-
-        @Override
-        public Task<?> task() {
-            return task;
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class ReportJob : DbSchedulerJob {
-
-        private val task: RecurringTask<Void> = Tasks.recurring("report", FixedDelay.of(Duration.ofMinutes(5)))
-            .execute { _, _ ->
-                // do something
-            }
-
-        override fun task(): Task<*> = task
-    }
-    ```
-
-`KoraDbScheduler` wraps the `db-scheduler` `com.github.kagkarlsson.scheduler.Scheduler`,
-so the `Scheduler` itself can be injected, for example to schedule new instances of a task or to inspect scheduled executions.
-
-### Graceful Shutdown { #graceful-shutdown-db-scheduler }
-
-During [graceful shutdown](container.md#component-lifecycle) `KoraDbScheduler` stops the `db-scheduler` scheduler,
-which stops picking new executions and waits up to `scheduling.dbScheduler.shutdownWait` for the running executions to finish.
-When the wait expires, running executions are interrupted and the scheduler waits up to `shutdownWait` once more.
-As with the other schedulers, long-running tasks should finish on their own
-or check [Thread.currentThread().isInterrupted()](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Thread.html#isInterrupted()).
