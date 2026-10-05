@@ -1,0 +1,1 @@
+--8<-- "ru/talk-benchmark-others-and-kora.md"

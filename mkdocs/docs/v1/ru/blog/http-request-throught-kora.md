@@ -1,0 +1,1 @@
+--8<-- "ru/http-request-throught-kora.md"

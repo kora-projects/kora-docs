@@ -1,0 +1,1 @@
+--8<-- "en/myth-of-large-community.md"

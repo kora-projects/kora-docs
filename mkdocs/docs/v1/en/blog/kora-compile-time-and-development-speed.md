@@ -1,0 +1,1 @@
+--8<-- "en/kora-compile-time-and-development-speed.md"

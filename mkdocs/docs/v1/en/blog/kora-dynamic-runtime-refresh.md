@@ -1,0 +1,1 @@
+--8<-- "en/kora-dynamic-runtime-refresh.md"

@@ -1,0 +1,1 @@
+--8<-- "ru/structured-concurrency-in-kora.md"

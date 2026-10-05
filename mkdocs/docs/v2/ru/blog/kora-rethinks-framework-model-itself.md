@@ -1,0 +1,1 @@
+--8<-- "ru/kora-rethinks-framework-model-itself.md"

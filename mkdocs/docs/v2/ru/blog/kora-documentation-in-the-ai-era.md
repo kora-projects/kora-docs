@@ -1,0 +1,1 @@
+--8<-- "ru/kora-documentation-in-the-ai-era.md"

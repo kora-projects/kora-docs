@@ -1,0 +1,1 @@
+--8<-- "ru/virtual-thread-in-production.md"

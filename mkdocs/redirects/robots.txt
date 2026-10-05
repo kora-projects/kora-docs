@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kora-projects.github.io/kora-docs/sitemap.xml

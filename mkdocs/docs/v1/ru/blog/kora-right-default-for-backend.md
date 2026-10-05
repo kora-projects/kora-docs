@@ -1,0 +1,1 @@
+--8<-- "ru/kora-right-default-for-backend.md"
