@@ -444,6 +444,17 @@ agent:
 Если у метода фабричного модуля тега нет, `@Tag(Tag.Factory)` разворачивается в «без тега», и созданные компоненты остаются нетегированными.
 Использование `@Tag(Tag.Factory)` вне фабричного модуля — ошибка компиляции.
 
+##### Готовые фабричные модули { #provided-factory-modules }
+
+Для нескольких подключений или серверов используйте готовые классы вместо копирования фабричных методов стандартного модуля:
+
+- `JdbcDatabaseFactoryModule(configPath)`, `CassandraDatabaseFactoryModule(configPath)` и `LettuceFactoryModule(configPath)` создают подключение с конфигурацией по указанному пути. Примеры тегов — в [JDBC](database-jdbc.md).
+- `OkHttpClientFactoryModule(baseConfigPath, configPath)`, `ApacheHttpClientFactoryModule(baseConfigPath, configPath)` и `JdkHttpClientFactoryModule(baseConfigPath, configPath)` создают отдельный транспорт [HTTP-клиента](http-client.md). Первый путь указывает на общую конфигурацию `HttpClientConfig`, второй — на настройки конкретного транспорта; перегрузка с одним аргументом использует вложенные секции `.ok`, `.apache` и `.jdk` соответственно. `HttpClientFactoryModule(configPath)` предоставляет только общую конфигурацию.
+- `UndertowHttpServerFactoryModule(name, configPath)` и `GrpcServerFactoryModule(name, configPath)` создают отдельные серверы. Имя используется в телеметрии; тег определяет набор обработчиков HTTP или служб и перехватчиков gRPC. Для gRPC тот же тег нужен компоненту `GrpcServerTelemetryFactory`. Пример — [внутренний HTTP-сервер](http-server.md#internal-server).
+- `FlywayFactoryModule(configPath)` и `LiquibaseFactoryModule(configPath)` добавляют [миграции к JDBC-подключению с тем же тегом](database-migration.md#tagged-migrations).
+
+Объявляйте эти классы через `@FactoryModule` с отдельным тегом для каждого экземпляра. Зависимости с `Tag.Factory`, включая предусмотренные модулем конфигураторы, получают этот тег; остальные зависимости сохраняют свои исходные теги. Фабричный модуль не заменяет автоматически существующий транспорт или сервер без тега.
+
 #### Обобщенная фабрика { #generic-factory }
 
 Если контейнер зависимостей не смог найти фабрику для конкретного типа, контейнер `Kora` может во время компиляции

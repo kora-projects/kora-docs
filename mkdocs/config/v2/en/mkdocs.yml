@@ -47,6 +47,10 @@ nav:
           - gRPC Client: guides/grpc-client.md
           - Advanced gRPC Client: guides/grpc-client-advanced.md
           - S3: guides/s3.md
+      - Integration creation:
+          - Neo4j module: guides/integration-neo4j.md
+          - AP and KSP: guides/integration-processors.md
+          - Custom aspect: guides/integration-aspect.md
       - Testing:
           - Component testing: guides/testing-junit.md
           - Integration Testing: guides/testing-integration.md

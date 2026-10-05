@@ -1175,6 +1175,71 @@ You can disable the watcher by using:
 1. Environment variable `KORA_CONFIG_WATCHER_ENABLED` (default: `true`)
 2. System property `kora.config.watcher.enabled` (default: `true`)
 
+### Updating mounted Kubernetes configuration { #kubernetes-refresh }
+
+Mount a `ConfigMap` as a directory and point `config.file` at the mounted file. Kubernetes updates projected volumes by switching symlinks; `ConfigWatcher` follows the real path and detects that change. This also applies to mounted `Secret` files used as configuration or included by HOCON. Updating a Secret does not by itself hot-reload an unrelated TLS client/server.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kora-config
+data:
+  application.conf: |
+    greeting.message = "Hello"
+---
+# Fragment of Deployment.spec.template.spec:
+containers:
+  - name: application
+    image: kora-app
+    env:
+      - name: JAVA_OPTS
+        value: "-Dconfig.file=/etc/kora/application.conf"
+    volumeMounts:
+      - name: config
+        mountPath: /etc/kora
+        readOnly: true
+volumes:
+  - name: config
+    configMap:
+      name: kora-config
+```
+
+`JAVA_OPTS` is used by the [Gradle application script](general.md#docker-image); for a direct `java` command, pass `-Dconfig.file` explicitly. Do not mount the file using `subPath`: Kubernetes does not update that mount. Environment variables and files packed inside the application JAR are not refreshed by changing a ConfigMap. Allow time for Kubernetes volume projection before Kora’s next watcher poll.
+
+`@ConfigSource("greeting")` maps the section into a typed graph component. On file change Kora rereads configuration and refreshes dependent graph nodes, rather than mutating the old config object in place. `@ConfigMapper` describes a reusable mapping; it participates in refresh when your module factory depends on the refreshed `Config`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("greeting")
+    public interface GreetingConfig { String message(); }
+
+    @Component
+    public final class GreetingService {
+        private final io.koraframework.application.graph.ValueOf<GreetingConfig> config;
+        public GreetingService(io.koraframework.application.graph.ValueOf<GreetingConfig> config) {
+            this.config = config;
+        }
+        public String message() { return config.get().message(); }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("greeting")
+    interface GreetingConfig { fun message(): String }
+
+    @Component
+    class GreetingService(private val config: io.koraframework.application.graph.ValueOf<GreetingConfig>) {
+        fun message(): String = config.get().message()
+    }
+    ```
+
+
+`ValueOf.get()` reads the current graph value; do not cache its result if you need subsequent updates. Ordinary constructor injection can cause the dependent component to be recreated during refresh. Nodes with lifecycle resources must support initialization and release. Invalid configuration or failed initialization is logged, the refresh is not published, and the watcher retries; do not assume arbitrary external side effects are rolled back. Read one config snapshot per operation to avoid mixing values across an update.
+
 ## Supported types { #supported-types }
 
 Configuration mappers provide an extensive list of supported types that covers most values you may need in custom

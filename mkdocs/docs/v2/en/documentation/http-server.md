@@ -360,6 +360,67 @@ A `Configurer<T>` receives the object being built and returns the object to use:
 An untagged `Configurer<Undertow.Builder>` applies to the **public** server.
 To configure the system server, mark the component with the `@SystemApi` tag.
 
+## Custom internal HTTP server { #internal-server }
+
+`UndertowHttpServerFactoryModule` creates an additional server with its own routes and configuration. Give the [factory module](container.md#factory-module-tag) and controller the same tag: generated handlers inherit that tag and are registered only on the matching server.
+
+Place `InternalHttpModule` in the same compilation module as `@KoraApp`: `@Module` includes it automatically. Keep `UndertowSystemHttpServerModule` or `UndertowPublicHttpServerModule` on the application interface. `UndertowSystemHttpServerModule` provides shared Undertow components and the system server; an existing `UndertowPublicHttpServerModule` also keeps the public server running. Use the same `http-server-undertow` dependency.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface InternalHttpModule {
+        interface InternalApi { }
+
+        @FactoryModule
+        @Tag(InternalApi.class)
+        default UndertowHttpServerFactoryModule internalHttpApi() {
+            return new UndertowHttpServerFactoryModule("kora-undertow-internal", "httpServer.internal");
+        }
+    }
+    ```
+
+    ```java
+    @Component
+    @HttpController
+    @Tag(InternalHttpModule.InternalApi.class)
+    public final class InternalHelloController {
+        @HttpRoute(method = HttpMethod.GET, path = "/hello")
+        public String hello() {
+            return "Hello World";
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface InternalHttpModule {
+        interface InternalApi
+
+        @FactoryModule
+        @Tag(InternalApi::class)
+        fun internalHttpApi(): UndertowHttpServerFactoryModule =
+            UndertowHttpServerFactoryModule("kora-undertow-internal", "httpServer.internal")
+    }
+    ```
+
+    ```kotlin
+    @Component
+    @HttpController
+    @Tag(InternalHttpModule.InternalApi::class)
+    class InternalHelloController {
+        @HttpRoute(method = HttpMethod.GET, path = "/hello")
+        fun hello(): String = "Hello World"
+    }
+    ```
+
+The first factory argument names the server for threads and telemetry; the second specifies the `HttpServerConfig` section. Set `httpServer.internal.port` in the application configuration, for example to `8086`; other settings for this server also belong under `httpServer.internal`.
+
+`GET http://localhost:8086/hello` returns `Hello World`. Shared transport settings remain under `httpServer.undertow`. Use the same `InternalApi` tag for internal server `HttpServerInterceptor` and `Configurer<Undertow.Builder>` components. The tag separates routes; network settings restrict access to the port. See [OpenAPI management](openapi-management.md#internal-server) for a similar OpenAPI example.
+
 ## SomeController declarative { #somecontroller-declarative }
 
 The `@HttpController` annotation should be used to create a controller, and the `@Component` annotation should be used to register it as a dependency.
@@ -1064,6 +1125,37 @@ public interface HttpServerResponse {
 `HttpBody` provides the factory methods `empty()`, `plaintext(...)`, `json(...)`, `octetStream(...)` and `of(contentType, ...)`.
 For a streaming response use `HttpBodyOutput.of(contentType, InputStream)` or `HttpBodyOutput.of(contentType, os -> ...)`.
 
+#### Streaming with InputStream { #streaming-inputstream }
+
+Return `HttpBodyOutput.of(contentType, inputStream)` to send a body without loading the whole file into a byte array. Open the stream in the controller and transfer ownership to the response body: the server closes it after response processing, including write failures. Do not wrap the returned stream in a controller-level `try-with-resources` / `use`, because that would close it before the server reads it.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpRoute(method = HttpMethod.GET, path = "/report")
+    public HttpServerResponse report() throws java.io.IOException {
+        var path = java.nio.file.Path.of("/data/report.csv");
+        var stream = java.nio.file.Files.newInputStream(path);
+        return HttpServerResponse.of(200, HttpBodyOutput.of("text/csv", stream));
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpRoute(method = HttpMethod.GET, path = "/report")
+    fun report(): HttpServerResponse {
+        val path = java.nio.file.Path.of("/data/report.csv")
+        val stream = java.nio.file.Files.newInputStream(path)
+        return HttpServerResponse.of(200, HttpBodyOutput.of("text/csv", stream))
+    }
+    ```
+
+
+Import `HttpBodyOutput` from `io.koraframework.http.common.body`. The fixed server-side path keeps this example independent of user-provided filenames. If the exact length is known and the content cannot change during transfer, use `of(contentType, length, stream)` or `octetStream(length, stream)`; otherwise leave it unknown (`-1`). HTTP/1.1 can then use chunked framing; HTTP/2 uses its own data frames.
+
+Undertow buffers a small unknown body up to `64KiB`; larger bodies use a bounded pipe and socket backpressure paces the producer. Reading an `InputStream` is blocking work on the request virtual thread. A disconnected client causes writing to fail; it does not guarantee that a custom blocking stream will immediately stop reading, so configure source read timeouts too. If headers are already sent, a read/write failure cannot be replaced with a JSON error response. This is byte streaming, not SSE event framing.
+
 #### JSON { #json-2 }
 
 If the response should be returned as `JSON`, use the `@Json` annotation on the method.
@@ -1664,6 +1756,54 @@ it throws `HttpServerResponseException.of(401, "Unauthorized")`.
 
 For a service without an OpenAPI contract, write a plain [interceptor](#interceptors) instead — see [Authorization without OpenAPI](#authorization-manual).
 
+### Authentication and authorization boundaries { #auth-boundaries }
+
+Authentication validates credentials and creates a principal. Authorization decides whether that principal may perform the operation. A token extractor alone does not enforce ownership or business permissions: check those in the service as well when it can be called outside HTTP. Kora does not infer application roles from a custom principal.
+
+For custom interceptors, use `HttpServerResponseException.of(401, "Unauthorized")` for missing/invalid credentials and `of(403, "Forbidden")` for an authenticated principal without permission. Bind a validated principal with `Principal.with(...)` around `chain.process(request)`. Throwing a bare `SecurityException` does not itself select an HTTP status; the example [error interceptor](#auth-error-handling) performs that mapping. In RC2, generated OpenAPI security returns `401` when no authentication requirement is satisfied, and `403` when the principal is authenticated but lacks the required scopes.
+
+#### Service-level permission check { #service-permissions }
+
+Use the `UserPrincipal` defined below to check a business permission in the service, even when HTTP authentication has already succeeded:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public void requireAdmin() {
+        var principal = Principal.current();
+        if (principal == null) {
+            throw HttpServerResponseException.of(401, "Unauthorized");
+        }
+        if (!(principal instanceof UserPrincipal user) || !user.roles().contains("admin")) {
+            throw HttpServerResponseException.of(403, "Forbidden");
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    fun requireAdmin() {
+        val principal = Principal.current()
+            ?: throw HttpServerResponseException.of(401, "Unauthorized")
+        if (principal !is UserPrincipal || "admin" !in principal.roles) {
+            throw HttpServerResponseException.of(403, "Forbidden")
+        }
+    }
+    ```
+
+For a transport-independent service, throw your own permission exception and map it to HTTP in an interceptor. The direct HTTP exception here keeps the example small.
+
+### Principal scope and outbound requests { #principal-propagation }
+
+`Principal.current()` reads a `ScopedValue` available inside `Principal.with(...)`, including synchronous controller and service calls. A task submitted to an independent executor does not automatically receive that binding. Capture the validated principal and explicitly rebind it in the task if needed; do not keep request principals in singleton fields.
+
+An outgoing HTTP client does not automatically copy the authenticated request token. Add credentials explicitly to a client argument or interceptor for a trusted destination; do not forward arbitrary inbound `Authorization` headers to every downstream service. Never log tokens.
+
+### Verify security behavior { #security-testing }
+
+Test requests with missing credentials, invalid credentials, valid credentials with insufficient scopes/roles, and valid permissions. Assert both the status and that protected business code was not called on rejection. Test service-level permission checks with `Principal.with(testPrincipal, () -> service.operation())`, then verify that `Principal.current()` is no longer bound after the callback. See [JUnit5](junit5.md) for replacing token validators and injecting the service.
+
 ### Custom Principal { #custom-principal }
 
 Use can create a simple principal for API if needed with or without fields:
@@ -1911,7 +2051,7 @@ For an `OAuth` security scheme the generated code expects a `PrincipalWithScopes
 #### Scope Checking { #scope-check }
 
 When scopes are declared in the OpenAPI contract, the generated interceptor checks them itself:
-if the returned `PrincipalWithScopes.scopes()` does not contain a required scope, the request is answered with `401`.
+if the principal is authenticated but `PrincipalWithScopes.scopes()` does not contain a required scope, the request is answered with `403`. Missing suitable credentials result in `401`.
 
 Outside of OpenAPI, an interceptor checks the scopes and binds the principal itself with `Principal.with(...)`,
 so that the rest of the chain can read it through `Principal.current()`:
@@ -1933,6 +2073,9 @@ so that the rest of the chain can read it through `Principal.current()`:
         @Override
         public HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) throws Exception {
             var principal = validator.validate(request.headers().getFirst("authorization"));
+            if (principal == null) {
+                throw HttpServerResponseException.of(401, "Unauthorized");
+            }
             if (!(principal instanceof PrincipalWithScopes scoped)) {
                 throw HttpServerResponseException.of(403, "No scopes available");
             }
@@ -1958,6 +2101,7 @@ so that the rest of the chain can read it through `Principal.current()`:
 
         override fun intercept(request: HttpServerRequest, chain: HttpServerInterceptor.InterceptChain): HttpServerResponse {
             val principal = validator.validate(request.headers().getFirst("authorization"))
+                ?: throw HttpServerResponseException.of(401, "Unauthorized")
             if (principal !is PrincipalWithScopes) {
                 throw HttpServerResponseException.of(403, "No scopes available")
             }
@@ -2073,14 +2217,14 @@ as a regular [interceptor](#interceptors) placed on the controller, on the route
         public HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) throws Exception {
             var authorization = request.headers().getFirst("authorization");
             if (!this.config.value().equals(authorization)) {
-                throw new SecurityException("Invalid API key"); //(1)!
+                throw HttpServerResponseException.of(401, "Unauthorized"); //(1)!
             }
             return chain.process(request);
         }
     }
     ```
 
-    1. The exception is turned into `403` by the global [authorization error handler](#auth-error-handling)
+    1. Missing or invalid credentials are answered with `401`; this exception already carries the HTTP status
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -2091,14 +2235,14 @@ as a regular [interceptor](#interceptors) placed on the controller, on the route
         override fun intercept(request: HttpServerRequest, chain: HttpServerInterceptor.InterceptChain): HttpServerResponse {
             val authorization = request.headers().getFirst("authorization")
             if (config.value() != authorization) {
-                throw SecurityException("Invalid API key") //(1)!
+                throw HttpServerResponseException.of(401, "Unauthorized") //(1)!
             }
             return chain.process(request)
         }
     }
     ```
 
-    1. The exception is turned into `403` by the global [authorization error handler](#auth-error-handling)
+    1. Missing or invalid credentials are answered with `401`; this exception already carries the HTTP status
 
 The interceptor is then attached with `@InterceptWith(ApiKeyAuthInterceptor.class)` on the controller or on a single route.
 

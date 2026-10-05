@@ -444,6 +444,17 @@ independently configured sets of components:
 If the factory module method has no tag, `@Tag(Tag.Factory)` resolves to "no tag" and the produced components are untagged.
 Using `@Tag(Tag.Factory)` outside a factory module is a compile-time error.
 
+##### Provided factory modules { #provided-factory-modules }
+
+For multiple connections or servers, use the provided classes instead of copying factory methods from the standard module:
+
+- `JdbcDatabaseFactoryModule(configPath)`, `CassandraDatabaseFactoryModule(configPath)` and `LettuceFactoryModule(configPath)` create a connection configured at the specified path. See [JDBC](database-jdbc.md) for tagging examples.
+- `OkHttpClientFactoryModule(baseConfigPath, configPath)`, `ApacheHttpClientFactoryModule(baseConfigPath, configPath)` and `JdkHttpClientFactoryModule(baseConfigPath, configPath)` create a separate [HTTP client](http-client.md) transport. The first path selects the common `HttpClientConfig`; the second selects transport-specific settings. Single-argument overloads use the nested `.ok`, `.apache` and `.jdk` sections respectively. `HttpClientFactoryModule(configPath)` provides only the common configuration.
+- `UndertowHttpServerFactoryModule(name, configPath)` and `GrpcServerFactoryModule(name, configPath)` create separate servers. The name is used in telemetry; the tag selects HTTP handlers or gRPC services and interceptors.For gRPC, `GrpcServerTelemetryFactory` must also have the same tag. See the [internal HTTP server](http-server.md#internal-server) example.
+- `FlywayFactoryModule(configPath)` and `LiquibaseFactoryModule(configPath)` add [migrations to the JDBC connection with the same tag](database-migration.md#tagged-migrations).
+
+Declare these classes through `@FactoryModule`, with a separate tag for each instance. Dependencies annotated with `Tag.Factory`, including module-specific configurers, inherit that tag; other dependencies retain their original tags. A factory module does not automatically replace an existing untagged transport or server.
+
 #### Generic factory { #generic-factory }
 
 If the dependency container could not find a factory for a particular type, the `Kora` container can try to find

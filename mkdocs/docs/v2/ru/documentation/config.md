@@ -1181,6 +1181,71 @@ services:
 1. Переменной окружения `KORA_CONFIG_WATCHER_ENABLED` (по умолчанию: `true`)
 2. Системного свойства `kora.config.watcher.enabled` (по умолчанию: `true`)
 
+### Обновление конфигурации в Kubernetes { #kubernetes-refresh }
+
+Смонтируйте `ConfigMap` как каталог и укажите путь к файлу в нём через `config.file`. Kubernetes обновляет файлы в таком томе, переключая символические ссылки; `ConfigWatcher` отслеживает реальный путь и обнаруживает замену. Это относится и к файлам `Secret`, используемым как конфигурация или подключённым через директиву `include` в HOCON. Само обновление `Secret` не гарантирует перезагрузку сертификатов TLS в других клиентах или серверах.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kora-config
+data:
+  application.conf: |
+    greeting.message = "Hello"
+---
+# Фрагмент Deployment.spec.template.spec:
+containers:
+  - name: application
+    image: kora-app
+    env:
+      - name: JAVA_OPTS
+        value: "-Dconfig.file=/etc/kora/application.conf"
+    volumeMounts:
+      - name: config
+        mountPath: /etc/kora
+        readOnly: true
+volumes:
+  - name: config
+    configMap:
+      name: kora-config
+```
+
+`JAVA_OPTS` читает [скрипт запуска приложения Gradle](general.md#docker-image); при прямом запуске `java` передайте `-Dconfig.file` явно. Не монтируйте файл через `subPath`: Kubernetes не обновляет файлы, подключённые таким способом. Переменные окружения и файлы внутри JAR не меняются при обновлении `ConfigMap`. Учитывайте время, необходимое Kubernetes для обновления файлов тома, и интервал проверки `ConfigWatcher` в Kora.
+
+`@ConfigSource("greeting")` преобразует секцию конфигурации в типизированный компонент графа. При изменении файла Kora перечитывает конфигурацию и обновляет зависимые узлы графа, а не изменяет старый объект на месте. `@ConfigMapper` описывает преобразование конфигурации; оно участвует в обновлении, если фабричный метод вашего модуля зависит от обновляемого `Config`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("greeting")
+    public interface GreetingConfig { String message(); }
+
+    @Component
+    public final class GreetingService {
+        private final io.koraframework.application.graph.ValueOf<GreetingConfig> config;
+        public GreetingService(io.koraframework.application.graph.ValueOf<GreetingConfig> config) {
+            this.config = config;
+        }
+        public String message() { return config.get().message(); }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("greeting")
+    interface GreetingConfig { fun message(): String }
+
+    @Component
+    class GreetingService(private val config: io.koraframework.application.graph.ValueOf<GreetingConfig>) {
+        fun message(): String = config.get().message()
+    }
+    ```
+
+
+`ValueOf.get()` возвращает текущее значение из графа; не кешируйте результат, если нужны дальнейшие обновления. При обычном внедрении через конструктор зависимый компонент может быть пересоздан во время обновления. Компоненты с управляемыми ресурсами должны поддерживать инициализацию и освобождение ресурсов. Если конфигурация некорректна или инициализация завершилась ошибкой, новая версия графа не применяется: ошибка записывается в журнал, а `ConfigWatcher` повторяет попытку. При этом произвольные действия с внешними системами автоматически не отменяются. Для одной операции получайте конфигурацию один раз, чтобы не смешивать значения из разных обновлений.
+
 ## Поддерживаемые типы { #supported-types }
 
 Мапперы конфигурации предоставляют обширный список поддерживаемых типов, который покрывает большинство значений,

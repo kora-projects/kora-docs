@@ -94,3 +94,7 @@ agent:
 === ":simple-kotlin: `Kotlin`"
 
     Новый Kotlin-сервис можно создать на основе [Kora Kotlin template](https://github.com/kora-projects/kora-kotlin-template).
+
+## Создание интеграций { #integration-authoring }
+
+Изучите создание интеграций на трёх примерах: [модуль Neo4j с жизненным циклом и телеметрией](integration-neo4j.md), [генерация builder для DTO через Java AP и Kotlin KSP](integration-processors.md) и [собственный аспект Kora](integration-aspect.md). Они отдельно объясняют runtime-подключение, генерацию исходников и перехват методов.

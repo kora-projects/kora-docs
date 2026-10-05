@@ -360,6 +360,67 @@ agent:
 `Configurer<Undertow.Builder>` без тега применяется к **публичному** серверу.
 Чтобы настроить системный сервер, пометьте компонент тегом `@SystemApi`.
 
+## Собственный внутренний HTTP-сервер { #internal-server }
+
+`UndertowHttpServerFactoryModule` позволяет поднять дополнительный сервер со своими маршрутами и конфигурацией. Пометьте [фабричный модуль](container.md#factory-module-tag) и контроллер одним тегом: сгенерированные обработчики получат этот тег и попадут только на соответствующий сервер.
+
+Разместите `InternalHttpModule` в том же модуле компиляции, что и `@KoraApp`: `@Module` подключает его автоматически. В интерфейсе приложения сохраните `UndertowSystemHttpServerModule` или `UndertowPublicHttpServerModule`. `UndertowSystemHttpServerModule` предоставляет общие компоненты Undertow и системный сервер; если уже подключён `UndertowPublicHttpServerModule`, публичный сервер также продолжит работать. Используется та же зависимость `http-server-undertow`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface InternalHttpModule {
+        interface InternalApi { }
+
+        @FactoryModule
+        @Tag(InternalApi.class)
+        default UndertowHttpServerFactoryModule internalHttpApi() {
+            return new UndertowHttpServerFactoryModule("kora-undertow-internal", "httpServer.internal");
+        }
+    }
+    ```
+
+    ```java
+    @Component
+    @HttpController
+    @Tag(InternalHttpModule.InternalApi.class)
+    public final class InternalHelloController {
+        @HttpRoute(method = HttpMethod.GET, path = "/hello")
+        public String hello() {
+            return "Hello World";
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface InternalHttpModule {
+        interface InternalApi
+
+        @FactoryModule
+        @Tag(InternalApi::class)
+        fun internalHttpApi(): UndertowHttpServerFactoryModule =
+            UndertowHttpServerFactoryModule("kora-undertow-internal", "httpServer.internal")
+    }
+    ```
+
+    ```kotlin
+    @Component
+    @HttpController
+    @Tag(InternalHttpModule.InternalApi::class)
+    class InternalHelloController {
+        @HttpRoute(method = HttpMethod.GET, path = "/hello")
+        fun hello(): String = "Hello World"
+    }
+    ```
+
+Первый аргумент фабрики — имя сервера для потоков и телеметрии, второй — путь к секции `HttpServerConfig`. В конфигурации приложения задайте `httpServer.internal.port`, например `8086`; остальные настройки этого сервера также задаются в `httpServer.internal`.
+
+`GET http://localhost:8086/hello` вернёт `Hello World`. Общие транспортные настройки остаются в `httpServer.undertow`. Для перехватчиков `HttpServerInterceptor` и `Configurer<Undertow.Builder>` внутреннего сервера используйте тот же тег `InternalApi`. Тег разделяет маршруты; доступ к порту ограничивается настройками сети. Аналогичный пример с OpenAPI — в [OpenAPI management](openapi-management.md#internal-server).
+
 ## SomeController декларативный { #somecontroller-declarative }
 
 Для создания контроллера используется аннотация `@HttpController`, а для регистрации его как зависимости — аннотация `@Component`.
@@ -1064,6 +1125,37 @@ public interface HttpServerResponse {
 `HttpBody` предоставляет фабричные методы `empty()`, `plaintext(...)`, `json(...)`, `octetStream(...)` и `of(contentType, ...)`.
 Для потокового ответа используйте `HttpBodyOutput.of(contentType, InputStream)` либо `HttpBodyOutput.of(contentType, os -> ...)`.
 
+#### Потоковая передача через InputStream { #streaming-inputstream }
+
+Верните `HttpBodyOutput.of(contentType, inputStream)`, чтобы отправить тело без чтения всего файла в массив байтов. Откройте поток в контроллере и передайте владение телу ответа: сервер закрывает его после обработки ответа, в том числе при ошибке записи. Не закрывайте возвращаемый поток через `try-with-resources` / `use` в контроллере — иначе сервер получит уже закрытый поток.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpRoute(method = HttpMethod.GET, path = "/report")
+    public HttpServerResponse report() throws java.io.IOException {
+        var path = java.nio.file.Path.of("/data/report.csv");
+        var stream = java.nio.file.Files.newInputStream(path);
+        return HttpServerResponse.of(200, HttpBodyOutput.of("text/csv", stream));
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpRoute(method = HttpMethod.GET, path = "/report")
+    fun report(): HttpServerResponse {
+        val path = java.nio.file.Path.of("/data/report.csv")
+        val stream = java.nio.file.Files.newInputStream(path)
+        return HttpServerResponse.of(200, HttpBodyOutput.of("text/csv", stream))
+    }
+    ```
+
+
+Импортируйте `HttpBodyOutput` из `io.koraframework.http.common.body`. Фиксированный путь к файлу на сервере в примере не зависит от пользовательского ввода. Если точная длина известна и содержимое не меняется во время передачи, используйте `of(contentType, length, stream)` или `octetStream(length, stream)`; иначе оставьте длину неизвестной (`-1`). HTTP/1.1 может передавать тело по частям, а HTTP/2 — в собственных кадрах данных.
+
+Undertow буферизует небольшое тело до `64KiB`, а для больших использует канал с ограниченным буфером: скорость записи в сокет ограничивает скорость чтения источника. Чтение `InputStream` выполняется блокирующим кодом на виртуальном потоке запроса. Разрыв соединения с клиентом приводит к ошибке записи, но не гарантирует немедленную остановку произвольного блокирующего чтения — задавайте ограничение времени чтения источника. После отправки заголовков ошибку чтения или записи уже нельзя заменить JSON-ответом. Сервер передаёт поток байтов, а не формирует события SSE.
+
 #### JSON { #json-2 }
 
 Если предполагается отвечать в формате `JSON` и для него требуется обработчик с `JsonWriter<T>`, для этого требуется использовать аннотацию `@Json` над методом.
@@ -1664,6 +1756,54 @@ public interface HttpServerPrincipalExtractor<T, P extends Principal> {
 
 Для сервиса без OpenAPI-контракта пишется обычный [перехватчик](#interceptors) — смотрите [Авторизацию без OpenAPI](#authorization-manual).
 
+### Аутентификация и авторизация { #auth-boundaries }
+
+Аутентификация проверяет учётные данные и создаёт объект, представляющий пользователя (`Principal`). Авторизация определяет, разрешена ли ему операция. Одно лишь извлечение и проверка токена не проверяет владение ресурсом и бизнес-права: проверяйте их также в сервисе, если он вызывается не только через HTTP. Kora не определяет роли приложения автоматически по вашему типу `Principal`.
+
+В собственном перехватчике используйте `HttpServerResponseException.of(401, "Unauthorized")` при отсутствии или некорректности учётных данных и `of(403, "Forbidden")` для аутентифицированного пользователя без нужных прав. Привязывайте проверенный `Principal` через `Principal.with(...)` вокруг `chain.process(request)`. Само по себе `SecurityException` не задаёт код HTTP-ответа; в примере это делает [перехватчик ошибок](#auth-error-handling). В RC2 сгенерированные обработчики безопасности OpenAPI возвращают `401`, если ни одно требование аутентификации не выполнено, и `403`, если пользователь аутентифицирован, но ему не хватает требуемых разрешений (`scopes`).
+
+#### Проверка прав в сервисе { #service-permissions }
+
+Проверяйте бизнес-права в сервисе через описанный ниже `UserPrincipal`, даже если HTTP-запрос уже прошёл аутентификацию:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public void requireAdmin() {
+        var principal = Principal.current();
+        if (principal == null) {
+            throw HttpServerResponseException.of(401, "Unauthorized");
+        }
+        if (!(principal instanceof UserPrincipal user) || !user.roles().contains("admin")) {
+            throw HttpServerResponseException.of(403, "Forbidden");
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    fun requireAdmin() {
+        val principal = Principal.current()
+            ?: throw HttpServerResponseException.of(401, "Unauthorized")
+        if (principal !is UserPrincipal || "admin" !in principal.roles) {
+            throw HttpServerResponseException.of(403, "Forbidden")
+        }
+    }
+    ```
+
+В сервисе, не зависящем от HTTP, выбрасывайте собственное исключение при отказе в доступе и преобразуйте его в HTTP-ответ через перехватчик. Здесь `HttpServerResponseException` используется для краткости примера.
+
+### Передача данных пользователя и исходящие запросы { #principal-propagation }
+
+`Principal.current()` читает `ScopedValue`, доступный внутри `Principal.with(...)`, в том числе при синхронных вызовах контроллеров и сервисов. Задача, запущенная на независимом потоке, автоматически не получает эту привязку. При необходимости сохраните проверенный `Principal` и явно привяжите его внутри задачи; не храните данные пользователя текущего запроса в полях общих компонентов.
+
+HTTP-клиент не копирует токен входящего запроса автоматически. Передавайте учётные данные явно аргументом метода клиента либо через перехватчик для доверенного адресата. Не пересылайте входящий заголовок `Authorization` произвольным внешним сервисам. Не записывайте токены в журнал.
+
+### Проверка аутентификации и прав доступа { #security-testing }
+
+Проверьте запросы без учётных данных, с некорректными учётными данными, с корректными данными, но недостаточными разрешениями или ролями, и с нужными правами. Проверяйте код ответа и отсутствие вызовов защищённого бизнес-кода при отказе в доступе. Для проверок на уровне сервиса используйте `Principal.with(testPrincipal, () -> service.operation())`, а после выполнения функции проверьте отсутствие привязки `Principal.current()`. Подмена проверки токена и внедрение сервиса описаны в [JUnit5](junit5.md).
+
 ### Пользовательский Principal { #custom-principal }
 
 При необходимости можно создать простой principal для API с полями или без них:
@@ -1911,7 +2051,7 @@ public interface HttpServerPrincipalExtractor<T, P extends Principal> {
 #### Проверка Scope { #scope-check }
 
 Если scope объявлены в OpenAPI-контракте, сгенерированный перехватчик проверяет их сам:
-если возвращенный `PrincipalWithScopes.scopes()` не содержит требуемого scope, запрос завершается ответом `401`.
+если пользователь аутентифицирован, но `PrincipalWithScopes.scopes()` не содержит требуемого разрешения, запрос завершается ответом `403`. При отсутствии подходящих учётных данных возвращается `401`.
 
 Вне OpenAPI перехватчик проверяет scope и сам привязывает principal через `Principal.with(...)`,
 чтобы остаток цепочки мог прочитать его через `Principal.current()`:
@@ -1933,6 +2073,9 @@ public interface HttpServerPrincipalExtractor<T, P extends Principal> {
         @Override
         public HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) throws Exception {
             var principal = validator.validate(request.headers().getFirst("authorization"));
+            if (principal == null) {
+                throw HttpServerResponseException.of(401, "Unauthorized");
+            }
             if (!(principal instanceof PrincipalWithScopes scoped)) {
                 throw HttpServerResponseException.of(403, "No scopes available");
             }
@@ -1958,6 +2101,7 @@ public interface HttpServerPrincipalExtractor<T, P extends Principal> {
 
         override fun intercept(request: HttpServerRequest, chain: HttpServerInterceptor.InterceptChain): HttpServerResponse {
             val principal = validator.validate(request.headers().getFirst("authorization"))
+                ?: throw HttpServerResponseException.of(401, "Unauthorized")
             if (principal !is PrincipalWithScopes) {
                 throw HttpServerResponseException.of(403, "No scopes available")
             }
@@ -2073,14 +2217,14 @@ auth.apiKey {
         public HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) throws Exception {
             var authorization = request.headers().getFirst("authorization");
             if (!this.config.value().equals(authorization)) {
-                throw new SecurityException("Invalid API key"); //(1)!
+                throw HttpServerResponseException.of(401, "Unauthorized"); //(1)!
             }
             return chain.process(request);
         }
     }
     ```
 
-    1. Исключение превращается в `403` глобальным [обработчиком ошибок авторизации](#auth-error-handling)
+    1. Отсутствующие или некорректные учётные данные приводят к ответу `401`; исключение уже содержит код HTTP-ответа
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -2091,14 +2235,14 @@ auth.apiKey {
         override fun intercept(request: HttpServerRequest, chain: HttpServerInterceptor.InterceptChain): HttpServerResponse {
             val authorization = request.headers().getFirst("authorization")
             if (config.value() != authorization) {
-                throw SecurityException("Invalid API key") //(1)!
+                throw HttpServerResponseException.of(401, "Unauthorized") //(1)!
             }
             return chain.process(request)
         }
     }
     ```
 
-    1. Исключение превращается в `403` глобальным [обработчиком ошибок авторизации](#auth-error-handling)
+    1. Отсутствующие или некорректные учётные данные приводят к ответу `401`; исключение уже содержит код HTTP-ответа
 
 Далее перехватчик подключается через `@InterceptWith(ApiKeyAuthInterceptor.class)` на контроллере либо на отдельном маршруте.
 

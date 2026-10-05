@@ -1257,6 +1257,86 @@ agent:
 Без `@Id` метод с `@Batch` не может отобразить произвольные строки, поэтому его возвращаемое значение ограничено
 типами `void` / `Unit`, `UpdateCount`, `int[]` / `IntArray` либо `long[]` / `LongArray`.
 
+## Примеры запросов { #query-examples }
+
+Примеры для PostgreSQL используют таблицу `entities(id, name, description)` и модель `Entity` из этой страницы. Передавайте значения параметрами, а структуру SQL задавайте явно.
+
+### Пагинация и сортировка { #pagination-sorting }
+
+Используйте `LIMIT` и `OFFSET`, чтобы база возвращала только нужную страницу. Нумерация в примере начинается с нуля: `offset = (long) page * size`, при `page >= 0` и `1 <= size <= 100`. Добавляйте уникальное поле, например `id`, для однозначного порядка сортировки; иначе на страницах могут повторяться или пропускаться строки. При одновременном изменении данных границы страниц со смещением всё равно могут сдвигаться.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Query("SELECT id, name, description FROM entities ORDER BY name ASC, id ASC LIMIT :limit OFFSET :offset")
+    List<Entity> page(int limit, long offset);
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Query("SELECT id, name, description FROM entities ORDER BY name ASC, id ASC LIMIT :limit OFFSET :offset")
+    fun page(limit: Int, offset: Long): List<Entity>
+    ```
+
+
+Для обратного порядка объявите запрос с `ORDER BY name DESC, id DESC`. Имена столбцов и `ASC`/`DESC` нельзя передать как параметры значений: выбирайте фиксированный запрос либо SQL-фрагмент из списка разрешённых вариантов. Не подставляйте произвольный пользовательский ввод.
+
+### Необязательные фильтры { #optional-filters }
+
+Необязательный фильтр можно выразить через `:name IS NULL OR name = :name`: `null` отключает фильтрацию, а другое значение выбирает записи с указанным именем.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Query("""
+        SELECT id, name, description FROM entities
+        WHERE (:name IS NULL OR name = :name)
+        ORDER BY id LIMIT :limit OFFSET :offset
+        """)
+    List<Entity> find(@org.jspecify.annotations.Nullable String name, int limit, long offset);
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Query("""
+        SELECT id, name, description FROM entities
+        WHERE (:name IS NULL OR name = :name)
+        ORDER BY id LIMIT :limit OFFSET :offset
+        """)
+    fun find(name: String?, limit: Int, offset: Long): List<Entity>
+    ```
+
+
+`find(null, 20, 0)` возвращает первую страницу без фильтра; `find("Alice", 20, 0)` выбирает записи с именем `Alice`. Это отличается от `name IS NULL OR name = :name`, где также возвращаются строки с `null` в столбце `name`. Несколько независимых фильтров объединяйте через `AND`, заключая каждый в скобки. Для больших таблиц условное добавление фильтра в SQL может дать более эффективный план выполнения запроса:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var query = JdbcQuery.named()
+        .sql("SELECT id, name, description FROM entities WHERE 1 = 1")
+        .sqlIf(" AND name = :name", name != null)
+        .bindIf("name", name, name != null)
+        .sql(" ORDER BY id LIMIT :limit OFFSET :offset")
+        .bind("limit", limit).bind("offset", offset)
+        .build();
+    var rows = executor.queryList(query, rs -> new Entity(rs.getLong("id"), rs.getString("name"), rs.getString("description")));
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val query = JdbcQuery.named()
+        .sql("SELECT id, name, description FROM entities WHERE 1 = 1")
+        .sqlIf(" AND name = :name", name != null)
+        .bindIf("name", name, name != null)
+        .sql(" ORDER BY id LIMIT :limit OFFSET :offset")
+        .bind("limit", limit).bind("offset", offset)
+        .build()
+    val rows = executor.queryList(query) { rs -> Entity(rs.getLong("id"), rs.getString("name"), rs.getString("description")) }
+    ```
+
 ## Ручной запрос с телеметрией { #query }
 
 Если запрос сложно выразить одним статическим `@Query`, объявите обычный метод с реализацией
@@ -1463,6 +1543,36 @@ agent:
     }
     ```
 
+### Работа с соединением через `JdbcExecutor` { #executor-callbacks }
+
+`withConnection(...)` использует привязанное соединение либо получает его из пула и закрывает после выполнения переданной функции; транзакцию он не открывает. `withContext(...)` также передаёт `ConnectionContext`. `currentConnection()` и `currentContext()` возвращают `null` вне области привязки соединения. `acquireConnection()` всегда получает соединение напрямую; вызывающий код должен закрыть его самостоятельно. К вызовам методов репозитория это соединение автоматически не привязывается. Для обычного кода предпочтительнее `withConnection(...)` и `withContext(...)`.
+
+`query(JdbcQuery, callback)` создаёт `PreparedStatement`, привязывает параметры и собирает телеметрию запроса. Закрывайте `ResultSet`, открытый внутри переданной функции. Методы `queryOne`, `queryOptional`, `queryList`, `executeUpdate` и `executeUpdateBatch` предоставляют готовые способы выполнения запросов. Перегрузки `executeUpdate` и `executeUpdateBatch` с `JdbcResultSetMapper` преобразуют сгенерированные ключи, если запрос настроен на их возврат.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var query = JdbcQuery.template("SELECT count(*) FROM entities");
+    long count = executor.query(query, (JdbcExecutor.SqlFunction<java.sql.PreparedStatement, Long>) statement -> {
+        try (var rows = statement.executeQuery()) {
+            rows.next();
+            return rows.getLong(1);
+        }
+    });
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val query = JdbcQuery.template("SELECT count(*) FROM entities")
+    val count = executor.query(query, JdbcExecutor.SqlFunction<java.sql.PreparedStatement, Long> { statement ->
+        statement.executeQuery().use { rows ->
+            rows.next()
+            rows.getLong(1)
+        }
+    })
+    ```
+
 ## Транзакции { #transaction }
 
 `JdbcRepository` предоставляет контракт `JdbcExecutor` через метод `executor()`.
@@ -1548,6 +1658,20 @@ agent:
 
 Соединение привязано к текущей области выполнения, поэтому работа, переданная в посторонний поток,
 в текущую транзакцию не попадает — такой поток получит собственное соединение.
+
+### Границы транзакции и ошибки { #transaction-semantics }
+
+`inTx(...)` открывает транзакцию, только если у текущего соединения `autoCommit = true`. Вложенный вызов присоединяется к ней: не создаёт точку сохранения, не приостанавливает внешнюю транзакцию и не выполняет независимую фиксацию. Это соответствует поведению `REQUIRED`; у `JdbcExecutor` нет выбора правил распространения транзакций или перегрузки с поведением `REQUIRES_NEW`.
+
+Исключение, вышедшее из функции внешнего вызова `inTx`, приводит к откату транзакции. Обрабатываются как `SQLException`, так и непроверяемые исключения; `JdbcExecutor` оборачивает `SQLException` в `UncheckedSqlException`. Реализация перехватывает `Exception`, поэтому при JVM `Error` нельзя рассчитывать на тот же механизм отката. Если ошибка вложенного вызова перехвачена, а внешняя функция завершилась нормально, Kora не помечает транзакцию как подлежащую обязательному откату и пытается её зафиксировать; сама база при этом уже могла перевести транзакцию в состояние ошибки. Дайте исключению выйти из функции, если нужно откатить всю операцию.
+
+Вызов другого метода того же сервиса не меняет это поведение: методы репозитория внутри `inTx` используют привязанное соединение. Для этого API аннотация `@Transactional` не требуется.
+
+#### Режим только для чтения и ограничения времени { #transaction-options }
+
+У `inTx` нет аргументов для режима только для чтения или ограничения времени транзакции. Чтобы указать драйверу, что соединения используются только для чтения, настройте пул через `Configurer<HikariConfig>` и `setReadOnly(true)`; соблюдение этого режима зависит от драйвера и базы данных. Для отдельного SQL-запроса используйте опции `JdbcQuery`, например `opts(options -> options.queryTimeoutSeconds(2))`. Такое ограничение действует на запрос, а не на всю транзакцию.
+
+Транзакция принадлежит одному экземпляру `JdbcExecutor` и его источнику данных. Вложенные вызовы разных экземпляров не создают атомарную транзакцию между базами. Независимый поток не наследует привязанное соединение; открывайте `inTx` внутри такого потока, если ему нужна транзакция.
 
 ### Уровень изоляции { #isolation }
 

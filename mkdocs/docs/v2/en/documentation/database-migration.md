@@ -351,3 +351,48 @@ The Gradle plugin is a separate `Flyway` installation from the one inside the ap
 The two versions are independent, and the build-time dependency lives on the `buildscript` classpath while the runtime one lives in `implementation`.
 
 In tests, the migration module remains the simplest option: the test database lives for the duration of a single run, there is only one instance, and the schema is prepared exactly by the same migrations as in production.
+
+
+## Migrations for a tagged connection { #tagged-migrations }
+
+For multiple databases, declare `FlywayFactoryModule` or `LiquibaseFactoryModule` through `@FactoryModule` with the same tag as `JdbcDatabaseFactoryModule`. The tag connects the migration interceptor to the specific `JdbcDataSource`; the constructor path selects an independent migration configuration section.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface OrdersDatabaseModule {
+        interface OrdersDb { }
+
+        @FactoryModule
+        @Tag(OrdersDb.class)
+        default JdbcDatabaseFactoryModule ordersDb() {
+            return new JdbcDatabaseFactoryModule("db.orders");
+        }
+
+        @FactoryModule
+        @Tag(OrdersDb.class)
+        default FlywayFactoryModule ordersMigrations() {
+            return new FlywayFactoryModule("flyway.orders");
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface OrdersDatabaseModule {
+        interface OrdersDb
+
+        @FactoryModule
+        @Tag(OrdersDb::class)
+        fun ordersDb(): JdbcDatabaseFactoryModule = JdbcDatabaseFactoryModule("db.orders")
+
+        @FactoryModule
+        @Tag(OrdersDb::class)
+        fun ordersMigrations(): FlywayFactoryModule = FlywayFactoryModule("flyway.orders")
+    }
+    ```
+
+Place `OrdersDatabaseModule` in the same compilation module as `@KoraApp`: `@Module` includes it automatically. Include the configuration module and `DatabaseModule`, which supplies shared database telemetry, on the application interface. This example configures the connection under `db.orders` and migrations under `flyway.orders`. For Liquibase, replace `FlywayFactoryModule("flyway.orders")` with `LiquibaseFactoryModule("liquibase.orders")` and use `database-liquibase` instead of `database-flyway`. Configuration and initialization behavior remain the same as for standard modules. For another database, declare a separate pair of factory modules with a different tag; do not attach both Flyway and Liquibase to one database unless that is intentional.

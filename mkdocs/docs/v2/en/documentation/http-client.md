@@ -427,7 +427,7 @@ Basic JDK HttpClient configuration parameters:
     ```
 
     1.  Maximum time to establish a connection (default: `5s`)
-    2.  Maximum time to read a response; shared with the other transports and not applied by the JDK client, use `requestTimeout` to bound a call (default: `2m`)
+    2.  Default request timeout, passed to `HttpRequest.Builder.timeout`; an explicit request `requestTimeout` takes precedence (default: `2m`)
 
 === ":simple-yaml: `YAML`"
 
@@ -438,7 +438,7 @@ Basic JDK HttpClient configuration parameters:
     ```
 
     1.  Maximum time to establish a connection (default: `5s`)
-    2.  Maximum time to read a response; shared with the other transports and not applied by the JDK client, use `requestTimeout` to bound a call (default: `2m`)
+    2.  Default request timeout, passed to `HttpRequest.Builder.timeout`; an explicit request `requestTimeout` takes precedence (default: `2m`)
 
 ??? note "Full Configuration"
 
@@ -469,7 +469,7 @@ Basic JDK HttpClient configuration parameters:
         1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
         2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
         3. Maximum time to establish a connection (default: `5s`)
-        4. Maximum time to read a response; shared with the other transports and not applied by the JDK client, use `requestTimeout` to bound a call (default: `2m`)
+        4. Default request timeout, passed to `HttpRequest.Builder.timeout`; an explicit request `requestTimeout` takes precedence (default: `2m`)
         5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
         6. Proxy host (required if the `proxy` section is present, no default)
         7. Proxy port (required if the `proxy` section is present, no default)
@@ -498,13 +498,15 @@ Basic JDK HttpClient configuration parameters:
         1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
         2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
         3. Maximum time to establish a connection (default: `5s`)
-        4. Maximum time to read a response; shared with the other transports and not applied by the JDK client, use `requestTimeout` to bound a call (default: `2m`)
+        4. Default request timeout, passed to `HttpRequest.Builder.timeout`; an explicit request `requestTimeout` takes precedence (default: `2m`)
         5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
         6. Proxy host (required if the `proxy` section is present, no default)
         7. Proxy port (required if the `proxy` section is present, no default)
         8. Proxy user (optional, no default)
         9. Proxy password (optional, no default)
         10. Hosts to exclude from proxying (optional, no default)
+
+For the JDK transport, a positive `readTimeout` sets the default request timeout; zero or a negative value disables that default. This is the JDK `HttpRequest` timeout, not a separate timer for each read from the returned `InputStream`. When constructing `JdkHttpClient` manually, pass the duration as the second constructor argument: the overload taking only `java.net.http.HttpClient` does not set it.
 
 #### Configurer { #configurer-3 }
 
@@ -2610,7 +2612,7 @@ A connection that cannot be established within `connectTimeout` is reported as [
 **Causes:**
 
 - Server doesn't respond within `requestTimeout`
-- Response read timeout exceeded (`readTimeout`; applied by the OkHttp and Apache transports, the JDK transport does not use it)
+- Response read timeout exceeded (`readTimeout`; the JDK transport uses it as the default request timeout when `requestTimeout` is absent)
 - Network delays
 
 **Recommendations:**

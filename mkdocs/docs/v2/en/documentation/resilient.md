@@ -1772,6 +1772,43 @@ Example configuration for all aspects:
           limitRefreshPeriod: "1s"
     ```
 
+### Policy ordering in practice { #policy-ordering }
+
+The following imperative composition makes the outer/inner boundaries explicit:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    // One timeout for all retries; breaker observes each attempt.
+    var result = timeouter.execute(() -> retry.retry(() -> breaker.accept(() -> client.call())));
+
+    // Breaker observes the final result; each attempt has its own timeout.
+    var another = breaker.accept(() -> retry.retry(() -> timeouter.execute(() -> client.call())));
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // One timeout for all retries; breaker observes each attempt.
+    val result = timeouter.execute { retry.retry { breaker.accept { client.call() } } }
+
+    // Breaker observes the final result; each attempt has its own timeout.
+    val another = breaker.accept { retry.retry { timeouter.execute { client.call() } } }
+    ```
+
+
+Inject `Timeouter`, `Retry` and `CircuitBreaker` using the corresponding specification tags shown above. Do not retry `CallNotPermittedException`: use an exception filter when the breaker is inside retry. The default retry filter accepts exceptions unless they implement `NonRetryableException`; it does not classify application errors for you.
+
+### Attempts and time limits { #request-budget }
+
+`attempts` counts **retries after the first call**: `attempts = 2` permits up to three calls. With a `500ms` timeout per call and delays of `100ms` and `200ms`, the maximum is approximately `3 × 500 + 100 + 200 = 1800ms`, plus overhead. An outer timeout bounds the whole sequence; an inner timeout bounds one attempt.
+
+`Timeouter` executes work on a separate virtual thread and calls `cancel(true)` on timeout. Interruption is cooperative: a downstream operation that ignores it may continue. Configure the client’s own timeouts too. The worker does not automatically inherit request `ScopedValue` bindings; open a JDBC transaction inside the timed callback rather than expecting an outer transaction to cross this boundary.
+
+### Avoid multiplied retries { #retry-amplification }
+
+Three services each making at most three calls can produce `3 × 3 × 3 = 27` downstream calls. Choose one retry boundary, use backoff/jitter and [retry budget](#retry-budget), and retry writes only when the operation is idempotent. Driver or HTTP-client retries also count. The default budget is local to one application instance; the [distributed factory](#retry-budget-factory) shares it through Redis. Rate limiting controls calls over time; it is not an in-flight concurrency limit or a database pool size.
+
 ## Exceptions { #exceptions }
 
 All resilience exceptions extend `io.koraframework.resilient.exception.ResilientException` (a `RuntimeException`), which exposes `name()` — the simple name of the specification interface that raised it.
