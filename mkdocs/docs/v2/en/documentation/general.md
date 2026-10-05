@@ -42,6 +42,10 @@ When a single operation needs to do several things in parallel, use `StructuredT
 
 If you need a step-by-step walkthrough before the reference description, see [Creating Your First Kora Application](../guides/getting-started.md) and [Dependency Injection Introduction](../guides/dependency-injection-introduction.md).
 
+### Why synchronous contracts in Kora 2 { #synchronous-contracts }
+
+Virtual threads let blocking JDBC and HTTP calls wait without occupying a platform thread for the whole operation. Kora 2 therefore uses one synchronous application contract instead of maintaining parallel JDBC/R2DBC, blocking/Vert.x and Kotlin `suspend` paths. This keeps service APIs, transactions, stack traces and generated code simpler. Virtual threads do not make CPU work faster or remove connection-pool limits. Async APIs remain useful when an external library requires them; response streaming also works with synchronous controllers through [InputStream bodies](http-server.md#streaming-inputstream).
+
 ## Annotation Processors { #annotation-processor }
 
 Kora builds the application at compile time: processors read annotations, validate the code, and generate source files that are then compiled together with the application code.
@@ -346,6 +350,10 @@ After that, module dependencies can be declared without a version, for example:
 All Kora artifacts live in the `io.koraframework` group.
 The exception is the experimental modules — the declarative `S3` client `s3-client-kora` and the `Camunda` integrations `camunda-engine-bpmn`, `camunda-rest-undertow`, `camunda-zeebe-worker`, together with their processors — they are published in the `io.koraframework.experimental` group.
 
+## Processor build logging { #processor-logging }
+
+Java AP and Kotlin KSP write Kora messages to the console. The `koraLogLevel` option sets their level (default `INFO`), independently of application runtime logging. For Java, pass `-AkoraLogLevel=DEBUG` to the compiler, for example through `tasks.withType(JavaCompile).configureEach { options.compilerArgs += "-AkoraLogLevel=DEBUG" }`; for Kotlin, use `ksp { arg("koraLogLevel", "DEBUG") }`. Choose `WARN` or `ERROR` for less output. Java AP also writes logs under `build/kora/log` when it recognizes the build directory; KSP writes only to the console.
+
 ## Run { #run }
 
 A Kora application is an interface annotated with `@KoraApp` that inherits the modules the application needs.
@@ -500,6 +508,38 @@ The [application plugin](https://docs.gradle.org/current/userguide/application_p
     ```
 
     A configured application example is available in the [Kotlin application template](https://github.com/kora-projects/kora-kotlin-template/blob/master/build.gradle.kts).
+
+### Docker image { #docker-image }
+
+Build an image from the Gradle distribution configured above. The same Dockerfile works for Java and Kotlin: the generated startup script already knows the main class and `applicationDefaultJvmArgs`.
+
+??? example "Dockerfile"
+
+    ```dockerfile
+    FROM eclipse-temurin:25-jdk AS build
+    WORKDIR /workspace
+    COPY . .
+    RUN chmod +x gradlew && ./gradlew --no-daemon distTar \
+        && mkdir /distribution \
+        && tar -xf build/distributions/application.tar -C /distribution
+
+    FROM eclipse-temurin:25-jre
+    WORKDIR /opt/application
+    COPY --from=build --chown=10001:10001 /distribution/application/ ./
+    USER 10001:10001
+    EXPOSE 8080 8085
+    ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
+    ENTRYPOINT ["/opt/application/bin/application"]
+    ```
+
+Keep `.gradle`, `build`, `.git` and IDE files out of the build context with `.dockerignore`. This example assumes a single application project and the fixed `application.tar` name from the previous section. For a multi-project build, use the application subproject’s `distTar` task and archive path.
+
+```shell
+docker build -t kora-app .
+docker run --rm --memory=512m -p 8080:8080 kora-app
+```
+
+`JAVA_OPTS` is read by the Gradle startup script; `MaxRAMPercentage` leaves part of the container memory for native allocations and thread stacks. `EXPOSE` documents ports but does not publish them. Publish `8085` only when operational endpoints need to be reached; locally, `-p 127.0.0.1:8085:8085` allows `curl http://localhost:8085/system/readiness`. Configure probes in your orchestrator. `docker stop` sends a termination signal to the application, whose shutdown hook releases graph components.
 
 ## Terminology { #terminology }
 

@@ -1255,6 +1255,86 @@ the `@Id` method returns that record, and a `@Batch` insert returns a `List` of 
 Without `@Id` a `@Batch` method cannot map arbitrary rows, so its return type is limited
 to `void` / `Unit`, `UpdateCount`, `int[]` / `IntArray`, or `long[]` / `LongArray`.
 
+## Query examples { #query-examples }
+
+These PostgreSQL examples use an `entities(id, name, description)` table and the `Entity` model from this page. Bind values as parameters; keep SQL structure explicit.
+
+### Pagination and sorting { #pagination-sorting }
+
+Use `LIMIT`/`OFFSET` in SQL so the database returns only the requested page. The example uses zero-based pages: `offset = (long) page * size`, with `page >= 0` and `1 <= size <= 100`. Always add a unique tie-breaker such as `id`; without deterministic ordering, pages can repeat or skip rows. Concurrent writes can still shift offset-based pages.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Query("SELECT id, name, description FROM entities ORDER BY name ASC, id ASC LIMIT :limit OFFSET :offset")
+    List<Entity> page(int limit, long offset);
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Query("SELECT id, name, description FROM entities ORDER BY name ASC, id ASC LIMIT :limit OFFSET :offset")
+    fun page(limit: Int, offset: Long): List<Entity>
+    ```
+
+
+For descending order, declare another query with `ORDER BY name DESC, id DESC`. Column names and `ASC`/`DESC` cannot be value parameters: choose a fixed query or an allowlisted SQL fragment, never concatenate arbitrary input.
+
+### Optional filters { #optional-filters }
+
+A nullable filter can use `:name IS NULL OR name = :name`: `null` disables filtering and a non-null value requires equality.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Query("""
+        SELECT id, name, description FROM entities
+        WHERE (:name IS NULL OR name = :name)
+        ORDER BY id LIMIT :limit OFFSET :offset
+        """)
+    List<Entity> find(@org.jspecify.annotations.Nullable String name, int limit, long offset);
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Query("""
+        SELECT id, name, description FROM entities
+        WHERE (:name IS NULL OR name = :name)
+        ORDER BY id LIMIT :limit OFFSET :offset
+        """)
+    fun find(name: String?, limit: Int, offset: Long): List<Entity>
+    ```
+
+
+`find(null, 20, 0)` returns the first page without a name filter; `find("Alice", 20, 0)` filters by name. This is different from `name IS NULL OR name = :name`, which also includes rows whose column is null. For several independent filters, combine parenthesized conditions with `AND`. For large datasets, conditional SQL can produce a better query plan:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var query = JdbcQuery.named()
+        .sql("SELECT id, name, description FROM entities WHERE 1 = 1")
+        .sqlIf(" AND name = :name", name != null)
+        .bindIf("name", name, name != null)
+        .sql(" ORDER BY id LIMIT :limit OFFSET :offset")
+        .bind("limit", limit).bind("offset", offset)
+        .build();
+    var rows = executor.queryList(query, rs -> new Entity(rs.getLong("id"), rs.getString("name"), rs.getString("description")));
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val query = JdbcQuery.named()
+        .sql("SELECT id, name, description FROM entities WHERE 1 = 1")
+        .sqlIf(" AND name = :name", name != null)
+        .bindIf("name", name, name != null)
+        .sql(" ORDER BY id LIMIT :limit OFFSET :offset")
+        .bind("limit", limit).bind("offset", offset)
+        .build()
+    val rows = executor.queryList(query) { rs -> Entity(rs.getLong("id"), rs.getString("name"), rs.getString("description")) }
+    ```
+
 ## Manual Query With Telemetry { #query }
 
 If a query is hard to express as a single static `@Query`, declare a regular method with an implementation
@@ -1461,6 +1541,36 @@ reports `Statement.SUCCESS_NO_INFO`.
     }
     ```
 
+### Connection and executor callbacks { #executor-callbacks }
+
+`withConnection(...)` reuses the scoped connection or borrows one and closes it after the callback; it does not start a transaction. `withContext(...)` additionally exposes `ConnectionContext`. `currentConnection()` and `currentContext()` return `null` outside that scope. `acquireConnection()` always borrows a connection directly; the caller must close it and it is not automatically bound to repository calls. Prefer callbacks for normal application code.
+
+`query(JdbcQuery, callback)` prepares and binds a statement and wraps it in database telemetry. Close any `ResultSet` opened inside the callback. `queryOne`, `queryOptional`, `queryList`, `executeUpdate` and `executeUpdateBatch` provide ready-made execution paths; the update/batch overloads with `JdbcResultSetMapper` map generated keys when the query requests them.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var query = JdbcQuery.template("SELECT count(*) FROM entities");
+    long count = executor.query(query, (JdbcExecutor.SqlFunction<java.sql.PreparedStatement, Long>) statement -> {
+        try (var rows = statement.executeQuery()) {
+            rows.next();
+            return rows.getLong(1);
+        }
+    });
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val query = JdbcQuery.template("SELECT count(*) FROM entities")
+    val count = executor.query(query, JdbcExecutor.SqlFunction<java.sql.PreparedStatement, Long> { statement ->
+        statement.executeQuery().use { rows ->
+            rows.next()
+            rows.getLong(1)
+        }
+    })
+    ```
+
 ## Transactions { #transaction }
 
 `JdbcRepository` exposes the `JdbcExecutor` contract through `executor()`.
@@ -1545,6 +1655,20 @@ and the exception is rethrown.
 
 The connection is bound to the executing scope, so work handed off to an unrelated thread does not join
 the current transaction — it acquires its own connection instead.
+
+### Transaction boundaries and failures { #transaction-semantics }
+
+`inTx(...)` starts a transaction only when the current connection has `autoCommit = true`. A nested call joins the existing transaction: it does not create a savepoint, suspend the outer transaction or commit independently. This resembles `REQUIRED`; `JdbcExecutor` has no propagation selector or `REQUIRES_NEW` overload.
+
+An exception escaping the outer callback causes rollback. Both `SQLException` and unchecked exceptions are covered; `SQLException` is wrapped in `UncheckedSqlException` at the executor boundary. The implementation catches `Exception`, so do not rely on the same rollback path for JVM `Error`. If an inner exception is caught and the outer callback returns normally, Kora does not mark the transaction rollback-only: it attempts commit, although the database may already have rejected the transaction. Let the exception escape when the whole operation must roll back.
+
+Calling another method of the same service does not change callback-based transaction semantics: repository calls made inside `inTx` use the bound connection. No `@Transactional` annotation is required by this API.
+
+#### Read-only and timeout { #transaction-options }
+
+There are no read-only or transaction-timeout arguments on `inTx`. For a read-only hint, configure the connection pool with a `Configurer<HikariConfig>` and `setReadOnly(true)`; enforcement depends on the driver/database. For an individual statement, use `JdbcQuery` options such as `opts(options -> options.queryTimeoutSeconds(2))`. A statement timeout is not a deadline for the whole transaction.
+
+A transaction belongs to one executor/data source. Nesting calls to different executors does not create an atomic cross-database transaction. Work submitted to an unrelated thread does not inherit the bound connection; start `inTx` inside the worker when that worker needs a transaction.
 
 ### Isolation level { #isolation }
 

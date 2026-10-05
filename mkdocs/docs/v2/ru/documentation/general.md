@@ -42,6 +42,10 @@ Kora исполняет код приложения синхронно на [в�
 
 Если нужен пошаговый разбор перед справочным описанием, смотрите [Создание первого приложения на Kora](../guides/getting-started.md) и [Введение во внедрение зависимостей](../guides/dependency-injection-introduction.md).
 
+### Почему в Kora 2 синхронные контракты { #synchronous-contracts }
+
+Виртуальные потоки позволяют блокирующим вызовам JDBC и HTTP ожидать результат, не занимая платформенный поток на всё время операции. Поэтому Kora 2 использует единый синхронный контракт приложения вместо отдельных вариантов API для JDBC и R2DBC, блокирующих вызовов и Vert.x, а также Kotlin `suspend`. Это упрощает API сервисов, работу с транзакциями, стеки вызовов и сгенерированный код. Виртуальные потоки не ускоряют вычисления и не отменяют ограничения пулов соединений. Асинхронные API остаются полезны, если их требует внешняя библиотека; [потоковая передача ответа через InputStream](http-server.md#streaming-inputstream) также работает в синхронном контроллере.
+
 ## Обработчики аннотаций { #annotation-processor }
 
 Kora строит приложение на этапе компиляции: обработчики читают аннотации, проверяют код и генерируют исходные файлы, которые затем компилируются вместе с кодом приложения.
@@ -346,6 +350,10 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
 Все артефакты Kora находятся в группе `io.koraframework`.
 Исключение - экспериментальные модули: декларативный `S3`-клиент `s3-client-kora` и интеграции с `Camunda` `camunda-engine-bpmn`, `camunda-rest-undertow`, `camunda-zeebe-worker` вместе с их обработчиками - они публикуются в группе `io.koraframework.experimental`.
 
+## Сообщения обработчиков при сборке { #processor-logging }
+
+Java AP и Kotlin KSP записывают сообщения Kora в консоль. Уровень задаётся опцией `koraLogLevel` (по умолчанию `INFO`), отдельно от настроек журналирования работающего приложения. Для Java передайте компилятору `-AkoraLogLevel=DEBUG`, например через `tasks.withType(JavaCompile).configureEach { options.compilerArgs += "-AkoraLogLevel=DEBUG" }`; для Kotlin используйте `ksp { arg("koraLogLevel", "DEBUG") }`. Если нужен менее подробный вывод, выберите `WARN` или `ERROR`. Java AP также сохраняет журнал в `build/kora/log`, когда распознаёт каталог сборки; KSP пишет только в консоль.
+
 ## Запуск { #run }
 
 Приложение Kora - это интерфейс с аннотацией `@KoraApp`, который наследует нужные приложению модули.
@@ -500,6 +508,38 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     ```
 
     Пример настроенного приложения можно посмотреть в [шаблоне Kotlin-приложения](https://github.com/kora-projects/kora-kotlin-template/blob/master/build.gradle.kts).
+
+### Образ Docker { #docker-image }
+
+Соберите образ из настроенного выше дистрибутива Gradle. Один Dockerfile подходит для Java и Kotlin: сгенерированный скрипт запуска уже содержит имя главного класса приложения и `applicationDefaultJvmArgs`.
+
+??? example "Dockerfile"
+
+    ```dockerfile
+    FROM eclipse-temurin:25-jdk AS build
+    WORKDIR /workspace
+    COPY . .
+    RUN chmod +x gradlew && ./gradlew --no-daemon distTar \
+        && mkdir /distribution \
+        && tar -xf build/distributions/application.tar -C /distribution
+
+    FROM eclipse-temurin:25-jre
+    WORKDIR /opt/application
+    COPY --from=build --chown=10001:10001 /distribution/application/ ./
+    USER 10001:10001
+    EXPOSE 8080 8085
+    ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
+    ENTRYPOINT ["/opt/application/bin/application"]
+    ```
+
+Исключите `.gradle`, `build`, `.git` и файлы IDE из контекста сборки через `.dockerignore`. Пример рассчитан на один проект приложения и фиксированное имя `application.tar` из предыдущей секции. Для многомодульной сборки укажите задачу `distTar` и путь к архиву подпроекта приложения.
+
+```shell
+docker build -t kora-app .
+docker run --rm --memory=512m -p 8080:8080 kora-app
+```
+
+`JAVA_OPTS` читает скрипт запуска Gradle; `MaxRAMPercentage` оставляет часть памяти контейнера для памяти вне кучи JVM и стеков потоков. `EXPOSE` описывает порты, но не публикует их. Публикуйте `8085`, только если нужен доступ к служебным HTTP-ресурсам; локально `-p 127.0.0.1:8085:8085` позволяет выполнить `curl http://localhost:8085/system/readiness`. Настройте проверки готовности в оркестраторе. `docker stop` посылает приложению сигнал завершения, после которого обработчик завершения JVM освобождает компоненты графа.
 
 ## Терминология { #terminology }
 

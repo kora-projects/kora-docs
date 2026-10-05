@@ -94,3 +94,7 @@ The finished applications that the guides themselves build live next to the exam
 === ":simple-kotlin: `Kotlin`"
 
     You can create a new Kotlin service with the [Kora Kotlin template](https://github.com/kora-projects/kora-kotlin-template).
+
+## Integration Authoring { #integration-authoring }
+
+Learn integration authoring through three focused examples: [a Neo4j module with lifecycle and telemetry](integration-neo4j.md), [a DTO builder generated with Java AP and Kotlin KSP](integration-processors.md), and [a custom Kora aspect](integration-aspect.md). They explain runtime wiring, source generation and method interception separately.

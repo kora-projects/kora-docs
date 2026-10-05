@@ -351,3 +351,48 @@ Gradle-плагин — это отдельная установка `Flyway`, �
 Эти версии независимы, а сборочная зависимость живет на classpath блока `buildscript`, тогда как рантаймовая — в `implementation`.
 
 В тестах модуль миграций остается самым простым вариантом: тестовая база живет только на время одного прогона, экземпляр приложения один, а схема готовится ровно теми же миграциями, что и в промышленном окружении.
+
+
+## Миграции для подключения с тегом { #tagged-migrations }
+
+Для нескольких баз объявите `FlywayFactoryModule` или `LiquibaseFactoryModule` через `@FactoryModule` с тем же тегом, что и `JdbcDatabaseFactoryModule`. Тег связывает перехватчик миграций с конкретным `JdbcDataSource`; путь в конструкторе задаёт независимую секцию настроек миграций.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface OrdersDatabaseModule {
+        interface OrdersDb { }
+
+        @FactoryModule
+        @Tag(OrdersDb.class)
+        default JdbcDatabaseFactoryModule ordersDb() {
+            return new JdbcDatabaseFactoryModule("db.orders");
+        }
+
+        @FactoryModule
+        @Tag(OrdersDb.class)
+        default FlywayFactoryModule ordersMigrations() {
+            return new FlywayFactoryModule("flyway.orders");
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface OrdersDatabaseModule {
+        interface OrdersDb
+
+        @FactoryModule
+        @Tag(OrdersDb::class)
+        fun ordersDb(): JdbcDatabaseFactoryModule = JdbcDatabaseFactoryModule("db.orders")
+
+        @FactoryModule
+        @Tag(OrdersDb::class)
+        fun ordersMigrations(): FlywayFactoryModule = FlywayFactoryModule("flyway.orders")
+    }
+    ```
+
+Разместите `OrdersDatabaseModule` в том же модуле компиляции, что и `@KoraApp`: аннотация `@Module` подключает его автоматически. В интерфейсе приложения подключите модуль конфигурации и `DatabaseModule`, который предоставляет общую телеметрию базы данных. В примере подключение настраивается в `db.orders`, миграции — в `flyway.orders`. Для Liquibase замените `FlywayFactoryModule("flyway.orders")` на `LiquibaseFactoryModule("liquibase.orders")` и подключите `database-liquibase` вместо `database-flyway`. Настройки и поведение при инициализации остаются теми же, что у стандартных модулей. Для другой базы объявите отдельную пару фабричных модулей с другим тегом; не подключайте Flyway и Liquibase к одной базе одновременно без явной необходимости.
