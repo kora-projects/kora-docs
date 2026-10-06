@@ -2340,9 +2340,10 @@ Values of sensitive headers, query parameters and body fields are masked, see [M
 
 Metrics require `httpServer.telemetry.metrics.enabled` **and** a `MeterRegistry` supplied by a [metrics](metrics.md) module.
 The server reports the `http.server.request.duration` timer, with the buckets from `httpServer.telemetry.metrics.slo` and the tags
-`server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address` and `error.type`,
+`server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme` and `error.type`,
 and the `http.server.active_requests` gauge with the same tags except `http.response.status_code` and `error.type`;
 both carry everything declared in `httpServer.telemetry.metrics.tags`.
+The `Host` header value (`server.address`) is not a metric tag: the client sets it and its values are unbounded. It stays a span attribute, and it can be added to metrics through a [metric factory](metrics.md#http-server).
 Metrics and tracing are described in the [Metrics Reference](metrics.md#http-server) section.
 
 ### Logging { #telemetry-logging }

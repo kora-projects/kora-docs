@@ -2340,9 +2340,10 @@ HTTP-сервер использует контракт телеметрии д�
 
 Для метрик нужны `httpServer.telemetry.metrics.enabled` **и** `MeterRegistry` из модуля [метрик](metrics.md).
 Сервер пишет таймер `http.server.request.duration` с бакетами из `httpServer.telemetry.metrics.slo` и тегами
-`server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address` и `error.type`,
+`server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme` и `error.type`,
 а также gauge `http.server.active_requests` с теми же тегами, кроме `http.response.status_code` и `error.type`;
 к обоим добавляется все, что объявлено в `httpServer.telemetry.metrics.tags`.
+Значения заголовка `Host` (`server.address`) в тегах метрик нет: его задает клиент и число значений не ограничено. Он остается атрибутом span, а добавить его в метрики можно через [фабрику метрик](metrics.md#http-server).
 Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#http-server).
 
 ### Логирование { #telemetry-logging }

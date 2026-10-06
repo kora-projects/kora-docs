@@ -550,7 +550,7 @@ Kora использует такой же подход для своих вну�
 Все метрики Kora следуют [семантическим соглашениям OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/) для имен и тегов,
 и каждый модуль использует ровно одну схему именования — настраиваемой версии спецификации больше нет.
 Ключи тегов берутся из констант атрибутов `io.opentelemetry.semconv`, поэтому, например, метрика `HTTP`-сервера несет
-`http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address` и `error.type`.
+`http.request.method`, `http.response.status_code`, `http.route`, `url.scheme` и `error.type`.
 
 Имена в экспозиции `Prometheus` выводятся из имени `Micrometer` по соглашению об именовании `Prometheus`:
 
@@ -578,11 +578,12 @@ Kora использует такой же подход для своих вну�
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |--------|------------|------|-------------|------|
-| `http.server.request.duration` | `http_server_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность обработки запроса `HTTP`-сервером | `server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address`, `error.type` |
-| `http.server.active_requests` | `http_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Количество активных `HTTP`-запросов | `server.name`, `server.port`, `http.request.method`, `http.route`, `url.scheme`, `server.address` |
+| `http.server.request.duration` | `http_server_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность обработки запроса `HTTP`-сервером | `server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `error.type` |
+| `http.server.active_requests` | `http_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Количество активных `HTTP`-запросов | `server.name`, `server.port`, `http.request.method`, `http.route`, `url.scheme` |
 
 Тег `server.name` отличает публичный сервер (`kora-undertow`) от системного (`kora-undertow-system`); для запроса, не совпавшего ни с одним маршрутом, `http.route` равен `UNKNOWN_ROUTE`.
 `http.response.status_code` — код статуса ответа, поэтому частоту и задержку запросов можно разбить по статусу на `http.server.request.duration`; у `http.server.active_requests` тега статуса нет, потому что счетчик увеличивается до появления ответа.
+Значения заголовка `Host` в тегах метрик нет: его задает клиент, и число значений не ограничено, поэтому каждое новое значение создавало бы новую серию. Адрес остается атрибутом `server.address` у span (см. [Трассировка](tracing.md)). Если он нужен в метриках, переопределите в собственной [фабрике метрик](#metrics-factory) `createMetricServerDurationKey` и `createMetricActiveRequestsGaugeKey` и верните ключ через `withExtraTags(...)` (тег, добавленный только в билдере, не входит в ключ кэша метрик); ограничить набор значений нужно самостоятельно. Нестандартный HTTP-метод попадает в `http.request.method` как `_OTHER`.
 
 Подробнее смотрите в документации модуля [HTTP-сервер](http-server.md).
 

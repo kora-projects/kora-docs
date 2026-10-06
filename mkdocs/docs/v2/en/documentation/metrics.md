@@ -550,7 +550,7 @@ Tags shared by every metric of the application belong in [`metrics.tags`](#appli
 All Kora metrics follow the [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) for names and tags,
 and each module uses exactly one naming scheme — there is no configurable specification version.
 Tag keys come from the `io.opentelemetry.semconv` attribute constants, so for example an `HTTP` server metric carries
-`http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address` and `error.type`.
+`http.request.method`, `http.response.status_code`, `http.route`, `url.scheme` and `error.type`.
 
 The `Prometheus` exposition names are derived from the `Micrometer` name by the `Prometheus` naming convention:
 
@@ -578,11 +578,12 @@ For exception tags, `error.type` uses the binary class name when a local or anon
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `http.server.request.duration` | `http_server_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `HTTP` server request processing duration | `server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address`, `error.type` |
-| `http.server.active_requests` | `http_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of active `HTTP` requests | `server.name`, `server.port`, `http.request.method`, `http.route`, `url.scheme`, `server.address` |
+| `http.server.request.duration` | `http_server_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `HTTP` server request processing duration | `server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `error.type` |
+| `http.server.active_requests` | `http_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of active `HTTP` requests | `server.name`, `server.port`, `http.request.method`, `http.route`, `url.scheme` |
 
 `server.name` distinguishes the public server (`kora-undertow`) from the system one (`kora-undertow-system`); a request that matched no route reports `http.route` as `UNKNOWN_ROUTE`.
 `http.response.status_code` is the response status code, so the request rate and latency can be split by status on `http.server.request.duration`; `http.server.active_requests` has no status tag because it is counted before the response exists.
+The `Host` header value is not a metric tag: the client sets it and its values are unbounded, so every new value would create a new series. The address stays on the span as the `server.address` attribute (see [Tracing](tracing.md)). If you need it in metrics, override `createMetricServerDurationKey` and `createMetricActiveRequestsGaugeKey` in your own [metric factory](#metrics-factory) and return the key with `withExtraTags(...)` (a tag added only in the builder is not part of the meter cache key); bounding the set of values is up to you. A non-standard HTTP method is reported in `http.request.method` as `_OTHER`.
 
 See [HTTP server](http-server.md) module documentation for more details.
 
