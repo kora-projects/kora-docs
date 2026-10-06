@@ -356,6 +356,7 @@ Attribute names follow the [OpenTelemetry Semantic Conventions](https://opentele
 Spans produced by a *named* component also carry attributes that say which declaration they came from: `system.config` (the configuration path of the component), `system.name.simple` and
 `system.name.canonical` (the simple and canonical class name of the declaration).
 They are set by the HTTP client, the `Kafka` consumer and producer, the SOAP and S3 clients, caches and scheduled jobs.
+For the HTTP client these names identify the method, not the class: `system.name.canonical` is `<client interface>.<method>` (`com.example.PetClient.getPet`) and `system.name.simple` is the method name (`getPet`), the same as in [metrics](metrics.md#http-client).
 
 Database spans use `db.connection`, `db.statement` and `db.result` event names. Kafka poll spans use the `messaging.poll.result` event.
 
@@ -367,7 +368,9 @@ A few more details worth knowing:
   *linked* to the `poll` span.
 - The `Caffeine` cache and the [resilience](resilient.md) aspects report metrics and logs but do not create spans.
 - On failure Kora sets the span status to `ERROR` and records the exception via `Span#recordException`. Most subsystems also set `OK` on success; the HTTP server and HTTP client leave a successful
-  span `UNSET` and only mark `ERROR` for a `4xx`/`5xx` status or a connection failure.
+  span `UNSET`. The HTTP client marks `ERROR` for a `4xx`/`5xx` status, a connection failure or any other exception (a timeout, for example).
+  The HTTP server marks `ERROR` only for a `5xx` status, a connection failure or an exception thrown by the handler; a span whose handler returned a `4xx`
+  response stays `UNSET`, as the [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status) require.
 
 ## Module tracing configuration { #module-config }
 
