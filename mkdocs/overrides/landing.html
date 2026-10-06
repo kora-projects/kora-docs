@@ -1437,6 +1437,7 @@
         }
 
         .benchmark-stat {
+            position: relative;
             min-height: 98px;
             padding: 20px 22px;
         }
@@ -1458,6 +1459,54 @@
             margin-top: 8px;
             font-size: 24px;
             line-height: 1.1;
+        }
+
+        .benchmark-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .benchmark-title strong {
+            margin-top: 0;
+        }
+
+        .benchmark-help {
+            display: inline-flex;
+        }
+
+        .benchmark-help .benchmark-versions {
+            z-index: 5;
+            top: calc(100% - 4px);
+            right: auto;
+            bottom: auto;
+            left: 20px;
+            width: min(360px, calc(100vw - 92px));
+        }
+
+        .benchmark-help .benchmark-versions::after {
+            top: -11px;
+            bottom: auto;
+        }
+
+        .benchmark-versions h4 {
+            margin: 0 0 12px;
+            font-size: 14px;
+        }
+
+        .benchmark-versions dl {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 7px 16px;
+            margin: 0;
+        }
+
+        .benchmark-versions dd {
+            margin: 0;
+            color: var(--soft);
+            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+            font-size: 12px;
         }
 
         .benchmark-chart {
@@ -2318,6 +2367,7 @@
 
         .startup-label {
             position: absolute;
+            z-index: 3;
             bottom: 0;
             min-height: 42px;
             width: 100%;
@@ -2326,6 +2376,62 @@
             font-weight: 900;
             line-height: 1.18;
             text-align: center;
+        }
+
+        .startup-help-button {
+            display: inline-grid;
+            place-items: center;
+            width: 24px;
+            height: 24px;
+            margin-left: 4px;
+            padding: 0;
+            border: 1px solid var(--line-strong);
+            border-radius: 50%;
+            background: var(--panel);
+            color: var(--soft);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+
+        .startup-help-button:hover,
+        .startup-help-button[aria-expanded="true"] {
+            border-color: var(--brand);
+            color: var(--brand-strong);
+        }
+
+        .startup-help-button:focus-visible {
+            outline: 2px solid var(--brand);
+            outline-offset: 3px;
+        }
+
+        .startup-help-tooltip {
+            position: absolute;
+            right: 0;
+            bottom: calc(100% + 10px);
+            width: min(300px, calc(100vw - 80px));
+            padding: 14px 16px;
+            border: 1px solid var(--line-strong);
+            border-radius: 10px;
+            background: var(--panel-strong);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        .startup-help-tooltip::after {
+            position: absolute;
+            right: 0;
+            bottom: -11px;
+            left: 0;
+            height: 11px;
+            content: "";
         }
 
         .startup-bar:not(.is-kora) .startup-column {
@@ -2358,6 +2464,7 @@
         /* startup / build chart switcher */
         .startup-toggle {
             display: flex;
+            flex-wrap: wrap;
             gap: 6px;
             padding: 16px 18px 0;
         }
@@ -3575,11 +3682,11 @@
                         </div>
                         <div class="metric">
                             <strong>95%+</strong>
-                            <span>of functionality covered by docs, guides, and examples</span>
+                            <span>of functionality covered by docs, AI skills, and examples</span>
                         </div>
                         <div class="metric">
-                            <strong>OTel</strong>
-                            <span>metrics and tracing across modules</span>
+                            <strong>0</strong>
+                            <span>hidden magic — development humans and AI agents can understand</span>
                         </div>
                     </div>
                 </div>
@@ -3652,7 +3759,7 @@
                 <article class="feature">
                     <span class="feature-index">04</span>
                     <h3>Optimized by Default.<br>Production-Ready.</h3>
-                    <p>Framework optimizations are already built in, so developers can focus on business code without spending time tuning internals or keeping performance hacks in their heads. Low CPU and memory overhead, fast readiness, resilience, graceful shutdown, metrics, and tracing support efficient, stable, predictable, observable production services.</p>
+                    <p>Framework optimizations are already built in, so developers can focus on business code without spending time tuning internals or keeping performance hacks in their heads. Low CPU and memory overhead, fast readiness, resilience, graceful shutdown, and OTel metrics and tracing across modules support efficient, stable, predictable, observable production services.</p>
                     <div class="diagram" aria-hidden="true">
                         <div class="diagram-row"><span class="diagram-label">Start</span><span class="diagram-value">fast readiness, low overhead</span></div>
                         <div class="diagram-row"><span class="diagram-label">Monitor</span><span class="diagram-value">metrics, traces, health probes</span></div>
@@ -3663,14 +3770,35 @@
 
         <section class="section" id="performance">
             <div class="section-header">
-                <h2>More throughput per core, fewer machines to pay for.</h2>
+                <h2>More efficiency per core, fewer machines to pay for.</h2>
                 <p class="section-lead">A TechEmpower Single query (external): responses per second for one database query per request. Higher is better.</p>
             </div>
             <div class="benchmark-panel" aria-label="TechEmpower query benchmark comparison">
                 <div class="benchmark-topline">
                     <div class="benchmark-stat">
                         <span>Snapshot</span>
-                        <strong>Single query</strong>
+                        <div class="benchmark-title">
+                            <strong>Single query</strong>
+                            <div class="benchmark-help">
+                                <button type="button" class="startup-help-button" aria-label="Show benchmark framework versions" aria-expanded="false" aria-describedby="benchmark-framework-versions">?</button>
+                                <div class="startup-help-tooltip benchmark-versions" id="benchmark-framework-versions" role="tooltip" hidden>
+                                    <h4>Framework versions</h4>
+                                    <dl>
+                                        <dt>Kora 2</dt><dd>2.0.0.RC2</dd>
+                                        <dt>Kora 1</dt><dd>1.2.22</dd>
+                                        <dt>Quarkus</dt><dd>3.40.1</dd>
+                                        <dt>Micronaut</dt><dd>5.2.1</dd>
+                                        <dt>Spring Boot</dt><dd>4.1.1</dd>
+                                        <dt>Helidon</dt><dd>4.5.5</dd>
+                                        <dt>Vert.x</dt><dd>5.2.0</dd>
+                                        <dt>Vert.x (Kora 1)</dt><dd>4.3.8</dd>
+                                        <dt>Ktor</dt><dd>3.6.0</dd>
+                                        <dt>jOOQ</dt><dd>3.21.9</dd>
+                                        <dt>ntex (tokio)</dt><dd>3.12.3</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="benchmark-stat">
                         <span>Metric</span>
@@ -3678,75 +3806,75 @@
                     </div>
                 </div>
                 <div class="benchmark-chart">
-                    <div class="benchmark-row" style="--score: 100; --row: 0">
-                        <span class="benchmark-name">ntex tokio (Rust)</span>
-                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">197,868</span>
-                    </div>
-                    <div class="benchmark-row is-kora" style="--score: 91.9; --row: 1">
+                    <div class="benchmark-row is-kora" style="--score: 100.0; --row: 0">
                         <span class="benchmark-name">Kora JDBC Repository</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">181,904</span>
+                        <span class="benchmark-value">134,312</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 91.3; --row: 2">
+                    <div class="benchmark-row" style="--score: 98.4; --row: 1">
                         <span class="benchmark-name">Quarkus JPA Repository</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">180,624</span>
+                        <span class="benchmark-value">132,217</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 84.3; --row: 3">
-                        <span class="benchmark-name">Quarkus jOOQ</span>
+                    <div class="benchmark-row" style="--score: 97.7; --row: 2">
+                        <span class="benchmark-name">ntex tokio (Rust)</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">166,896</span>
+                        <span class="benchmark-value">131,191</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 84.0; --row: 4">
+                    <div class="benchmark-row" style="--score: 94.1; --row: 3">
                         <span class="benchmark-name">Micronaut Data JDBC</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">166,221</span>
+                        <span class="benchmark-value">126,327</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 65.9; --row: 5">
-                        <span class="benchmark-name">Helidon MP JDBC Client</span>
+                    <div class="benchmark-row" style="--score: 94.0; --row: 4">
+                        <span class="benchmark-name">Quarkus jOOQ</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">130,367</span>
+                        <span class="benchmark-value">126,234</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 64.4; --row: 6">
+                    <div class="benchmark-row" style="--score: 89.8; --row: 5">
                         <span class="benchmark-name">Spring JDBC Template</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">127,355</span>
+                        <span class="benchmark-value">120,593</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 50.3; --row: 7">
-                        <span class="benchmark-name">Micronaut Data JPA Reactive</span>
+                    <div class="benchmark-row" style="--score: 76.4; --row: 6">
+                        <span class="benchmark-name">Helidon MP JDBC Client</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">99,436</span>
+                        <span class="benchmark-value">102,580</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 49.7; --row: 8">
+                    <div class="benchmark-row" style="--score: 67.2; --row: 7">
                         <span class="benchmark-name">Ktor CIO JDBC Driver</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">98,409</span>
+                        <span class="benchmark-value">90,310</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 42.3; --row: 9">
-                        <span class="benchmark-name">Spring Data JDBC</span>
-                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">83,793</span>
-                    </div>
-                    <div class="benchmark-row" style="--score: 42.1; --row: 10">
-                        <span class="benchmark-name">Spring Data JPA</span>
-                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">83,343</span>
-                    </div>
-                    <div class="benchmark-row" style="--score: 30.7; --row: 11">
+                    <div class="benchmark-row" style="--score: 47.5; --row: 8">
                         <span class="benchmark-name">Spring Data R2DBC Reactive</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">60,745</span>
+                        <span class="benchmark-value">63,798</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 17.0; --row: 12">
+                    <div class="benchmark-row" style="--score: 38.6; --row: 9">
+                        <span class="benchmark-name">Spring Data JDBC</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">51,859</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 38.4; --row: 10">
+                        <span class="benchmark-name">Spring Data JPA</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">51,616</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 34.8; --row: 11">
+                        <span class="benchmark-name">Micronaut Data JPA Reactive</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">46,800</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 13.9; --row: 12">
                         <span class="benchmark-name">Micronaut Data JPA</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">33,544</span>
+                        <span class="benchmark-value">18,671</span>
                     </div>
                 </div>
                 <div class="benchmark-note">
-                    <span>Values use the "Single query" interval from the linked external results. This is a local benchmark with a local environment and no network latency to the database, so all event-loop reactive systems running on EventLoop threads get a performance boost from it.</span>
-                    <a href="https://www.techempower.com/benchmarks/#section=test&resultsurl=https%3A%2F%2Fraw.githubusercontent.com%2FGoodforGod%2FFrameworkBenchmarks%2Frefs%2Fheads%2Ffeature%2Fkora-and-others%2Fdeployment%2Fresults.json&test=db">Open TechEmpower snapshot</a>
+                    <span>Values use the "Single query" interval from the linked external results. PostgreSQL runs on a separate server with 16 CPU cores and 24 GB RAM. The application and load generator run separately on a second server with 24 CPUs and 64 GB RAM, connected over the local network. Network latency between the servers is within 1 ms, approximating communication inside a data center.</span>
+                    <a href="https://www.techempower.com/benchmarks/#section=test&amp;resultsurl=https://raw.githubusercontent.com/GoodforGod/FrameworkBenchmarks/refs/heads/master/results.json&amp;test=db">Open TechEmpower</a>
                 </div>
             </div>
             <details class="perf-why">
@@ -3864,7 +3992,7 @@
                     <div>
                         <small>Learn by example</small>
                         <h2>Docs without the bloat.</h2>
-                        <p>95%+ of Kora's functionality is covered by documentation&mdash;step-by-step guides, module references, and runnable examples. No need to piece together answers across dozens of tabs and scattered Stack Overflow discussions. The official AI skill <a href="https://github.com/kora-projects/kora-skills">kora-skills</a> makes working with Kora even easier for AI agents.</p>
+                        <p>95%+ of Kora's functionality is covered by documentation&mdash;step-by-step guides, module references, and <a href="https://github.com/kora-projects/kora-examples">runnable examples</a>. No need to guess which version an AI answer refers to or piece together answers across dozens of tabs and scattered Stack Overflow discussions. The official AI skill <a href="https://github.com/kora-projects/kora-skills">kora-skills</a> makes working with Kora even easier for AI agents.</p>
                         <div class="hero-note docs-stats">
                             <div class="metric">
                                 <strong>95%+</strong>
@@ -3945,7 +4073,7 @@
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="ops">
                     <small>Ops</small>
                     <h3>Observability by design</h3>
-                    <p>Metrics, tracing, structured logging, context propagation, health probes, and graceful shutdown integrated from the start.</p>
+                    <p>OTel metrics and tracing across modules, structured logging, context propagation, health probes, and graceful shutdown integrated from the start.</p>
                 </article>
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="extend">
                     <small>Modules</small>
@@ -4066,11 +4194,12 @@
                 <h2>Fastest to boot,<br>fastest to serve.</h2>
                 <p class="section-lead">Fast readiness helps horizontal scaling absorb peak load faster and thin framework internals avoids heavy startup SLA spikes during rolling deployments. Lower is better.</p>
             </div>
-            <div class="startup-panel" aria-label="Kora startup and build time comparison">
+            <div class="startup-panel" aria-label="Kora startup, memory, and build time comparison">
                 <div class="startup-toggle" role="tablist" aria-label="Choose benchmark">
                     <button type="button" class="startup-tab is-active" data-chart="boot" aria-selected="true">Startup &amp; readiness</button>
-                    <button type="button" class="startup-tab" data-chart="build" aria-selected="false">Clean build</button>
+                    <button type="button" class="startup-tab" data-chart="memory" aria-selected="false">Memory at readiness</button>
                     <button type="button" class="startup-tab" data-chart="build-cached" aria-selected="false">Cached build</button>
+                    <button type="button" class="startup-tab" data-chart="build" aria-selected="false">Clean build</button>
                 </div>
 
                 <div class="startup-view" data-chart="boot">
@@ -4084,7 +4213,10 @@
                         <div class="startup-bar" style="--startup-score: 70.4; --startup-duration: 21130ms; --startup-row: 1; --startup-top: #6f91cf; --startup-bottom: #395c9a; --startup-glow: rgba(114, 167, 255, 0.14)">
                             <span class="startup-value-wrap"><span class="startup-value" data-target="21.13" data-duration="21130">0.00s</span></span>
                             <span class="startup-column"></span>
-                            <span class="startup-label">Spring Heavy Optimized</span>
+                            <span class="startup-label">Spring Heavy Optimized<span class="startup-help">
+                                <button type="button" class="startup-help-button" aria-label="About Spring Heavy Optimized" aria-expanded="false" aria-describedby="spring-optimized-boot">?</button>
+                                <span class="startup-help-tooltip" id="spring-optimized-boot" role="tooltip" hidden>Spring Boot applications with all possible runtime and compile-time optimizations applied, including the Spring AOT plugin.</span>
+                            </span></span>
                         </div>
                         <div class="startup-bar" style="--startup-score: 88.4; --startup-duration: 26530ms; --startup-row: 2; --startup-top: #95bd63; --startup-bottom: #5b813f; --startup-glow: rgba(149, 230, 168, 0.14)">
                             <span class="startup-value-wrap"><span class="startup-value" data-target="26.53" data-duration="26530">0.00s</span></span>
@@ -4095,6 +4227,34 @@
                     <div class="startup-caption">
                         <span>10x PetClinic services with full production integrations in a Docker container, 1 CPU and 1 GB memory, startup and readiness.</span>
                         <span>Average across 5 runs on MacBook Pro 2019 Intel i7-9750H<span class="startup-caption-break">(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).</span></span>
+                    </div>
+                </div>
+
+                <div class="startup-view" data-chart="memory" hidden>
+                    <h3 class="startup-view-title">RSS at readiness, MB (median)</h3>
+                    <div class="startup-chart" data-unit="MB" data-precision="0">
+                        <div class="startup-bar is-kora" style="--startup-score: 32.4; --startup-duration: 1200ms; --startup-row: 0; --startup-top: #ffdf5d; --startup-bottom: #8f7a25; --startup-glow: rgba(255, 176, 46, 0.3)">
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="162" data-duration="1200">0 MB</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Kora</span>
+                        </div>
+                        <div class="startup-bar" style="--startup-score: 68.6; --startup-duration: 1200ms; --startup-row: 1; --startup-top: #6f91cf; --startup-bottom: #395c9a; --startup-glow: rgba(114, 167, 255, 0.14)">
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="343" data-duration="1200">0 MB</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Spring Heavy Optimized<span class="startup-help">
+                                <button type="button" class="startup-help-button" aria-label="About Spring Heavy Optimized" aria-expanded="false" aria-describedby="spring-optimized-memory">?</button>
+                                <span class="startup-help-tooltip" id="spring-optimized-memory" role="tooltip" hidden>Spring Boot applications with all possible runtime and compile-time optimizations applied, including the Spring AOT plugin.</span>
+                            </span></span>
+                        </div>
+                        <div class="startup-bar" style="--startup-score: 92.6; --startup-duration: 1200ms; --startup-row: 2; --startup-top: #95bd63; --startup-bottom: #5b813f; --startup-glow: rgba(149, 230, 168, 0.14)">
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="463" data-duration="1200">0 MB</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Spring Stock</span>
+                        </div>
+                    </div>
+                    <div class="startup-caption">
+                        <span>10x PetClinic services on JDK 25 with compact object headers enabled. Median resident set size (RSS) at readiness across 10 runs. Lower is better.</span>
+                        <span>Kora: 2.0.0-ap-ksp-combined.</span>
                     </div>
                 </div>
 
@@ -4114,7 +4274,10 @@
                         <div class="startup-bar" style="--startup-score: 88.0; --startup-duration: 18690ms; --startup-row: 2; --startup-top: #6f91cf; --startup-bottom: #395c9a; --startup-glow: rgba(114, 167, 255, 0.14)">
                             <span class="startup-value-wrap"><span class="startup-value" data-target="18.69" data-duration="18690">0.00s</span></span>
                             <span class="startup-column"></span>
-                            <span class="startup-label">Spring Heavy Optimized</span>
+                            <span class="startup-label">Spring Heavy Optimized<span class="startup-help">
+                                <button type="button" class="startup-help-button" aria-label="About Spring Heavy Optimized" aria-expanded="false" aria-describedby="spring-optimized-build">?</button>
+                                <span class="startup-help-tooltip" id="spring-optimized-build" role="tooltip" hidden>Spring Boot applications with all possible runtime and compile-time optimizations applied, including the Spring AOT plugin.</span>
+                            </span></span>
                         </div>
                     </div>
                     <div class="startup-caption">
@@ -4139,7 +4302,10 @@
                         <div class="startup-bar" style="--startup-score: 88.0; --startup-duration: 2840ms; --startup-row: 2; --startup-top: #6f91cf; --startup-bottom: #395c9a; --startup-glow: rgba(114, 167, 255, 0.14)">
                             <span class="startup-value-wrap"><span class="startup-value" data-target="2.84" data-duration="2840">0.00s</span></span>
                             <span class="startup-column"></span>
-                            <span class="startup-label">Spring Heavy Optimized</span>
+                            <span class="startup-label">Spring Heavy Optimized<span class="startup-help">
+                                <button type="button" class="startup-help-button" aria-label="About Spring Heavy Optimized" aria-expanded="false" aria-describedby="spring-optimized-cached">?</button>
+                                <span class="startup-help-tooltip" id="spring-optimized-cached" role="tooltip" hidden>Spring Boot applications with all possible runtime and compile-time optimizations applied, including the Spring AOT plugin.</span>
+                            </span></span>
                         </div>
                     </div>
                     <div class="startup-caption">
@@ -4323,6 +4489,7 @@
             "Principles": "Принципы",
             "Modules": "Модули",
             "Guides": "Руководства",
+            "Skill": "Нейро-Навык",
             "Philosophy": "Философия",
             "Kora just works.": "Kora просто работает.",
             "STEP principle": "Принцип STEP",
@@ -4365,8 +4532,8 @@
             "Get started": "Начать",
             "View on GitHub": "Смотреть на GitHub",
             "runtime reflections": "рефлексии во время выполнения",
-            "of functionality covered by docs, guides, and examples": "функциональности покрыто документацией, Руководствами и примерами",
-            "metrics and tracing across modules": "метрики и трассировка во всех модулях",
+            "of functionality covered by docs, AI skills, and examples": "функциональности покрыто документацией, нейро-навыками и примерами",
+            "hidden magic — development humans and AI agents can understand": "скрытой магии — разработка понятная человеку и нейро-агенту",
             "High-level API": "Высокоуровневый API",
             "Familiar top-level abstractions": "Знакомые верхнеуровневые абстракции",
             "Generated sources": "Сгенерированные исходники",
@@ -4396,19 +4563,20 @@
             "compiler feedback, fast tests": "диагностика компилятора, быстрые тесты",
             "Optimized by Default.": "Оптимизировано.",
             "Production-Ready.": "Готово к эксплуатации.",
-            "Framework optimizations are already built in, so developers can focus on business code without spending time tuning internals or keeping performance hacks in their heads. Low CPU and memory overhead, fast readiness, resilience, graceful shutdown, metrics, and tracing support efficient, stable, predictable, observable production services.": "Оптимизации уже сделаны: разработчикам не нужно тратить время на тюнинг фреймворка и держать в голове хаки производительности. Низкое потребление CPU и памяти, быстрый запуск, отказоустойчивость, корректное завершение, метрики и трассировка поддерживают стабильную, предсказуемую и наблюдаемую работу сервисов.",
+            "Framework optimizations are already built in, so developers can focus on business code without spending time tuning internals or keeping performance hacks in their heads. Low CPU and memory overhead, fast readiness, resilience, graceful shutdown, and OTel metrics and tracing across modules support efficient, stable, predictable, observable production services.": "Оптимизации уже сделаны: разработчикам не нужно тратить время на тюнинг фреймворка и держать в голове хаки производительности. Низкое потребление CPU и памяти, быстрый запуск, отказоустойчивость, корректное завершение, а также метрики и трассировка OTel во всех модулях поддерживают стабильную, предсказуемую и наблюдаемую работу сервисов.",
             "Start": "Запуск",
             "fast readiness, low overhead": "готовность, скорость, эффективность",
             "Monitor": "Мониторинг",
             "metrics, traces, health probes": "метрики, трассировка, завершение",
-            "More throughput per core, fewer machines to pay for.": "Больше производительности на ядро — меньше расходов, больше стабильности.",
+            "More efficiency per core, fewer machines to pay for.": "Больше эффективности на ядро — меньше расходов, больше стабильности.",
             "A TechEmpower Single query (external): responses per second for one database query per request. Higher is better.": "TechEmpower Single query (external): число ответов в секунду при одном запросе к базе данных на HTTP-запрос. Чем больше, тем лучше.",
             "Snapshot": "Срез",
+            "Framework versions": "Версии фреймворков",
             "Single query": "Single query",
             "Metric": "Метрика",
             "Responses / sec": "Ответов / сек",
-            "Values use the \"Single query\" interval from the linked external results. This is a local benchmark with a local environment and no network latency to the database, so all event-loop reactive systems running on EventLoop threads get a performance boost from it.": "Значения взяты из интервала \"Single query\" во внешнем наборе результатов по ссылке. Это локальный бенчмарк с локальным окружением и без сетевой задержки до базы данных, поэтому все реактивные системы на event-loop, работающие в потоках EventLoop, получают за счёт этого прирост производительности.",
-            "Open TechEmpower snapshot": "Открыть срез TechEmpower",
+            "Values use the \"Single query\" interval from the linked external results. PostgreSQL runs on a separate server with 16 CPU cores and 24 GB RAM. The application and load generator run separately on a second server with 24 CPUs and 64 GB RAM, connected over the local network. Network latency between the servers is within 1 ms, approximating communication inside a data center.": "Значения взяты из интервала \"Single query\" во внешнем наборе результатов по ссылке. PostgreSQL размещён на отдельном сервере с 16 ядрами CPU и 24 GB оперативной памяти. Приложение и генератор нагрузки работают отдельно друг от друга на втором сервере с 24 CPU и 64 GB оперативной памяти, связанном с сервером БД по локальной сети. Задержка между серверами — в пределах 1 мс, что приближает условия бенчмарка к взаимодействию внутри дата-центра.",
+            "Open TechEmpower": "Открыть TechEmpower",
             "Why efficiency matters even when you don't need the throughput": "Почему эффективность важна, даже когда производительность вам не нужна",
             "For a single service, raw performance is rarely the goal — most services handle their load comfortably on either framework, so it is easy to conclude that efficiency is irrelevant here. For one service in isolation, that is true.": "Для одного сервиса чистая производительность редко является целью — большинство сервисов спокойно держат свою нагрузку на любом фреймворке, поэтому легко сделать вывод, что эффективность здесь неважна. Для одного сервиса в отрыве от остального это действительно так.",
             "Engineers often see the system only from their own vantage point — their service, their repository, their machine, at best their own production stand — and through that lens the conclusion holds. But step back to the level of a company's whole technical infrastructure and the picture, along with the priorities, looks very different.": "Инженеры часто видят систему только со своей колокольни — свой сервис, свой репозиторий, своя машина, в лучшем случае свой продакшн-стенд — и через эту призму вывод выглядит верным. Но поднимитесь на уровень всей технической инфраструктуры компании — и картина, а вместе с ней и приоритеты, выглядят совсем иначе.",
@@ -4445,7 +4613,7 @@
             "One consistent repository model for JDBC and Cassandra, with generated implementations, compile-time mappings, query macros, and explicit control over data access.": "Единая модель репозиториев для JDBC и Cassandra: сгенерированные реализации, преобразования во время компиляции, макросы запросов и явный контроль над доступом к данным.",
             "Ops": "Ops",
             "Observability by design": "Наблюдаемость из коробки",
-            "Metrics, tracing, structured logging, context propagation, health probes, and graceful shutdown integrated from the start.": "Метрики, трассировка, структурированное логирование, распространение контекста, проверки работоспособности и корректное завершение встроены с самого начала.",
+            "OTel metrics and tracing across modules, structured logging, context propagation, health probes, and graceful shutdown integrated from the start.": "Метрики и трассировка OTel во всех модулях, структурированное логирование, распространение контекста, проверки работоспособности и корректное завершение встроены с самого начала.",
             "Integration": "Интеграции",
             "Kafka, gRPC, S3, and more": "Kafka, gRPC, S3 и не только",
             "Messaging, RPC, storage, workflow engines, and infrastructure integrations built around the same explicit programming model.": "Обмен сообщениями, RPC, хранилища, движки бизнес-процессов и инфраструктурные интеграции, построенные вокруг той же явной модели программирования.",
@@ -4484,13 +4652,14 @@
             "Kora tries to stay close to JDBC, Kafka, gRPC, HTTP, and other core technologies instead of building a separate framework-specific world. These are abstractions familiar to most Java developers — proven in production for years and already second nature. So most of what you — or a model — already know about Java/Kotlin and standard technologies applies directly to Kora code.": "Kora старается держаться близко к JDBC, Kafka, gRPC, HTTP и другим базовым технологиям, а не строить отдельный мир вокруг фреймворка. Это привычные большинству Java-разработчиков абстракции, которые годами работают в промышленной эксплуатации и знакомы всем. Поэтому почти всё, что вы — или модель — уже знаете о Java, Kotlin и стандартных технологиях, напрямую применимо к коду на Kora.",
             "The same explicitness, strong typing, precise compiler feedback, and minimal magic make Kora approachable for an engineer joining the project and predictable for the tools working alongside them.": "Явность, прозрачность, строгая типизация, точная обратная связь компилятора и минимум магии делают Kora понятной инженеру, который приходит в проект, и предсказуемой для его инструментов.",
             "A real iteration loop: the agent writes code, the compiler answers, it fixes and moves on — most mistakes caught before anything runs.": "Настоящий цикл итераций: агент пишет код, компилятор отвечает, агент исправляет и идёт дальше — большинство ошибок ловится ещё до запуска.",
-            "Read the guide": "Читать Руководство",
+            "Read the guide": "Читать руководство",
             "Examples": "Примеры",
             "Fastest to boot,": "Быстрее всех стартует,",
             "fastest to serve.": "быстрее всех работает.",
             "Fast readiness helps horizontal scaling absorb peak load faster and thin framework internals avoids heavy startup SLA spikes during rolling deployments. Lower is better.": "Быстрая готовность помогает горизонтальному масштабированию лучше справляться с пиковой нагрузкой, а тонкий слой фреймворка до бизнес кода снижает стартовые просадки SLA во время развертываний. (Меньше значит лучше.)",
             "Serving traffic": "Обслуживает трафик",
             "10x PetClinic services with full production integrations in a Docker container, 1 CPU and 1 GB memory, startup and readiness.": "10x PetClinic-сервисы с полным набором боевых интеграций в Docker-контейнере: 1 CPU, 1 GB памяти, запуск и готовность к обслуживанию.",
+            "Spring Boot applications with all possible runtime and compile-time optimizations applied, including the Spring AOT plugin.": "Приложения Spring Boot, к которым применены максимально возможные Runtime + Compile Time оптимизации, включая использование плагина Spring AOT.",
             "Average across 5 runs on MacBook Pro 2019 Intel i7-9750H": "Среднее по 5 запускам на MacBook Pro 2019 Intel i7-9750H",
             "(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).": "(схож с EPYC 7763 согласно GeekBench 5 Single-Core Benchmark).",
             "Why fast startup and readiness really save time and money": "Почему быстрый старт и готовность реально экономят время и деньги",
@@ -4515,6 +4684,9 @@
             "Compile-time wiring, thin abstractions and no runtime reflection make warm-up far smaller — not zero — so a new instance is close to steady-state throughput from the first requests, keeping the p95–p98 tail during deploys and scaling well below a warm-up-bound runtime.": "Связывание во время компиляции, тонкие абстракции и отсутствие рефлексии в рантайме делают прогрев в разы меньше — не нулевым — поэтому новый экземпляр близок к установившейся пропускной способности с первых запросов, удерживая хвост p95–p98 при деплоях и масштабировании значительно ниже, чем у рантайма, зависящего от прогрева.",
             "Seconds per instance × the whole fleet × every restart → fewer machines, a smaller bill, and a faster loop. Kora builds its graph at compile time and starts up as parallel as possible, with a far smaller warm-up footprint.": "Секунды на экземпляр × весь парк × каждый перезапуск → меньше машин, меньший счёт и более быстрый цикл. Kora строит граф во время компиляции, а на старте всё инициализируется максимально параллельно, насколько возможно, и имеет значительно меньший след прогрева.",
             "Startup & readiness": "Запуск и готовность",
+            "Memory at readiness": "Память при готовности",
+            "RSS at readiness, MB (median)": "RSS при готовности, MB (медиана)",
+            "10x PetClinic services on JDK 25 with compact object headers enabled. Median resident set size (RSS) at readiness across 10 runs. Lower is better.": "10x PetClinic-сервисы на JDK 25 с включёнными compact object headers. Медиана потребления резидентной памяти (RSS) при готовности к обслуживанию по 10 запускам. Меньше значит лучше.",
             "Clean build": "Чистая сборка",
             "Cached build": "Кешированная сборка",
             "Artifact built": "Артефакт собран",
@@ -4558,14 +4730,16 @@
             "in production.": "в эксплуатации.",
             "Learn by example": "Учитесь на примерах",
             "Docs without the bloat.": "Документация без воды.",
-            "95%+ of Kora's functionality is covered by documentation—step-by-step guides, module references, and runnable examples. No need to piece together answers across dozens of tabs and scattered Stack Overflow discussions. The official AI skill": "95%+ функциональности Kora описано в документации: пошаговых руководствах, справочниках по модулям и рабочих примерах. Не нужно собирать ответы по десяткам вкладок и разрозненным обсуждениям на Stack Overflow. А официальный нейро-навык",
+            "95%+ of Kora's functionality is covered by documentation—step-by-step guides, module references, and": "95%+ функциональности Kora описано в документации: пошаговых руководствах, справочниках по модулям и",
+            "runnable examples": "рабочих примерах",
+            ". No need to guess which version an AI answer refers to or piece together answers across dozens of tabs and scattered Stack Overflow discussions. The official AI skill": ". Не нужно угадывать, про какую версию ответила нейросеть, собирать ответы по десяткам вкладок и разрозненным обсуждениям на Stack Overflow. А официальный нейро-навык",
             "makes working with Kora even easier for AI agents.": "делает работу с Kora еще проще для нейро-агентов.",
             "▾ See how an AI agent teaches you Kora": "▾ Посмотрите, как нейро-агент учит вас Kora",
             "▴ Hide the walkthrough": "▴ Скрыть демонстрацию",
             "Learning Kora today can be as simple as installing the official kora-skills skill and asking your agent — it consults the skill, then teaches straight from the official guides and examples.": "Учиться Kora сегодня можно просто: установите официальный навык kora-skills и задайте вопрос своему агенту — он сверяется с навыком и объясняет прямо по официальным руководствам и примерам.",
             "Kora AI-Skills": "Kora нейро-навык",
             "functionality documented": "функциональности задокументировано",
-            "step-by-step guides": "пошаговых Руководств",
+            "step-by-step guides": "пошаговых руководств",
             "module references": "справочников по модулям",
             "Build your first Kora service.": "Соберите первый сервис на Kora.",
             "Follow the guided setup, use the official examples, or jump straight into the module documentation for the stack you already know you need.": "Пройдите пошаговую настройку, используйте официальные примеры или сразу откройте документацию по модулям для стека, который вам уже нужен.",
@@ -4575,6 +4749,9 @@
         };
 
         const attrRu = {
+            "Show benchmark framework versions": "Показать версии фреймворков в бенчмарке",
+            "Kora startup, memory, and build time comparison": "Сравнение времени запуска, потребления памяти и времени сборки Kora",
+            "About Spring Heavy Optimized": "Подробнее о Spring Heavy Optimized",
             "Documentation language": "Язык страницы",
             "Primary navigation": "Основная навигация",
             "Page sections": "Разделы страницы",
@@ -7280,7 +7457,41 @@ BUILD FAILED in 1s`
             return;
         }
 
-        /* one animation at a time across both charts */
+        const helpItems = Array.from(document.querySelectorAll(".startup-help, .benchmark-help")).map((help) => {
+            const button = help.querySelector("button");
+            const tooltip = help.querySelector("[role='tooltip']");
+            let pinned = false;
+            const show = (visible) => {
+                tooltip.hidden = !visible;
+                button.setAttribute("aria-expanded", String(visible));
+            };
+            const close = () => { pinned = false; show(false); };
+            help.addEventListener("pointerenter", (event) => {
+                if (event.pointerType !== "touch") show(true);
+            });
+            help.addEventListener("pointerleave", () => {
+                if (!pinned && document.activeElement !== button) show(false);
+            });
+            button.addEventListener("focus", () => show(true));
+            button.addEventListener("blur", () => {
+                if (!pinned) show(false);
+            });
+            button.addEventListener("click", () => {
+                pinned = !pinned;
+                show(pinned);
+            });
+            return { help, close };
+        });
+        document.addEventListener("click", (event) => {
+            helpItems.forEach(({ help, close }) => {
+                if (!help.contains(event.target)) close();
+            });
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") helpItems.forEach(({ close }) => close());
+        });
+
+        /* one animation at a time across all charts */
         let playToken = 0;
 
         const burstKora = (koraBar) => {
@@ -7309,6 +7520,9 @@ BUILD FAILED in 1s`
                 return;
             }
             const maxDuration = Math.max(...values.map((item) => Number(item.dataset.duration) || 0));
+            const unit = chartEl.dataset.unit || "s";
+            const precision = Number(chartEl.dataset.precision ?? 2);
+            const formatValue = (value) => `${value.toFixed(precision)}${unit === "s" ? "" : " "}${unit}`;
             const koraBar = chartEl.querySelector(".startup-bar.is-kora");
             let koraReady = false;
 
@@ -7317,7 +7531,7 @@ BUILD FAILED in 1s`
                 bar.classList.remove("is-ready");
                 bar.style.setProperty("--startup-progress", 0);
             });
-            values.forEach((item) => { item.textContent = "0.00s"; });
+            values.forEach((item) => { item.textContent = formatValue(0); });
             chartEl.classList.remove("is-running");
             void chartEl.offsetWidth;
             chartEl.classList.add("is-running");
@@ -7334,10 +7548,10 @@ BUILD FAILED in 1s`
                     const target = Number(item.dataset.target);
                     const duration = Number(item.dataset.duration) || maxDuration;
                     const progress = Math.min(elapsed / duration, 1);
-                    item.textContent = `${(target * progress).toFixed(2)}s`;
+                    item.textContent = formatValue(target * progress);
                     item.closest(".startup-bar")?.style.setProperty("--startup-progress", progress);
 
-                    if (!koraReady && item.closest(".startup-bar")?.classList.contains("is-kora") && progress >= 1) {
+                    if (!koraReady && koraBar?.querySelector(".startup-ready") && item.closest(".startup-bar")?.classList.contains("is-kora") && progress >= 1) {
                         koraReady = true;
                         koraBar?.classList.add("is-ready");
                         burstKora(koraBar);
@@ -7357,6 +7571,7 @@ BUILD FAILED in 1s`
             section.querySelector(`.startup-view[data-chart="${key}"] .startup-chart`);
 
         const showChart = (key, replay) => {
+            helpItems.forEach(({ close }) => close());
             views.forEach((view) => { view.hidden = view.dataset.chart !== key; });
             tabs.forEach((tab) => {
                 const active = tab.dataset.chart === key;
