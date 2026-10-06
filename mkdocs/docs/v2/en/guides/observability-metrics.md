@@ -472,7 +472,7 @@ Tags solve this. A tag is a short stable label attached to a metric. For example
 
 The tag must be stable and have a limited number of possible values. Good tag values usually look like `route`, `provider`, `status`, `result`, or `operation`. Bad tag values are full emails, user ids, request ids, raw paths, and other values that can grow almost without limit.
 
-Kora framework metrics follow the same rule. The HTTP server timer `http.server.request.duration` is tagged with `server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address`, and `error.type` — every one of them from a small, predictable set. A route template like `/users/{id}` is safe; a raw path like `/users/128734` would create a new series for each user, which is exactly why Kora reports the template and falls back to `UNKNOWN_ROUTE` when no route matched. The domain after `@` follows the same idea: it does not identify the concrete user and is useful for grouping.
+Kora framework metrics follow the same rule. The HTTP server timer `http.server.request.duration` is tagged with `server.name`, `server.port`, `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, and `error.type` — every one of them from a small, predictable set. A route template like `/users/{id}` is safe; a raw path like `/users/128734` would create a new series for each user, which is exactly why Kora reports the template and falls back to `UNKNOWN_ROUTE` when no route matched. The domain after `@` follows the same idea: it does not identify the concrete user and is useful for grouping.
 
 #### Dynamic Tag { #dynamic-tag }
 
