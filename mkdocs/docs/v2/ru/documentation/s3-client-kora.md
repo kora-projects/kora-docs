@@ -136,23 +136,22 @@ Kora предоставляет **два независимых артефакт
             upload {
                 partSize = "5MiB" //(7)!
                 chunkSize = "64KiB" //(8)!
-                singlePartUploadLimit = "100MiB" //(9)!
             }
             telemetry {
                 logging {
-                    enabled = false //(10)!
+                    enabled = false //(9)!
                 }
                 metrics {
-                    enabled = false //(11)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(12)!
-                    tags = { // (13)!
+                    enabled = false //(10)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
+                    tags = { // (12)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
                 }
                 tracing {
-                    enabled = true //(14)!
-                    attributes = { // (15)!
+                    enabled = true //(13)!
+                    attributes = { // (14)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
@@ -169,13 +168,12 @@ Kora предоставляет **два независимых артефакт
         6.  Максимальное время выполнения операции, передаётся в нижележащий `HTTP`-запрос (по умолчанию: `45s`)
         7.  Размер части при [многочастной загрузке](#multipart-upload) тела типа `InputStream` (по умолчанию: `5MiB`)
         8.  Размер чанка кодирования `aws-chunked`, когда телом является [`ContentWriter`](#file-body) (по умолчанию: `64KiB`)
-        9.  Размер объекта, начиная с которого многочастная загрузка предпочтительнее загрузки одним запросом (по умолчанию: `100MiB`)
-        10. Включает логирование модуля (по умолчанию: `false`)
-        11. Включает метрики модуля (по умолчанию: `false`)
-        12. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        13. Настройка тегов метрик (по умолчанию: `{}`)
-        14. Включает трассировку модуля (по умолчанию: `true`)
-        15. Настройка атрибутов трассировки (по умолчанию: `{}`)
+        9.  Включает логирование модуля (по умолчанию: `false`)
+        10. Включает метрики модуля (по умолчанию: `false`)
+        11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        12. Настройка тегов метрик (по умолчанию: `{}`)
+        13. Включает трассировку модуля (по умолчанию: `true`)
+        14. Настройка атрибутов трассировки (по умолчанию: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -192,19 +190,18 @@ Kora предоставляет **два независимых артефакт
             upload:
               partSize: "5MiB" #(7)!
               chunkSize: "64KiB" #(8)!
-              singlePartUploadLimit: "100MiB" #(9)!
             telemetry:
               logging:
-                enabled: false #(10)!
+                enabled: false #(9)!
               metrics:
-                enabled: false #(11)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
-                tags: #(13)!
+                enabled: false #(10)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
+                tags: #(12)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(14)!
-                attributes: #(15)!
+                enabled: true #(13)!
+                attributes: #(14)!
                   key1: value1
                   key2: value2
         ```
@@ -217,13 +214,12 @@ Kora предоставляет **два независимых артефакт
         6.  Максимальное время выполнения операции, передаётся в нижележащий `HTTP`-запрос (по умолчанию: `45s`)
         7.  Размер части при [многочастной загрузке](#multipart-upload) тела типа `InputStream` (по умолчанию: `5MiB`)
         8.  Размер чанка кодирования `aws-chunked`, когда телом является [`ContentWriter`](#file-body) (по умолчанию: `64KiB`)
-        9.  Размер объекта, начиная с которого многочастная загрузка предпочтительнее загрузки одним запросом (по умолчанию: `100MiB`)
-        10. Включает логирование модуля (по умолчанию: `false`)
-        11. Включает метрики модуля (по умолчанию: `false`)
-        12. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        13. Настройка тегов метрик (по умолчанию: `{}`)
-        14. Включает трассировку модуля (по умолчанию: `true`)
-        15. Настройка атрибутов трассировки (по умолчанию: `{}`)
+        9.  Включает логирование модуля (по умолчанию: `false`)
+        10. Включает метрики модуля (по умолчанию: `false`)
+        11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        12. Настройка тегов метрик (по умолчанию: `{}`)
+        13. Включает трассировку модуля (по умолчанию: `true`)
+        14. Настройка атрибутов трассировки (по умолчанию: `{}`)
 
 Имя бакета (`bucket`) **не** входит в `S3ClientConfig`. Оно определяется отдельно через
 [`@S3.Bucket`](#bucket) и может указывать на любой путь конфигурации.

@@ -136,23 +136,22 @@ Each declarative client reads its own `S3ClientConfig` from the path declared in
             upload {
                 partSize = "5MiB" //(7)!
                 chunkSize = "64KiB" //(8)!
-                singlePartUploadLimit = "100MiB" //(9)!
             }
             telemetry {
                 logging {
-                    enabled = false //(10)!
+                    enabled = false //(9)!
                 }
                 metrics {
-                    enabled = false //(11)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(12)!
-                    tags = { // (13)!
+                    enabled = false //(10)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
+                    tags = { // (12)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
                 }
                 tracing {
-                    enabled = true //(14)!
-                    attributes = { // (15)!
+                    enabled = true //(13)!
+                    attributes = { // (14)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
@@ -169,13 +168,12 @@ Each declarative client reads its own `S3ClientConfig` from the path declared in
         6.  Maximum operation execution time, passed to the underlying `HTTP` request (default: `45s`)
         7.  Part size used when a [multipart upload](#multipart-upload) is performed for an `InputStream` body (default: `5MiB`)
         8.  Chunk size used by `aws-chunked` encoding when the body is a [`ContentWriter`](#file-body) (default: `64KiB`)
-        9.  Object size from which a multipart upload is preferred over a single-request upload (default: `100MiB`)
-        10. Enables module logging (default: `false`)
-        11. Enables module metrics (default: `false`)
-        12. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        13. Configures metric tags (default: `{}`)
-        14. Enables module tracing (default: `true`)
-        15. Configures tracing attributes (default: `{}`)
+        9.  Enables module logging (default: `false`)
+        10. Enables module metrics (default: `false`)
+        11. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        12. Configures metric tags (default: `{}`)
+        13. Enables module tracing (default: `true`)
+        14. Configures tracing attributes (default: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -192,19 +190,18 @@ Each declarative client reads its own `S3ClientConfig` from the path declared in
             upload:
               partSize: "5MiB" #(7)!
               chunkSize: "64KiB" #(8)!
-              singlePartUploadLimit: "100MiB" #(9)!
             telemetry:
               logging:
-                enabled: false #(10)!
+                enabled: false #(9)!
               metrics:
-                enabled: false #(11)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
-                tags: #(13)!
+                enabled: false #(10)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
+                tags: #(12)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(14)!
-                attributes: #(15)!
+                enabled: true #(13)!
+                attributes: #(14)!
                   key1: value1
                   key2: value2
         ```
@@ -217,13 +214,12 @@ Each declarative client reads its own `S3ClientConfig` from the path declared in
         6.  Maximum operation execution time, passed to the underlying `HTTP` request (default: `45s`)
         7.  Part size used when a [multipart upload](#multipart-upload) is performed for an `InputStream` body (default: `5MiB`)
         8.  Chunk size used by `aws-chunked` encoding when the body is a [`ContentWriter`](#file-body) (default: `64KiB`)
-        9.  Object size from which a multipart upload is preferred over a single-request upload (default: `100MiB`)
-        10. Enables module logging (default: `false`)
-        11. Enables module metrics (default: `false`)
-        12. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        13. Configures metric tags (default: `{}`)
-        14. Enables module tracing (default: `true`)
-        15. Configures tracing attributes (default: `{}`)
+        9.  Enables module logging (default: `false`)
+        10. Enables module metrics (default: `false`)
+        11. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        12. Configures metric tags (default: `{}`)
+        13. Enables module tracing (default: `true`)
+        14. Configures tracing attributes (default: `{}`)
 
 The `bucket` name is **not** part of `S3ClientConfig`. It is resolved separately through
 [`@S3.Bucket`](#bucket), which may point at any configuration path.
