@@ -245,12 +245,12 @@ Every telemetry block is nested under the configuration section of the module th
 
     ```javascript
     httpServer.telemetry.metrics.enabled = true //(1)!
-    httpClient.telemetry.metrics.enabled = true //(2)!
+    httpClient.usersApi.telemetry.metrics.enabled = true //(2)!
     jdbc.telemetry.metrics.enabled = true //(3)!
     ```
 
     1.  Metrics of the public HTTP server: request duration and active requests.
-    2.  Metrics shared by declarative HTTP clients.
+    2.  Metrics of the declarative client `usersApi`. Telemetry is configured per client under its own configuration path, see [HTTP Client](../documentation/http-client.md#client-configuration).
     3.  Metrics of the JDBC data source and its connection pool.
 
 === ":simple-yaml: `YAML`"
@@ -261,9 +261,10 @@ Every telemetry block is nested under the configuration section of the module th
         metrics:
           enabled: true #(1)!
     httpClient:
-      telemetry:
-        metrics:
-          enabled: true #(2)!
+      usersApi:
+        telemetry:
+          metrics:
+            enabled: true #(2)!
     jdbc:
       telemetry:
         metrics:
@@ -271,7 +272,7 @@ Every telemetry block is nested under the configuration section of the module th
     ```
 
     1.  Metrics of the public HTTP server: request duration and active requests.
-    2.  Metrics shared by declarative HTTP clients.
+    2.  Metrics of the declarative client `usersApi`. Telemetry is configured per client under its own configuration path, see [HTTP Client](../documentation/http-client.md#client-configuration).
     3.  Metrics of the JDBC data source and its connection pool.
 
 Custom metrics registered by your own code through `MeterRegistry` are not affected by this flag. `user.creation.total` appears as soon as `MetricsModule` is connected and the code runs, because the

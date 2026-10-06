@@ -232,7 +232,7 @@ agent:
 |--------|--------------------|
 | [HTTP-сервер](http-server.md) (публичный) | `httpServer.telemetry.metrics` |
 | [HTTP-сервер](http-server.md#system-server) (системный) | `httpServer.system.telemetry.metrics` |
-| [HTTP-клиент](http-client.md) | `httpClient.telemetry.metrics` и собственный путь конфигурации клиента из `@HttpClient` |
+| [HTTP-клиент](http-client.md) | собственный путь конфигурации клиента из `@HttpClient` плюс `.telemetry.metrics`, например `httpClient.<clientName>.telemetry.metrics` |
 | [База данных JDBC](database-jdbc.md) | `jdbc.telemetry.metrics` |
 | [База данных Cassandra](database-cassandra.md) | `cassandra.telemetry.metrics` |
 | [gRPC-сервер](grpc-server.md) | `grpcServer.telemetry.metrics` |
