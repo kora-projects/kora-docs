@@ -2451,7 +2451,7 @@
             max-width: 430px;
         }
 
-        .startup-caption span:last-child {
+        .startup-caption > span:last-child:not(:only-child) {
             margin-left: auto;
             text-align: right;
         }
@@ -3962,7 +3962,7 @@
                         </div>
                     </aside>
                     <div class="philosophy-main">
-                        <p class="philosophy-lead">Kora does not pursue breadth for its own sake, wrap every possible technology behind a framework-specific abstraction, or replace every functionality of other frameworks. <span class="muted">It takes proven, widely used backend practices and pushes them further:</span> less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead.</p>
+                        <p class="philosophy-lead">Kora does not pursue breadth for its own sake, wrap every possible technology behind a framework-specific abstraction, or replace every functionality of other frameworks and libraries. <span class="muted">It takes proven, widely used backend practices and pushes them further:</span> less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead.</p>
                         <figure class="philosophy-quote">
                             <p>A Swiss Army knife offers a tool for almost any situation, but rarely does everything equally well. Kora focuses on a targeted set of tools, each purpose-built for its specific task.</p>
                             <p>Use only the modules you need, replace or customize their components, and add your own modules and integrations through the same explicit application model.</p>
@@ -4254,7 +4254,6 @@
                     </div>
                     <div class="startup-caption">
                         <span>10x PetClinic services on JDK 25 with compact object headers enabled. Median resident set size (RSS) at readiness across 10 runs. Lower is better.</span>
-                        <span>Kora: 2.0.0-ap-ksp-combined.</span>
                     </div>
                 </div>
 
@@ -4502,7 +4501,7 @@
             "Not a tool for every situation.": "Не инструмент на все случаи.",
             "But a tool that": "Но инструмент, который",
             "simply works predictably": "просто предсказуемо работает",
-            "Kora does not pursue breadth for its own sake, wrap every possible technology behind a framework-specific abstraction, or replace every functionality of other frameworks.": "Kora не стремится к охвату ради охвата, не оборачивает каждую технологию в собственную абстракцию и не заменяет собой всю функциональность других фреймворков.",
+            "Kora does not pursue breadth for its own sake, wrap every possible technology behind a framework-specific abstraction, or replace every functionality of other frameworks and libraries.": "Kora не стремится к охвату ради охвата, не оборачивает каждую технологию в собственную абстракцию и не заменяет собой всю функциональность других фреймворков и библиотек.",
             "It takes proven, widely used backend practices and pushes them further:": "Она берет проверенные, широко используемые практики серверной разработки и доводит их до предела:",
             "less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead.": "меньше механики во время выполнения, меньше конкурирующих стилей, понятнее контракты и ниже когнитивная нагрузка.",
             "Use only the modules you need, replace or customize their components, and add your own modules and integrations through the same explicit application model.": "Используйте только нужные вам модули, заменяйте или настраивайте их компоненты и добавляйте свои модули и интеграции через ту же явную модель приложения.",
