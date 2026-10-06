@@ -609,7 +609,7 @@ The full set of client options (`url`, `requestTimeout`, per-operation blocks, `
     httpClient.petV2.petApi {
         url = "https://localhost:8443" //(1)!
         requestTimeout = "10s" //(2)!
-        getValuesConfig { //(3)!
+        getValues { //(3)!
             requestTimeout = "20s"
         }
         telemetry.logging.enabled = true
@@ -628,7 +628,7 @@ The full set of client options (`url`, `requestTimeout`, per-operation blocks, `
         petApi:
           url: "https://localhost:8443" #(1)!
           requestTimeout: "10s" #(2)!
-          getValuesConfig: #(3)!
+          getValues: #(3)!
             requestTimeout: "20s"
           telemetry:
             logging:
