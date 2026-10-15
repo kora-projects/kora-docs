@@ -4,10 +4,10 @@ seo_description: "Настройка AWS SDK S3Client в Kora, совместн�
 keywords: ["Kora Framework", "фреймворк Kora", "AWS S3", "AWS SDK S3Client", "s3-client-aws", "объектное хранилище"]
 description: "Explains the stable s3-client-aws integration, which publishes the AWS SDK S3Client in the Kora graph, configures it through s3client.aws and routes requests through Kora's HTTP client. Covers usage, configuration, combining it with the experimental declarative S3 client, and bucket administration."
 agent:
-  use_when: "Use this file for the stable AWS SDK S3 integration: s3-client-aws, AwsS3ClientModule, AwsS3Config, s3client.aws, software.amazon.awssdk.services.s3.S3Client, SDK operations, ExecutionInterceptor, combining both S3 artifacts, and bucket administration. For the experimental declarative Kora client, see s3-client.md."
+  use_when: "Use this file for the stable AWS SDK S3 integration: s3-client-aws, AwsS3ClientModule, AwsS3Config, s3client.aws, software.amazon.awssdk.services.s3.S3Client, SDK operations, ExecutionInterceptor, combining both S3 artifacts, and bucket administration. For the experimental declarative Kora client, see s3-client-kora.md."
 ---
 
-Интеграция `s3-client-aws` не зависит от экспериментального [S3-клиента Kora](s3-client.md). Подключайте любой из артефактов отдельно или оба вместе, если нужны генерируемые операции с объектами и полный API AWS SDK.
+Интеграция `s3-client-aws` не зависит от экспериментального [S3-клиента Kora](s3-client-kora.md). Подключайте любой из артефактов отдельно или оба вместе, если нужны генерируемые операции с объектами и полный API AWS SDK.
 
 ## Клиент AWS SDK { #aws }
 
@@ -242,7 +242,7 @@ agent:
     ```
 
     1. `software.amazon.awssdk.services.s3.S3Client`, клиент AWS SDK
-    2. Пакетное удаление, которое [декларативный клиент](s3-client.md#delete-file) не генерирует
+    2. Пакетное удаление, которое [декларативный клиент](s3-client-kora.md#delete-file) не генерирует
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -272,10 +272,10 @@ agent:
     ```
 
     1. `software.amazon.awssdk.services.s3.S3Client`, клиент AWS SDK
-    2. Пакетное удаление, которое [декларативный клиент](s3-client.md#delete-file) не генерирует
+    2. Пакетное удаление, которое [декларативный клиент](s3-client-kora.md#delete-file) не генерирует
 
 Об ошибках сообщает собственная иерархия исключений SDK — `NoSuchKeyException`,
-`NoSuchBucketException`, `S3Exception` — а не [исключения Kora `S3`](s3-client.md#exceptions).
+`NoSuchBucketException`, `S3Exception` — а не [исключения Kora `S3`](s3-client-kora.md#exceptions).
 
 Пользовательское поведение SDK добавляется компонентами `ExecutionInterceptor`: каждый
 `software.amazon.awssdk.core.interceptor.ExecutionInterceptor`, опубликованный под
@@ -332,7 +332,7 @@ agent:
     ```
 
     1.  Фиксированный путь [клиента AWS SDK](#aws)
-    2.  Путь, объявленный в `@S3.Client("s3client.uploads")` [декларативного клиента](s3-client.md#client-declarative)
+    2.  Путь, объявленный в `@S3.Client("s3client.uploads")` [декларативного клиента](s3-client-kora.md#client-declarative)
 
 === ":simple-yaml: `YAML`"
 
@@ -353,7 +353,7 @@ agent:
     ```
 
     1.  Фиксированный путь [клиента AWS SDK](#aws)
-    2.  Путь, объявленный в `@S3.Client("s3client.uploads")` [декларативного клиента](s3-client.md#client-declarative)
+    2.  Путь, объявленный в `@S3.Client("s3client.uploads")` [декларативного клиента](s3-client-kora.md#client-declarative)
 
 ### Администрирование бакетов { #bucket-administration }
 

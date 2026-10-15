@@ -77,7 +77,9 @@ nav:
         - OpenAPI отображение: documentation/openapi-management.md
       - Базы данных:
         - Общее: documentation/database-common.md
-        - JDBC: documentation/database-jdbc.md
+        - JDBC:
+          - JDBC: documentation/database-jdbc.md
+          - PostgreSQL: documentation/database-jdbc-postgres.md
         - Cassandra: documentation/database-cassandra.md
         - Миграции: documentation/database-migration.md
       - Интеграции:
@@ -97,7 +99,7 @@ nav:
         - GraalVM Native: documentation/graalvm-native.md
         - Netty: documentation/netty.md
       - Экспериментальное:
-        - Декларативный S3 клиент: documentation/s3-client.md
+        - Kora S3 клиент: documentation/s3-client-kora.md
         - Camunda BPMN: documentation/camunda7-bpmn.md
         - Camunda REST: documentation/camunda7-rest.md
         - Camunda Zeebe: documentation/camunda8-worker.md

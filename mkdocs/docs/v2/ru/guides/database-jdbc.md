@@ -1021,7 +1021,7 @@ HTTP-контракт остается стабильным, пока слой �
 ## Что дальше? { #whats-next }
 
 - [Продвинутые шаблоны JDBC](database-jdbc-advanced.md), чтобы добавить вторую таблицу, транзакции, пользовательские преобразователи, макросы и проекции.
-- [Модуль PostgreSQL](../documentation/database-jdbc.md#postgres), чтобы отображать массивы PostgreSQL, `interval`, range-типы и столбцы `json` / `jsonb` без собственных преобразователей.
+- [Модуль PostgreSQL](../documentation/database-jdbc-postgres.md), чтобы отображать массивы PostgreSQL, `interval`, range-типы и столбцы `json` / `jsonb` без собственных преобразователей.
 - [Интеграционное тестирование](testing-integration.md), чтобы проверять JDBC-репозитории, миграции и поведение PostgreSQL с Testcontainers.
 - [Тестирование как черный ящик](testing-black-box.md), чтобы проверять упакованное HTTP-приложение сквозным образом.
 - [База данных Cassandra](database-cassandra.md), если вы хотите сравнить тот же урок хранения данных с моделью распределенной базы данных.
