@@ -135,7 +135,7 @@ agent:
 и через `PrometheusMeterRegistryInitializer` устанавливает на реестр один глобальный `MeterFilter.commonTags(...)`.
 При совпадении ключей значение из `metrics.tags` побеждает любого поставщика.
 Теги вычисляются один раз, при создании реестра, поэтому поставщик не должен возвращать значения, зависящие от запроса.
-Этот инициализатор объявлен как `@DefaultComponent`, поэтому собственный `PrometheusMeterRegistryInitializer` его отключает, смотрите [Персонализация](#personalization).
+Этот инициализатор — обычный компонент, а не `@DefaultComponent`, поэтому общие теги применяются и тогда, когда приложение объявляет собственные `PrometheusMeterRegistryInitializer`: инициализатор общих тегов работает вместе с ними, смотрите [Персонализация](#personalization).
 
 ### Эндпоинт опроса { #scrape-endpoint }
 
@@ -450,13 +450,6 @@ Kora использует такой же подход для своих вну�
     }
     ```
 
-!!! warning "Собственный инициализатор отключает общие теги"
-
-    `MetricsModule` устанавливает общие теги через `PrometheusMeterRegistryInitializer`, объявленный как `@DefaultComponent`.
-    Как только в контейнере появляется любой другой `PrometheusMeterRegistryInitializer`, реестр получает только инициализаторы не по умолчанию,
-    и `metrics.tags` и `MetricsTagsProvider` больше не применяются.
-    Если вы объявляете инициализатор и вам по-прежнему нужны общие теги, добавьте их в нем через `registry.config().commonTags(...)`.
-
 У стандартных метрик также есть собственные настройки, например корзины гистограммы `slo` для метрик `Timer`, которые задаются для каждого модуля в блоке [`telemetry.metrics`](#module-metrics).
 Когда `slo` не переопределено, используется `TelemetryConfig.MetricsConfig#DEFAULT_SLO` — 14 корзин:
 
@@ -592,7 +585,8 @@ Kora использует такой же подход для своих вну�
 |--------|------------|------|-------------|------|
 | `http.client.request.duration` | `http_client_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Длительность запроса `HTTP`-клиента | `http.request.method`, `http.response.status_code`, `server.address`, `server.port`, `url.scheme`, `url.template`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
-`system.config` — путь конфигурации клиента, `system.name.simple` и `system.name.canonical` — простое и каноническое имена интерфейса декларативного клиента.
+`system.config` — путь конфигурации клиента. Теги `system.name.simple` и `system.name.canonical` задаются для каждого метода клиента: `system.name.canonical` — каноническое имя интерфейса декларативного клиента и имя метода (`com.example.PetClient.getPet`), `system.name.simple` — только имя метода (`getPet`).
+Одноименные методы разных клиентов получают одинаковый `system.name.simple`, поэтому различайте клиенты по `system.config` или `system.name.canonical`.
 Если порт отсутствует в URI, `server.port` принимает значение `80` для HTTP и `443` для HTTPS; для других схем без явно заданного порта тег не добавляется.
 
 Подробнее смотрите в документации модуля [HTTP-клиент](http-client.md).
