@@ -5,7 +5,15 @@ hide:
   - navigation
 ---
 
-## 1.2.22
+## 1.2.23
+
+Fixed:
+
+- Fixed HTTP server ending the exchange after a blocking response when the request body was not read
+- Fixed Redis Lettuce cache iterating the `SCAN` cursor and batching large deletes
+- Fixed multipart form enum parameter generation in OpenAPI generator
+
+### 1.2.22
 
 Added:
 

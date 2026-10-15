@@ -545,7 +545,7 @@ Kora находит эти преобразователи по их обобще
 
 В этом руководстве преобразователь написан вручную, чтобы показать его контракт. В реальном сервисе на `PostgreSQL` модуль `io.koraframework:database-jdbc-postgres` уже предоставляет
 преобразователи массивов для `List`, `Set`, `Collection` и массивов: унаследуйте `PostgresJdbcDatabaseModule` вместо `JdbcDatabaseModule`, пометьте параметр `assigneeIds` аннотацией `@Pg`, и собственный компонент не понадобится, см.
-[PostgreSQL](../documentation/database-jdbc.md#postgres-arrays).
+[PostgreSQL](../documentation/database-jdbc-postgres.md#postgres-arrays).
 
 ## Новый репозиторий { #new-repository }
 

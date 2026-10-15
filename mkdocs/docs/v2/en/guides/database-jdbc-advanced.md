@@ -542,7 +542,7 @@ repository parameters when it resolves the mapper.
 
 This guide writes the mapper by hand to show the mapper contract. In a real `PostgreSQL` service the `io.koraframework:database-jdbc-postgres` module already provides array
 mappers for `List`, `Set`, `Collection`, and arrays: inherit `PostgresJdbcDatabaseModule` instead of `JdbcDatabaseModule`, annotate the `assigneeIds` parameter with `@Pg`, and no custom component is needed, see
-[PostgreSQL](../documentation/database-jdbc.md#postgres-arrays).
+[PostgreSQL](../documentation/database-jdbc-postgres.md#postgres-arrays).
 
 ## New Repository { #new-repository }
 

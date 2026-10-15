@@ -4,10 +4,10 @@ seo_description: "Configure the AWS SDK S3Client in Kora, use it with the declar
 keywords: ["Kora Framework", "AWS S3", "AWS SDK S3Client", "s3-client-aws", "object storage"]
 description: "Explains the stable s3-client-aws integration, which publishes the AWS SDK S3Client in the Kora graph, configures it through s3client.aws and routes requests through Kora's HTTP client. Covers usage, configuration, combining it with the experimental declarative S3 client, and bucket administration."
 agent:
-  use_when: "Use this file for the stable AWS SDK S3 integration: s3-client-aws, AwsS3ClientModule, AwsS3Config, s3client.aws, software.amazon.awssdk.services.s3.S3Client, SDK operations, ExecutionInterceptor, combining both S3 artifacts, and bucket administration. For the experimental declarative Kora client, see s3-client.md."
+  use_when: "Use this file for the stable AWS SDK S3 integration: s3-client-aws, AwsS3ClientModule, AwsS3Config, s3client.aws, software.amazon.awssdk.services.s3.S3Client, SDK operations, ExecutionInterceptor, combining both S3 artifacts, and bucket administration. For the experimental declarative Kora client, see s3-client-kora.md."
 ---
 
-The `s3-client-aws` integration is independent of the experimental [Kora S3 client](s3-client.md). Add either artifact on its own, or use both when you need generated object operations and the full AWS SDK API.
+The `s3-client-aws` integration is independent of the experimental [Kora S3 client](s3-client-kora.md). Add either artifact on its own, or use both when you need generated object operations and the full AWS SDK API.
 
 ## AWS SDK client { #aws }
 
@@ -275,7 +275,7 @@ The SDK client is injected directly, without a tag:
     2. Batch deletion, which the [declarative client](s3-client.md#delete-file) does not generate
 
 Failures are reported by the SDK's own exception hierarchy — `NoSuchKeyException`,
-`NoSuchBucketException`, `S3Exception` — not by the [Kora `S3` exceptions](s3-client.md#exceptions).
+`NoSuchBucketException`, `S3Exception` — not by the [Kora `S3` exceptions](s3-client-kora.md#exceptions).
 
 Custom SDK behaviour is added with `ExecutionInterceptor` components: every
 `software.amazon.awssdk.core.interceptor.ExecutionInterceptor` published under

@@ -1020,7 +1020,7 @@ You also inspected generated JDBC code to see how Kora turns repository annotati
 ## What's Next? { #whats-next }
 
 - [Advanced JDBC Patterns](database-jdbc-advanced.md) to add a second table, transactions, custom mappers, macros, and projections.
-- [PostgreSQL module](../documentation/database-jdbc.md#postgres) to map PostgreSQL arrays, `interval`, range types, and `json` / `jsonb` columns without hand-written mappers.
+- [PostgreSQL module](../documentation/database-jdbc-postgres.md) to map PostgreSQL arrays, `interval`, range types, and `json` / `jsonb` columns without hand-written mappers.
 - [Integration Testing](testing-integration.md) to verify JDBC repositories, migrations, and PostgreSQL behavior with Testcontainers.
 - [Black Box Testing](testing-black-box.md) to validate the packaged HTTP application end to end.
 - [Cassandra Database](database-cassandra.md) if you want to compare the same persistence lesson with a distributed database model.
