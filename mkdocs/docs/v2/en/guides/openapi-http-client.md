@@ -1306,8 +1306,8 @@ For the full configuration reference, see [HTTP Server](../documentation/http-se
         url = "http://localhost:8080" //(5)!
         url = ${?PUBLIC_API_URL} //(6)!
         requestTimeout = 10s //(7)!
+        telemetry.logging.enabled = true //(8)!
       }
-      telemetry.logging.enabled = true //(8)!
     }
 
     logging {
@@ -1326,7 +1326,7 @@ For the full configuration reference, see [HTTP Server](../documentation/http-se
     5.  Base URL of the OpenAPI server application.
     6.  Optional override from the `PUBLIC_API_URL` environment variable, which is what the container-based test sets.
     7.  Maximum time allowed for one client request.
-    8.  Enables client request logging (default: `false`).
+    8.  Enables request logging for the `usersApi` client. Telemetry is configured per client, inside its own block (default: `false`).
     9.  Log level for the root logger.
     10. Log level for Kora framework loggers.
     11. Log level for the application package.
@@ -1345,9 +1345,9 @@ For the full configuration reference, see [HTTP Server](../documentation/http-se
       usersApi: #(4)!
         url: "http://localhost:8080" #(5)!
         requestTimeout: 10s #(6)!
-      telemetry:
-        logging:
-          enabled: true #(7)!
+        telemetry:
+          logging:
+            enabled: true #(7)!
     logging:
       levels:
         ROOT: "INFO" #(8)!
@@ -1361,7 +1361,7 @@ For the full configuration reference, see [HTTP Server](../documentation/http-se
     4.  The generated interface name with a **lower-case first letter**. `UsersApi` here would not be read.
     5.  Base URL of the OpenAPI server application.
     6.  Maximum time allowed for one client request.
-    7.  Enables client request logging (default: `false`).
+    7.  Enables request logging for the `usersApi` client. Telemetry is configured per client, inside its own block (default: `false`).
     8.  Log level for the root logger.
     9.  Log level for Kora framework loggers.
     10. Log level for the application package.

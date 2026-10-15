@@ -232,7 +232,7 @@ The `telemetry.metrics` block is nested under the module's own configuration sec
 |--------|--------------------|
 | [HTTP server](http-server.md) (public) | `httpServer.telemetry.metrics` |
 | [HTTP server](http-server.md#system-server) (system) | `httpServer.system.telemetry.metrics` |
-| [HTTP client](http-client.md) | `httpClient.telemetry.metrics` and the client's own `@HttpClient` configuration path |
+| [HTTP client](http-client.md) | the client's own `@HttpClient` configuration path plus `.telemetry.metrics`, e.g. `httpClient.<clientName>.telemetry.metrics` |
 | [JDBC database](database-jdbc.md) | `jdbc.telemetry.metrics` |
 | [Cassandra database](database-cassandra.md) | `cassandra.telemetry.metrics` |
 | [gRPC server](grpc-server.md) | `grpcServer.telemetry.metrics` |
