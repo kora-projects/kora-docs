@@ -135,7 +135,7 @@ Any number of providers can be registered. `MetricsModule` collects all of them,
 and installs one global `MeterFilter.commonTags(...)` on the registry through a `PrometheusMeterRegistryInitializer`.
 On a key conflict the value from `metrics.tags` wins over every provider.
 Tags are resolved once, when the registry is created, so a provider must not return per-request values.
-That initializer is a `@DefaultComponent`, so declaring your own `PrometheusMeterRegistryInitializer` switches it off, see [Personalization](#personalization).
+That initializer is a regular component, not a `@DefaultComponent`, so the common tags stay applied when the application declares its own `PrometheusMeterRegistryInitializer`: the common-tags initializer runs alongside them, see [Personalization](#personalization).
 
 ### Scrape endpoint { #scrape-endpoint }
 
@@ -450,13 +450,6 @@ An initializer is for the rest of the registry settings, for example a `MeterFil
     }
     ```
 
-!!! warning "Your own initializer turns off the common tags"
-
-    `MetricsModule` installs the common tags through a `PrometheusMeterRegistryInitializer` declared as `@DefaultComponent`.
-    As soon as the container has any other `PrometheusMeterRegistryInitializer`, the registry receives only the non-default initializers,
-    so `metrics.tags` and `MetricsTagsProvider` are no longer applied.
-    If you declare an initializer and still need common tags, add them in it with `registry.config().commonTags(...)`.
-
 Standard metrics also have their own settings, for example the `slo` histogram buckets for `Timer` metrics, configured per module under [`telemetry.metrics`](#module-metrics).
 When `slo` is not overridden, `TelemetryConfig.MetricsConfig#DEFAULT_SLO` is used — 14 buckets:
 
@@ -592,7 +585,8 @@ See [HTTP server](http-server.md) module documentation for more details.
 |--------|------------|------|-------------|------|
 | `http.client.request.duration` | `http_client_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `HTTP` client request duration | `http.request.method`, `http.response.status_code`, `server.address`, `server.port`, `url.scheme`, `url.template`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
-`system.config` is the client's configuration path, `system.name.simple` and `system.name.canonical` are the simple and canonical names of the declarative client interface.
+`system.config` is the client's configuration path. `system.name.simple` and `system.name.canonical` are set per client method: `system.name.canonical` is the canonical name of the declarative client interface followed by the method name (`com.example.PetClient.getPet`), and `system.name.simple` is the method name alone (`getPet`).
+Same-named methods of different clients share `system.name.simple`, so tell clients apart by `system.config` or `system.name.canonical`.
 `server.port` uses `80` for HTTP and `443` for HTTPS when the URI omits a port; for other schemes without an explicit port, the tag is omitted.
 
 See [HTTP client](http-client.md) module documentation for more details.
