@@ -245,12 +245,12 @@ Micrometer можно воспринимать как универсальный
 
     ```javascript
     httpServer.telemetry.metrics.enabled = true //(1)!
-    httpClient.telemetry.metrics.enabled = true //(2)!
+    httpClient.usersApi.telemetry.metrics.enabled = true //(2)!
     jdbc.telemetry.metrics.enabled = true //(3)!
     ```
 
     1.  Метрики публичного HTTP-сервера: длительность запроса и число активных запросов.
-    2.  Метрики, общие для декларативных HTTP-клиентов.
+    2.  Метрики декларативного клиента `usersApi`. Телеметрия настраивается для каждого клиента по его собственному пути конфигурации, смотрите [HTTP-клиент](../documentation/http-client.md#client-configuration).
     3.  Метрики источника данных JDBC и его пула соединений.
 
 === ":simple-yaml: `YAML`"
@@ -261,9 +261,10 @@ Micrometer можно воспринимать как универсальный
         metrics:
           enabled: true #(1)!
     httpClient:
-      telemetry:
-        metrics:
-          enabled: true #(2)!
+      usersApi:
+        telemetry:
+          metrics:
+            enabled: true #(2)!
     jdbc:
       telemetry:
         metrics:
@@ -271,7 +272,7 @@ Micrometer можно воспринимать как универсальный
     ```
 
     1.  Метрики публичного HTTP-сервера: длительность запроса и число активных запросов.
-    2.  Метрики, общие для декларативных HTTP-клиентов.
+    2.  Метрики декларативного клиента `usersApi`. Телеметрия настраивается для каждого клиента по его собственному пути конфигурации, смотрите [HTTP-клиент](../documentation/http-client.md#client-configuration).
     3.  Метрики источника данных JDBC и его пула соединений.
 
 На собственные метрики, которые ваш код регистрирует через `MeterRegistry`, этот флаг не влияет. `user.creation.total` появится, как только подключен `MetricsModule` и код отработал, потому что сам
