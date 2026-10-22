@@ -42,8 +42,9 @@ jobs:
           mkdir public/ru
           mv public/v2/en/index.html public/index.html      # landing at the site root (/kora-docs/)
           mv public/v2/ru/index.html public/ru/index.html   # Russian landing at /ru/
-          cp -r mkdocs/redirects/. public   # CNAME, robots.txt, sitemap index, llms.txt, 404, /v2/<lang>/ -> landing, /docs /guides /changelog shortcuts
+          cp -r mkdocs/redirects/. public   # robots.txt, landing sitemap, llms.txt, 404 and shortcuts
           python3 mkdocs/hooks/legacy_redirects.py public   # pre-split /kora-docs/<lang>/... URLs -> /kora-docs/v1/<lang>/...
+          python3 mkdocs/hooks/build_sitemap.py public
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
         with:

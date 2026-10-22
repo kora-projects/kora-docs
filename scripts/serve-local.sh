@@ -58,8 +58,9 @@ cp -r mkdocs/generated/v2 "$OUT/v2"
 mkdir -p "$OUT/ru"
 mv "$OUT/v2/en/index.html" "$OUT/index.html"      # landing at /kora-docs/
 mv "$OUT/v2/ru/index.html" "$OUT/ru/index.html"   # Russian landing at /kora-docs/ru/
-cp -r mkdocs/redirects/. "$OUT"          # CNAME, robots.txt, sitemap index, llms.txt, 404, /v2/<lang>/ -> landing, shortcuts
+cp -r mkdocs/redirects/. "$OUT"          # robots.txt, landing sitemap, llms.txt, 404 and shortcuts
 "$PYTHON" mkdocs/hooks/legacy_redirects.py "$OUT"   # pre-split /kora-docs/<lang>/... URLs
+"$PYTHON" mkdocs/hooks/build_sitemap.py "$OUT"
 
 echo "Serving http://127.0.0.1:${PORT}/kora-docs/"
 cd "$ROOT"

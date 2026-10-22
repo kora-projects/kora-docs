@@ -20,3 +20,7 @@ jobs:
           mkdocs build --strict --verbose -f mkdocs/config/v1/en/mkdocs.yml
           mkdocs build --strict --verbose -f mkdocs/config/v2/ru/mkdocs.yml
           mkdocs build --strict --verbose -f mkdocs/config/v2/en/mkdocs.yml
+      - name: Validate combined sitemap
+        run: |
+          cp mkdocs/redirects/sitemap-landing.xml mkdocs/generated/
+          python3 mkdocs/hooks/build_sitemap.py mkdocs/generated
