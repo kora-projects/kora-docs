@@ -26,6 +26,7 @@ STUB = """<!DOCTYPE html>
 <html lang="{lang}">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="/kora-docs/favicon.ico">
 <title>{title}</title>
 <link rel="canonical" href="{url}">
 <meta http-equiv="refresh" content="0; url={path}">
