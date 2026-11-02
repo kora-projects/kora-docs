@@ -139,8 +139,8 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     }
 
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.23"
-        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.23"))
+        annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.24"
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.24"))
     }
     ```
 
@@ -166,8 +166,8 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     }
 
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors:1.2.23")
-        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.23"))
+        ksp("ru.tinkoff.kora:symbol-processors:1.2.24")
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.24"))
     }
     ```
 
@@ -200,8 +200,8 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
 
     ```groovy
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.23"
-        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.23"))
+        annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.24"
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.24"))
     }
     ```
 
@@ -211,8 +211,8 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
 
     ```kotlin
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors:1.2.23")
-        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.23"))
+        ksp("ru.tinkoff.kora:symbol-processors:1.2.24")
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.24"))
     }
     ```
 

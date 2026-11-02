@@ -5,7 +5,18 @@ hide:
   - navigation
 ---
 
-## 1.2.23
+## 1.2.24
+
+Fixed:
+
+- Fixed OpenAPI generator server multipart mapper ignoring plain string parts
+- Fixed database connection acquisition inside telemetry to correctly catch acquire issues
+- Fixed stale gRPC server RPC handlers after service rebind and graph refresh
+- Fixed application graph refresh when direct dependencies change with unchanged `ValueOf<T>`
+- Fixed OpenAPI generator registering `authAllowMultiple` and `implicitHeaders` as CLI options
+- Fixed OpenAPI generator form parameter handling for `uuid`, `uri`, arrays and bytes
+
+### 1.2.23
 
 Fixed:
 

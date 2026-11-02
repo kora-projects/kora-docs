@@ -678,7 +678,7 @@ but the tests and will not otherwise be included in the graph:
 
     ```groovy
     dependencies {
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.23"
+        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.24"
     }
     ```
 
@@ -688,7 +688,7 @@ but the tests and will not otherwise be included in the graph:
 
     ```groovy
     dependencies {
-        kspTest("ru.tinkoff.kora:symbol-processors:1.2.23")
+        kspTest("ru.tinkoff.kora:symbol-processors:1.2.24")
     }
     ```
 
