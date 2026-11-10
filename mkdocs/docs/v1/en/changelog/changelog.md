@@ -5,7 +5,21 @@ hide:
   - navigation
 ---
 
-## 1.2.24
+
+## 1.2.25
+
+Added:
+
+- Made tracing `Resource` default one
+
+Fixed:
+
+- Fixed `CircuitBreaker` hanging in open state
+- Fixed annotation processor detecting overridden module methods without `@Override`
+- Updated dependencies to patch versions and fixed transitive CVE checks
+- Fixed database JDBC registering Hikari Micrometer tracker for native image
+
+### 1.2.24
 
 Fixed:
 
