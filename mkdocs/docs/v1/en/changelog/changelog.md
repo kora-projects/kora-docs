@@ -6,7 +6,14 @@ hide:
 ---
 
 
-## 1.2.25
+## 1.2.26
+
+Fixed:
+
+- Fixed `KafkaAssignConsumerContainer` losing records after a processing failure and preserving assign consumer progress across offset resets and partition reassignment
+- Fixed lag reporting and duration-based offset initialization in Kafka assign consumer
+
+### 1.2.25
 
 Added:
 

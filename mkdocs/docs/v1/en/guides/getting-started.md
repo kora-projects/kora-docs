@@ -489,7 +489,7 @@ Now add dependencies. First import the Kora BOM. After this line, Kora dependenc
 
     ```groovy
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.25")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.26")
 
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
 
@@ -504,7 +504,7 @@ Now add dependencies. First import the Kora BOM. After this line, Kora dependenc
 
     ```kotlin
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.25"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.26"))
 
         ksp("ru.tinkoff.kora:symbol-processor")
 
